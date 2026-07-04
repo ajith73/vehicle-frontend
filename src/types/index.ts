@@ -23,8 +23,8 @@ export interface Mechanic {
   mapLink?: string;
   experience?: string;
   specializedVehicle?: string;
-  vehicleTypes?: any;
-  serviceTypes?: any;
+  vehicleTypes?: any[];
+  serviceTypes?: any[];
   servicesAvailable?: string;
   status: string;
   description?: string;
@@ -39,14 +39,12 @@ export interface Mechanic {
   roadsideAssistance?: boolean;
   is24Hours?: boolean;
   holidayWorking?: boolean;
-  operatingDays?: any;
+  operatingDays?: any[];
   operatingHours?: string;
   availability?: boolean;
   websiteUrl?: string;
   imageUrl?: string;
   services?: any[];
-  vehicleTypes?: any[];
-  operatingDays?: any[];
   startTime?: string;
   endTime?: string;
   createdAt: string;
