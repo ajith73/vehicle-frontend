@@ -27,6 +27,11 @@ export async function apiClient<T>(endpoint: string, options: FetchOptions = {})
   const response = await fetch(`${API_URL}${endpoint}`, config);
 
   if (!response.ok) {
+    if (response.status === 401) {
+      localStorage.removeItem('token');
+      window.location.href = '/admin/login';
+    }
+    
     let errorMsg = 'An error occurred';
     try {
       const errorData = await response.json();

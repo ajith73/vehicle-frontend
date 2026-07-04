@@ -3,12 +3,18 @@ import toast from 'react-hot-toast';
 import { MessageSquare, Trash2, Filter } from 'lucide-react';
 import { useFeedback } from '../hooks/useFeedback';
 import * as api from '../api/feedback';
+import { Pagination } from '../components/Pagination';
+import { ConfirmDialog } from '../components/ConfirmDialog';
+
+const ITEMS_PER_PAGE = 10;
 
 export default function AdminFeedback() {
   const { feedback, loading, refetch } = useFeedback();
   const [typeFilter, setTypeFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
-  const [deleteModalId, setDeleteModalId] = useState<number | null>(null);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [confirmConfig, setConfirmConfig] = useState<{isOpen: boolean, title: string, message: string, type: 'danger'|'warning'|'info'|'success', onConfirm: () => void} | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const role = localStorage.getItem('role');
 
   const handleUpdateStatus = async (id: number, newStatus: string) => {
@@ -22,14 +28,21 @@ export default function AdminFeedback() {
   };
 
   const handleDelete = async (id: number) => {
-    try {
-      await api.deleteFeedback(id);
-      toast.success('Feedback deleted');
-      setDeleteModalId(null);
-      refetch();
-    } catch (err) {
-      toast.error('Error deleting feedback');
-    }
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Delete Feedback?',
+      message: 'This action cannot be undone. Are you sure you want to delete this feedback permanently?',
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          await api.deleteFeedback(id);
+          toast.success('Feedback deleted');
+          refetch();
+        } catch (err) {
+          toast.error('Error deleting feedback');
+        }
+      }
+    });
   };
 
   const filteredFeedback = feedback.filter(item => {
@@ -39,14 +52,73 @@ export default function AdminFeedback() {
     return matchesType && matchesStatus;
   });
 
+  const totalPages = Math.ceil(filteredFeedback.length / ITEMS_PER_PAGE);
+  const paginatedFeedback = filteredFeedback.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  const handleBulkAction = async (action: 'resolve' | 'delete') => {
+    if (selectedIds.length === 0) return;
+    
+    setConfirmConfig({
+      isOpen: true,
+      title: action === 'resolve' ? 'Resolve Feedback?' : 'Delete Feedback?',
+      message: `Are you sure you want to ${action} ${selectedIds.length} item(s)?`,
+      type: action === 'resolve' ? 'info' : 'danger',
+      onConfirm: async () => {
+        try {
+          if (action === 'resolve') {
+            await Promise.all(selectedIds.map(id => api.updateFeedbackStatus(id, 'Not Need Update')));
+          } else {
+            await Promise.all(selectedIds.map(id => api.deleteFeedback(id)));
+          }
+          toast.success(`Successfully ${action}d ${selectedIds.length} item(s)`);
+          setSelectedIds([]);
+          refetch();
+        } catch (err) {
+          toast.error('Error during bulk action');
+        }
+      }
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.length === filteredFeedback.length && filteredFeedback.length > 0) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(filteredFeedback.map(f => f.id));
+    }
+  };
+
+  const toggleSelect = (id: number) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
   if (loading) return <div className="p-8 text-center text-muted-foreground">Loading...</div>;
 
   return (
     <div className="p-8 max-w-7xl mx-auto w-full">
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex justify-between items-center mb-6">
         <h2 className="text-3xl font-bold text-foreground flex items-center gap-2">
           <MessageSquare className="text-primary" /> User Feedback
         </h2>
+        {selectedIds.length > 0 && role === 'Super Admin' && (
+          <div className="flex gap-2">
+            <button 
+              onClick={() => handleBulkAction('resolve')}
+              className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 font-medium transition-colors shadow-sm"
+            >
+              Mark Selected Resolved ({selectedIds.length})
+            </button>
+            <button 
+              onClick={() => handleBulkAction('delete')}
+              className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 font-medium transition-colors shadow-sm"
+            >
+              <Trash2 size={18} /> Delete Selected ({selectedIds.length})
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="bg-card border border-border rounded-xl p-4 mb-6 shadow-sm space-y-4">
@@ -94,6 +166,16 @@ export default function AdminFeedback() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-muted border-b border-border">
+                {role === 'Super Admin' && (
+                  <th className="p-4 w-12 text-center">
+                    <input 
+                      type="checkbox" 
+                      checked={selectedIds.length === filteredFeedback.length && filteredFeedback.length > 0}
+                      onChange={toggleSelectAll}
+                      className="w-4 h-4 rounded border-border text-primary focus:ring-primary/20 cursor-pointer"
+                    />
+                  </th>
+                )}
                 <th className="p-4 font-medium w-1/4">Type & Date</th>
                 <th className="p-4 font-medium">Description</th>
                 <th className="p-4 font-medium w-48">Status</th>
@@ -101,11 +183,21 @@ export default function AdminFeedback() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {filteredFeedback.length === 0 ? (
-                <tr><td colSpan={role === 'Super Admin' ? 4 : 3} className="p-8 text-center text-muted-foreground">No feedback found</td></tr>
+              {paginatedFeedback.length === 0 ? (
+                <tr><td colSpan={role === 'Super Admin' ? 5 : 4} className="p-8 text-center text-muted-foreground">No feedback found matching your criteria.</td></tr>
               ) : (
-                filteredFeedback.map((item) => (
-                  <tr key={item.id} className="hover:bg-muted/30 transition-colors">
+                paginatedFeedback.map((item) => (
+                  <tr key={item.id} className={`hover:bg-muted/30 transition-colors ${selectedIds.includes(item.id) ? 'bg-primary/5' : ''}`}>
+                    {role === 'Super Admin' && (
+                      <td className="p-4 text-center">
+                        <input 
+                          type="checkbox" 
+                          checked={selectedIds.includes(item.id)}
+                          onChange={() => toggleSelect(item.id)}
+                          className="w-4 h-4 rounded border-border text-primary focus:ring-primary/20 cursor-pointer"
+                        />
+                      </td>
+                    )}
                     <td className="p-4">
                       <p className="font-bold text-foreground">{item.type}</p>
                       <p className="text-xs text-muted-foreground">{new Date(item.createdAt).toLocaleDateString()}</p>
@@ -131,7 +223,7 @@ export default function AdminFeedback() {
                     {role === 'Super Admin' && (
                       <td className="p-4">
                         <button 
-                        onClick={() => setDeleteModalId(item.id)}
+                        onClick={() => handleDelete(item.id)}
                         className="p-2 bg-destructive/10 text-destructive rounded-lg hover:bg-destructive hover:text-destructive-foreground transition-colors"
                         title="Delete Feedback"
                       >
@@ -144,37 +236,26 @@ export default function AdminFeedback() {
               )}
             </tbody>
           </table>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            totalItems={filteredFeedback.length}
+            itemsPerPage={ITEMS_PER_PAGE}
+          />
         </div>
       </div>
 
-      {/* Delete Confirmation Modal */}
-      {deleteModalId && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-card w-full max-w-sm rounded-2xl shadow-2xl p-6 animate-in zoom-in-95 duration-200 text-center">
-            <div className="w-16 h-16 bg-destructive/10 text-destructive rounded-full flex items-center justify-center mx-auto mb-4">
-              <Trash2 size={32} />
-            </div>
-            <h3 className="text-xl font-bold mb-2">Delete Feedback?</h3>
-            <p className="text-muted-foreground text-sm mb-6">
-              This action cannot be undone. Are you sure you want to delete this feedback permanently?
-            </p>
-            <div className="flex gap-3">
-              <button 
-                onClick={() => setDeleteModalId(null)}
-                className="flex-1 py-2.5 rounded-xl font-bold bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={() => handleDelete(deleteModalId)}
-                className="flex-1 py-2.5 rounded-xl font-bold bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors shadow-lg shadow-destructive/20"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog 
+        isOpen={!!confirmConfig?.isOpen}
+        title={confirmConfig?.title || ''}
+        message={confirmConfig?.message || ''}
+        type={confirmConfig?.type || 'warning'}
+        onConfirm={() => {
+          if (confirmConfig?.onConfirm) confirmConfig.onConfirm();
+        }}
+        onCancel={() => setConfirmConfig(null)}
+      />
 
       {/* Global Style for hiding scrollbar */}
       <style dangerouslySetInnerHTML={{ __html: `

@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, Polyline, useMap, useMapEvents, Circle } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
-import { X, Phone, MessageCircle, ExternalLink, MapPin, Navigation, ChevronLeft, LocateFixed, Mail, Globe, Clock, Settings2 } from 'lucide-react';
+import { X, Phone, MessageCircle, ExternalLink, MapPin, Navigation, ChevronLeft, LocateFixed, Mail, Globe, Clock, Settings2, MessageSquare, Wrench } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { API_URL } from '../api/apiClient';
@@ -132,7 +132,7 @@ export default function MapPage() {
   
   // Controls state
   const [showControls, setShowControls] = useState(false);
-  const [radius, setRadius] = useState<number>(50000); // Default very large (Any)
+  const [radius, setRadius] = useState<number>(5); // Default 5km
   const [routeOption, setRouteOption] = useState<'Fastest' | 'Shortest' | 'Avoid Toll'>('Fastest');
   const [sortBy, setSortBy] = useState<'Nearest' | 'Available'>('Nearest');
 
@@ -242,7 +242,7 @@ export default function MapPage() {
           const target = data.find((m: any) => m.id.toString() === routeTo);
           if (target) {
             setSelectedMechanic(target);
-            setSheetState(0);
+            setSheetState(1);
             if (mapInstance) {
               mapInstance.flyTo([target.latitude, target.longitude], 14);
             }
@@ -260,11 +260,6 @@ export default function MapPage() {
   // Derived state: filtered and sorted mechanics
   const visibleMechanics = useMemo(() => {
     let filtered = mechanics.filter(m => m.distance <= radius);
-    
-    // Bounds filtering optimization
-    if (mapBounds) {
-      filtered = filtered.filter(m => mapBounds.contains([m.latitude, m.longitude]));
-    }
 
     filtered.sort((a, b) => {
       if (sortBy === 'Available') {
@@ -274,7 +269,20 @@ export default function MapPage() {
       return a.distance - b.distance;
     });
     return filtered;
-  }, [mechanics, radius, sortBy, mapBounds]);
+  }, [mechanics, radius, sortBy]);
+
+  // Derived state: nearby alternatives to selected mechanic
+  const nearbyMechanics = useMemo(() => {
+    if (!selectedMechanic || !mechanics.length) return [];
+    const withDistance = mechanics
+      .filter(m => m.id !== selectedMechanic.id)
+      .map(m => ({
+        ...m,
+        distToSelected: getDistanceFromLatLonInKm(selectedMechanic.latitude, selectedMechanic.longitude, m.latitude, m.longitude)
+      }));
+    withDistance.sort((a, b) => a.distToSelected - b.distToSelected);
+    return withDistance.slice(0, 5);
+  }, [selectedMechanic, mechanics]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStart(e.targetTouches[0].clientY);
@@ -302,9 +310,9 @@ export default function MapPage() {
   };
 
   const getSheetHeightClass = () => {
-    if (sheetState === 0) return 'h-[30vh] md:h-auto';
-    if (sheetState === 1) return 'h-[60vh] md:h-auto';
-    return 'h-[95vh] md:h-auto';
+    if (sheetState === 0) return 'h-[35vh] sm:h-auto';
+    if (sheetState === 1) return 'h-[50vh] sm:h-auto';
+    return 'h-[90vh] sm:h-auto';
   };
 
   const isLoading = locationLoading || mechanicsLoading;
@@ -323,93 +331,85 @@ export default function MapPage() {
         </div>
       )}
 
-      {/* Map Controls */}
-      <div className="absolute top-4 left-4 right-4 z-[1000] flex justify-between items-start pointer-events-none">
-        <button 
-          onClick={() => navigate(-1)}
-          className="pointer-events-auto bg-card p-3 rounded-full shadow-lg border border-border hover:bg-secondary transition-colors"
+      {/* Floating Action Buttons */}
+      <div className="absolute top-4 right-4 z-[400] flex flex-col gap-3 pointer-events-auto">
+        <button
+          onClick={() => setShowControls(!showControls)}
+          className="bg-card text-foreground p-3 rounded-full shadow-lg border border-border hover:bg-secondary/50 transition-colors w-12 h-12 flex items-center justify-center"
         >
-          <ChevronLeft size={24} />
+          <Settings2 className="w-6 h-6" />
         </button>
-
-        <div className="flex flex-col items-end gap-2 pointer-events-auto">
-          <button 
-            onClick={() => setShowControls(!showControls)}
-            className={`bg-card p-3 rounded-full shadow-lg border border-border transition-colors ${showControls ? 'bg-primary text-primary-foreground' : 'hover:bg-secondary text-primary'}`}
-          >
-            <Settings2 size={24} />
-          </button>
-          
-          <button 
-            onClick={locateUser}
-            className="bg-card p-3 rounded-full shadow-lg border border-border hover:bg-secondary transition-colors text-primary"
-          >
-            <LocateFixed size={24} />
-          </button>
-
-          {showControls && (
-            <div className="bg-card p-4 rounded-2xl shadow-xl border border-border animate-in slide-in-from-right-4 text-sm w-64 mt-2">
-              <div className="mb-4">
-                <p className="font-bold mb-2">Search Radius</p>
-                <div className="flex flex-wrap gap-2">
-                  {[1, 3, 5, 10, 50, 50000].map(r => (
-                    <button 
-                      key={r}
-                      onClick={() => setRadius(r)}
-                      className={`px-3 py-1 rounded-full text-xs font-bold ${radius === r ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}
-                    >
-                      {r === 50000 ? 'Any' : `${r}km`}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              
-              <div className="mb-4">
-                <p className="font-bold mb-2">Sort By</p>
-                <div className="flex gap-2">
-                  {['Nearest', 'Available'].map(s => (
-                    <button 
-                      key={s}
-                      onClick={() => setSortBy(s as any)}
-                      className={`px-3 py-1 rounded-full text-xs font-bold ${sortBy === s ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              
-              <div>
-                <p className="font-bold mb-2">Route Option</p>
-                <div className="flex flex-wrap gap-2">
-                  {['Fastest', 'Shortest', 'Avoid Toll'].map(r => (
-                    <button 
-                      key={r}
-                      onClick={() => setRouteOption(r as any)}
-                      className={`px-3 py-1 rounded-full text-xs font-bold ${routeOption === r ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}
-                    >
-                      {r}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+        <button
+          onClick={locateUser}
+          className="bg-primary text-primary-foreground p-3 rounded-full shadow-lg hover:bg-primary/90 transition-colors w-12 h-12 flex items-center justify-center"
+        >
+          <LocateFixed className="w-6 h-6" />
+        </button>
       </div>
+
+      {showControls && (
+        <div className="absolute top-20 right-4 z-[400] bg-card p-4 rounded-2xl shadow-xl border border-border animate-in slide-in-from-top-4 text-sm w-64">
+          <div className="mb-4">
+            <p className="font-bold mb-2">Search Radius</p>
+            <div className="flex flex-wrap gap-2">
+              {[1, 3, 5, 10, 50, 50000].map(r => (
+                <button 
+                  key={r}
+                  onClick={() => setRadius(r)}
+                  className={`px-3 py-1 rounded-full text-xs font-bold ${radius === r ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}
+                >
+                  {r === 50000 ? 'Any' : `${r}km`}
+                </button>
+              ))}
+            </div>
+          </div>
+          
+          <div className="mb-4">
+            <p className="font-bold mb-2">Sort By</p>
+            <div className="flex gap-2">
+              {['Nearest', 'Available'].map(s => (
+                <button 
+                  key={s}
+                  onClick={() => setSortBy(s as any)}
+                  className={`px-3 py-1 rounded-full text-xs font-bold ${sortBy === s ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+          
+          <div>
+            <p className="font-bold mb-2">Route Option</p>
+            <div className="flex flex-wrap gap-2">
+              {['Fastest', 'Shortest', 'Avoid Toll'].map(r => (
+                <button 
+                  key={r}
+                  onClick={() => setRouteOption(r as any)}
+                  className={`px-3 py-1 rounded-full text-xs font-bold ${routeOption === r ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}
+                >
+                  {r}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       <MapContainer 
         center={userLocation} 
         zoom={13} 
         className="flex-1 w-full z-0"
         ref={setMapInstance}
+        zoomControl={false}
       >
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; OpenStreetMap contributors'
+          className="dark:brightness-75 dark:contrast-125 dark:invert dark:hue-rotate-180 transition-all duration-300"
+        />
         <ChangeView center={userLocation} />
         <MapBoundsListener setBounds={setMapBounds} />
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
         
         {/* Radius Circle */}
         <Circle center={userLocation} radius={radius * 1000} pathOptions={{ color: '#3b82f6', fillColor: '#3b82f6', fillOpacity: 0.1, weight: 1 }} />
@@ -425,7 +425,7 @@ export default function MapPage() {
               eventHandlers={{
                 click: () => {
                   setSelectedMechanic(mechanic);
-                  setSheetState(0);
+                  setSheetState(1);
                 }
               }}
             />
@@ -437,149 +437,129 @@ export default function MapPage() {
         )}
       </MapContainer>
 
-      {/* Floating Bottom Sheet */}
+      {/* Mechanic Details - Bottom Sheet (Mobile) / Side Panel (Desktop) */}
       {selectedMechanic && (
         <>
-          {sheetState === 2 && (
-            <div 
-              className="absolute inset-0 z-[900] bg-background/50 backdrop-blur-sm sm:hidden animate-in fade-in"
-              onClick={() => setSheetState(0)}
-            />
-          )}
-          
-          <div 
-            className={`absolute bottom-0 left-0 right-0 md:left-4 md:top-24 md:bottom-auto md:w-[420px] z-[1000] bg-card border-t md:border border-border shadow-[0_-10px_40px_rgba(0,0,0,0.2)] md:shadow-2xl rounded-t-3xl md:rounded-3xl overflow-hidden transition-all duration-300 ease-out flex flex-col ${getSheetHeightClass()} animate-in slide-in-from-bottom-full md:slide-in-from-left-8`}
-          >
-            {/* Drag Handle */}
-            <div 
-              className="w-full pt-4 pb-3 flex justify-center cursor-pointer touch-none md:hidden bg-card z-10 shrink-0"
-              onClick={() => setSheetState(prev => (prev === 2 ? 0 : 2))}
-              onTouchStart={handleTouchStart}
-              onTouchEnd={handleTouchEnd}
-            >
-              <div className="w-14 h-1.5 bg-muted-foreground/30 rounded-full"></div>
-            </div>
 
-            <div className="overflow-y-auto hide-scrollbar flex-1 pb-10">
-              {selectedMechanic.image && (
-                <div className="relative">
-                  <img 
-                    src={selectedMechanic.image} 
-                    alt={selectedMechanic.name} 
-                    className={`${sheetState === 2 ? 'h-56' : 'h-32'} w-full object-cover transition-all duration-300`} 
-                  />
-                  <button 
-                    onClick={() => { setSelectedMechanic(null); setRouteCoords([]); }}
-                    className="absolute top-3 right-3 p-2 bg-black/50 text-white hover:bg-black/70 backdrop-blur-md rounded-full md:flex hidden"
-                  >
-                    <X size={18} />
-                  </button>
-                </div>
-              )}
+          <div 
+            className={`fixed sm:absolute bottom-0 sm:bottom-[10%] sm:left-4 sm:top-1/2 sm:-translate-y-1/2 w-full sm:w-[400px] z-[500] flex flex-col pointer-events-none rounded-t-3xl sm:rounded-2xl overflow-hidden shadow-2xl transition-all duration-300 transform translate-y-0 pb-safe pb-[72px] sm:pb-0 ${getSheetHeightClass()}`}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+          >
+            <div className="bg-card border-t sm:border border-border flex flex-col pointer-events-auto h-full w-full">
+              {/* Mobile handle */}
+              <div className="w-full flex justify-center py-3 sm:hidden cursor-pointer shrink-0" onClick={() => setSheetState(prev => prev === 2 ? 1 : 2)}>
+                <div className="w-12 h-1.5 bg-muted rounded-full"></div>
+              </div>
               
-              <div className="p-6">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-bold text-2xl leading-tight pr-4">{selectedMechanic.name}</h3>
-                  {!selectedMechanic.image && (
-                    <button 
-                      onClick={() => { setSelectedMechanic(null); setRouteCoords([]); }}
-                      className="p-1 bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded-full shrink-0 md:flex hidden"
-                    >
-                      <X size={18} />
-                    </button>
+              <div className="flex-1 overflow-y-auto hide-scrollbar pb-6">
+                <div className="p-4 sm:p-5 flex gap-4 relative">
+                  {selectedMechanic.image ? (
+                    <img src={selectedMechanic.image} alt={selectedMechanic.businessName || selectedMechanic.name} className="w-20 h-20 rounded-xl object-cover shrink-0" />
+                  ) : (
+                    <div className="w-20 h-20 bg-secondary rounded-xl flex items-center justify-center shrink-0">
+                      <Wrench className="w-8 h-8 text-muted-foreground/30" />
+                    </div>
                   )}
-                </div>
-                
-                <div className="flex justify-between items-center mb-5">
-                  <p className="text-sm text-muted-foreground flex items-center gap-1 truncate max-w-[60%]">
-                    <MapPin size={14} className="shrink-0" />
-                    <span className="truncate">{selectedMechanic.area}, {selectedMechanic.city}</span>
-                  </p>
                   
-                  {/* Status & ETA */}
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className={`text-xs font-bold px-3 py-1.5 rounded-lg border ${selectedMechanic.currentStatus === 'Available' ? 'bg-green-500/10 text-green-600 border-green-500/20' : selectedMechanic.currentStatus === 'Busy' ? 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20' : 'bg-red-500/10 text-red-600 border-red-500/20'}`}>
-                      {selectedMechanic.currentStatus}
-                    </span>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-lg font-bold text-foreground mb-1 leading-tight truncate">{selectedMechanic.businessName || selectedMechanic.name}</h3>
+                    <p className="text-sm text-muted-foreground flex items-center gap-1.5 truncate">
+                      <MapPin className="w-4 h-4 shrink-0" /> {selectedMechanic.landmark ? `${selectedMechanic.landmark}, ` : ''}{selectedMechanic.area}
+                    </p>
                     
-                    {drivingDistance && drivingTime && (
-                      <div className="bg-primary/10 text-primary px-3 py-1.5 rounded-lg border border-primary/20 flex items-center gap-2">
-                        <span className="font-bold text-sm flex items-center gap-1"><span className="text-base">🚗</span> {drivingTime}</span>
-                        <span className="text-primary/30 font-bold">|</span>
-                        <span className="font-bold text-sm flex items-center gap-1"><span className="text-base">📍</span> {drivingDistance} km</span>
+                    <div className="flex items-center gap-2 mt-2">
+                      <div className="flex items-center gap-1 text-xs font-bold px-2 py-1 bg-secondary rounded-md">
+                        <div className={`w-2 h-2 rounded-full ${getMechanicStatus(selectedMechanic) === 'Available' ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
+                        {getMechanicStatus(selectedMechanic)}
                       </div>
-                    )}
+                      <div className="text-xs font-bold text-primary px-2 py-1 bg-primary/10 rounded-md whitespace-nowrap">
+                        {drivingTime ? `${drivingTime} ` : ''}({getDistanceFromLatLonInKm(userLocation[0], userLocation[1], selectedMechanic.latitude, selectedMechanic.longitude).toFixed(1)} km)
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                {/* Contact Actions */}
-                <div className="flex gap-4 mb-6 overflow-x-auto pb-2 hide-scrollbar">
-                  <a 
-                    href={`https://www.google.com/maps/dir/?api=1&origin=${userLocation[0]},${userLocation[1]}&destination=${selectedMechanic.latitude},${selectedMechanic.longitude}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="w-14 h-14 shrink-0 flex items-center justify-center bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/20 active:scale-95"
-                  >
-                    <Navigation size={24} />
-                  </a>
-                  {selectedMechanic.phone?.map((p: any, i: number) => (
-                    <React.Fragment key={i}>
-                      <a href={`tel:${p.number}`} className="w-14 h-14 shrink-0 flex items-center justify-center bg-primary text-primary-foreground rounded-full hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20 active:scale-95">
-                        <Phone size={24} />
-                      </a>
-                      {p.isWhatsapp && (
-                        <a href={`https://wa.me/91${p.number}`} target="_blank" rel="noreferrer" className="w-14 h-14 shrink-0 flex items-center justify-center bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors shadow-lg shadow-green-500/20 active:scale-95">
-                          <MessageCircle size={24} />
-                        </a>
-                      )}
-                    </React.Fragment>
-                  ))}
+                {/* Action Icons Row */}
+                <div className="flex justify-around items-center px-4 py-3 border-y border-border/50 gap-2 shrink-0">
+                   {selectedMechanic.phone?.[0] && (
+                     <a href={`tel:${selectedMechanic.phone[0].number}`} className="p-3 bg-primary/10 text-primary rounded-full hover:bg-primary/20 transition-colors shrink-0">
+                       <Phone className="w-5 h-5" />
+                     </a>
+                   )}
+                   {selectedMechanic.phone?.[0]?.isWhatsapp && (
+                     <a href={`https://wa.me/91${selectedMechanic.phone[0].number}`} target="_blank" rel="noreferrer" className="p-3 bg-green-500/10 text-green-600 rounded-full hover:bg-green-500/20 transition-colors shrink-0">
+                       <MessageCircle className="w-5 h-5" />
+                     </a>
+                   )}
+                   {selectedMechanic.phone?.[0] && (
+                     <a href={`sms:${selectedMechanic.phone[0].number}`} className="p-3 bg-blue-500/10 text-blue-600 rounded-full hover:bg-blue-500/20 transition-colors shrink-0">
+                       <MessageSquare className="w-5 h-5" />
+                     </a>
+                   )}
+                   {selectedMechanic.email && (
+                     <a href={`mailto:${selectedMechanic.email}`} className="p-3 bg-orange-500/10 text-orange-600 rounded-full hover:bg-orange-500/20 transition-colors shrink-0">
+                       <Mail className="w-5 h-5" />
+                     </a>
+                   )}
+                   {selectedMechanic.websiteUrl && (
+                     <a href={selectedMechanic.websiteUrl} target="_blank" rel="noreferrer" className="p-3 bg-purple-500/10 text-purple-600 rounded-full hover:bg-purple-500/20 transition-colors shrink-0">
+                       <Globe className="w-5 h-5" />
+                     </a>
+                   )}
+                   <button onClick={() => {
+                     setRouteCoords([]);
+                     navigate(`/map?routeTo=${selectedMechanic.id}`);
+                   }} className="p-3 bg-secondary text-secondary-foreground rounded-full hover:bg-secondary/80 border border-border shadow-sm transition-colors shrink-0">
+                     <Navigation className="w-5 h-5" />
+                   </button>
                 </div>
 
-                {/* Badges / Details (Visible when expanded or half) */}
+                {/* Extended Details for sheetState > 0 */}
                 {(sheetState > 0) && (
-                  <div className="animate-in fade-in duration-300">
-                    {selectedMechanic.vehicleTypes && (
-                      <div className="mb-6">
-                        <p className="font-bold mb-2">Supported Vehicles</p>
-                        <div className="flex gap-2 flex-wrap">
-                          {selectedMechanic.vehicleTypes.map((v: any, i: number) => (
-                            <span key={i} className="px-3 py-1 bg-secondary text-secondary-foreground rounded-lg text-sm font-semibold">{v.type || v}</span>
-                          ))}
-                        </div>
+                  <div className="p-4 sm:p-5 animate-in fade-in duration-300">
+                    <div className="mb-4">
+                      <h4 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
+                        <MapPin className="w-5 h-5 text-primary" /> Nearby Mechanics
+                      </h4>
+                      <div className="flex flex-col gap-3">
+                        {nearbyMechanics.map((m: any) => (
+                          <div 
+                            key={m.id}
+                            onClick={() => {
+                              setSelectedMechanic(m);
+                              setSheetState(1);
+                              mapInstance?.flyTo([m.latitude, m.longitude], 15);
+                            }}
+                            className="bg-background border border-border rounded-xl p-3 flex items-center gap-3 cursor-pointer hover:border-primary/50 transition-colors"
+                          >
+                            {m.image ? (
+                              <img src={m.image} alt={m.businessName} className="w-12 h-12 rounded-lg object-cover shrink-0" />
+                            ) : (
+                              <div className="w-12 h-12 bg-secondary rounded-lg flex items-center justify-center shrink-0">
+                                <Wrench className="w-5 h-5 text-muted-foreground" />
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <h5 className="font-bold text-sm text-foreground truncate">{m.businessName || m.name}</h5>
+                              <p className="text-xs text-muted-foreground truncate">{m.distToSelected?.toFixed(1)} km away • {m.area}</p>
+                            </div>
+                            <ChevronLeft className="w-4 h-4 text-muted-foreground rotate-180" />
+                          </div>
+                        ))}
+                        {nearbyMechanics.length === 0 && (
+                          <p className="text-sm text-muted-foreground">No other mechanics nearby.</p>
+                        )}
                       </div>
-                    )}
-                    
-                    {selectedMechanic.services && (
-                      <div className="mb-6">
-                        <p className="font-bold mb-2">Services</p>
-                        <div className="flex gap-2 flex-wrap">
-                          {selectedMechanic.services.map((s: any, i: number) => (
-                            <span key={i} className="px-3 py-1 bg-primary/10 text-primary rounded-lg text-sm font-semibold">{s.name || s}</span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    
-                    {selectedMechanic.description && (
-                      <div className="mb-6">
-                        <p className="font-bold mb-2">About</p>
-                        <p className="text-muted-foreground text-sm">{selectedMechanic.description}</p>
-                      </div>
-                    )}
+                    </div>
                   </div>
                 )}
-
               </div>
             </div>
           </div>
         </>
       )}
 
-      <style dangerouslySetInnerHTML={{ __html: `
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-      `}} />
     </div>
   );
 }

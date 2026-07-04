@@ -41,7 +41,7 @@ export default function DonationPage() {
 
   if (success) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-73px)] p-4 sm:p-8 relative">
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-73px)] p-4 sm:p-8 pb-[80px] sm:pb-8 relative">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-pink-500/10 via-background to-background -z-10" />
         <div className="max-w-md w-full bg-card/60 backdrop-blur-xl shadow-2xl rounded-3xl p-8 sm:p-12 border border-white/10 dark:border-white/5 text-center transform animate-in zoom-in duration-500">
           <div className="mx-auto w-24 h-24 bg-pink-500/20 text-pink-500 rounded-full flex items-center justify-center mb-6">
@@ -61,7 +61,7 @@ export default function DonationPage() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-73px)] p-4 sm:p-8 relative">
+    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-73px)] p-4 sm:p-8 pb-[80px] sm:pb-8 relative">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/10 via-background to-background -z-10" />
       
       <div className="max-w-xl w-full bg-card/60 backdrop-blur-xl shadow-2xl rounded-3xl p-6 sm:p-10 border border-white/10 dark:border-white/5">

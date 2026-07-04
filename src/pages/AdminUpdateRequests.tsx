@@ -4,12 +4,28 @@ import { useNavigate } from 'react-router-dom';
 import { CheckCircle, XCircle, AlertCircle, Eye, Edit3, X } from 'lucide-react';
 import * as api from '../api/mechanics';
 import type { UpdateRequest } from '../types';
+import { Pagination } from '../components/Pagination';
+import { ConfirmDialog } from '../components/ConfirmDialog';
+
+const ITEMS_PER_PAGE = 10;
 
 export default function AdminUpdateRequests() {
   const [requests, setRequests] = useState<UpdateRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewUpdateData, setViewUpdateData] = useState<UpdateRequest | null>(null);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [statusFilter, setStatusFilter] = useState('All');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [confirmConfig, setConfirmConfig] = useState<{isOpen: boolean, title: string, message: string, type: 'danger'|'warning'|'info'|'success', onConfirm: () => void} | null>(null);
   const navigate = useNavigate();
+
+  const filteredRequests = requests.filter(req => statusFilter === 'All' || req.status === statusFilter);
+
+  const totalPages = Math.ceil(filteredRequests.length / ITEMS_PER_PAGE);
+  const paginatedRequests = filteredRequests.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   const fetchRequests = useCallback(async () => {
     try {
@@ -27,26 +43,104 @@ export default function AdminUpdateRequests() {
   }, [fetchRequests]);
 
   const handleAction = async (id: number, action: 'approve' | 'reject') => {
-    if (!window.confirm(`Are you sure you want to ${action} this request?`)) return;
-    try {
-      if (action === 'approve') {
-        await api.approveUpdateRequest(id);
-      } else {
-        await api.rejectUpdateRequest(id);
+    setConfirmConfig({
+      isOpen: true,
+      title: action === 'approve' ? 'Approve Update?' : 'Reject Update?',
+      message: `Are you sure you want to ${action} this request?`,
+      type: action === 'approve' ? 'success' : 'danger',
+      onConfirm: async () => {
+        try {
+          if (action === 'approve') {
+            await api.approveUpdateRequest(id);
+          } else {
+            await api.rejectUpdateRequest(id);
+          }
+          toast.success(`Successfully ${action}d request`);
+          fetchRequests();
+        } catch (err) {
+          toast.error('Error communicating with server');
+        }
       }
-      toast(`Successfully ${action}d request`);
-      fetchRequests();
-    } catch (err) {
-      toast.error('Error communicating with server');
+    });
+  };
+
+  const handleBulkAction = async (action: 'approve' | 'reject') => {
+    if (selectedIds.length === 0) return;
+    
+    setConfirmConfig({
+      isOpen: true,
+      title: action === 'approve' ? 'Approve Updates?' : 'Reject Updates?',
+      message: `Are you sure you want to ${action} ${selectedIds.length} request(s)?`,
+      type: action === 'approve' ? 'success' : 'danger',
+      onConfirm: async () => {
+        try {
+          if (action === 'approve') {
+            await Promise.all(selectedIds.map(id => api.approveUpdateRequest(id)));
+          } else {
+            await Promise.all(selectedIds.map(id => api.rejectUpdateRequest(id)));
+          }
+          toast.success(`Successfully ${action}d ${selectedIds.length} request(s)`);
+          setSelectedIds([]);
+          fetchRequests();
+        } catch (err) {
+          toast.error('Error during bulk action');
+        }
+      }
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.length === filteredRequests.length && filteredRequests.length > 0) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(filteredRequests.map(r => r.id));
     }
+  };
+
+  const toggleSelect = (id: number) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
 
   if (loading) return <div className="p-8 text-center text-muted-foreground">Loading...</div>;
 
   return (
     <div className="p-8 max-w-7xl mx-auto w-full">
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex justify-between items-center mb-6">
         <h2 className="text-3xl font-bold text-foreground">Mechanic Update Requests</h2>
+        {selectedIds.length > 0 && (
+          <div className="flex gap-2">
+            <button 
+              onClick={() => handleBulkAction('approve')}
+              className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 font-medium transition-colors shadow-sm"
+            >
+              <CheckCircle size={18} /> Approve Selected ({selectedIds.length})
+            </button>
+            <button 
+              onClick={() => handleBulkAction('reject')}
+              className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 font-medium transition-colors shadow-sm"
+            >
+              <XCircle size={18} /> Reject Selected ({selectedIds.length})
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="bg-card border border-border rounded-xl p-4 mb-6 shadow-sm">
+        <div className="flex gap-2 overflow-x-auto hide-scrollbar">
+          {['All', 'Pending Update Approval', 'Approved', 'Rejected'].map((status) => (
+            <button
+              key={status}
+              onClick={() => setStatusFilter(status)}
+              className={`shrink-0 px-4 py-1.5 rounded-full text-xs font-bold border transition-colors ${
+                statusFilter === status 
+                  ? 'bg-primary text-primary-foreground border-primary' 
+                  : 'bg-background text-muted-foreground border-border hover:border-primary/50'
+              }`}
+            >
+              {status}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
@@ -54,6 +148,14 @@ export default function AdminUpdateRequests() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-muted border-b border-border">
+                <th className="p-4 w-12 text-center">
+                  <input 
+                    type="checkbox" 
+                    checked={selectedIds.length === filteredRequests.length && filteredRequests.length > 0}
+                    onChange={toggleSelectAll}
+                    className="w-4 h-4 rounded border-border text-primary focus:ring-primary/20 cursor-pointer"
+                  />
+                </th>
                 <th className="p-4 font-medium">Mechanic</th>
                 <th className="p-4 font-medium">Requested By</th>
                 <th className="p-4 font-medium">Status</th>
@@ -61,11 +163,19 @@ export default function AdminUpdateRequests() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {requests.length === 0 ? (
-                <tr><td colSpan={4} className="p-8 text-center text-muted-foreground">No update requests found</td></tr>
+              {paginatedRequests.length === 0 ? (
+                <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">No update requests found</td></tr>
               ) : (
-                requests.map((req) => (
-                  <tr key={req.id} className="hover:bg-muted/50 transition-colors">
+                paginatedRequests.map((req) => (
+                  <tr key={req.id} className={`hover:bg-muted/50 transition-colors ${selectedIds.includes(req.id) ? 'bg-primary/5' : ''}`}>
+                    <td className="p-4 text-center">
+                      <input 
+                        type="checkbox" 
+                        checked={selectedIds.includes(req.id)}
+                        onChange={() => toggleSelect(req.id)}
+                        className="w-4 h-4 rounded border-border text-primary focus:ring-primary/20 cursor-pointer"
+                      />
+                    </td>
                     <td className="p-4">
                       <p className="font-bold text-foreground">{req.Mechanic?.name}</p>
                       <p className="text-xs text-muted-foreground">ID: {req.mechanicId}</p>
@@ -123,6 +233,13 @@ export default function AdminUpdateRequests() {
               )}
             </tbody>
           </table>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            totalItems={filteredRequests.length}
+            itemsPerPage={ITEMS_PER_PAGE}
+          />
         </div>
       </div>
 
@@ -165,7 +282,9 @@ export default function AdminUpdateRequests() {
                                 {key.replace(/([A-Z])/g, ' $1').trim()}
                               </span>
                               <span className="sm:col-span-2 text-foreground font-medium">
-                                {Array.isArray(value) ? value.join(', ') : typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                                {Array.isArray(value) 
+                                  ? value.map((v: any) => typeof v === 'object' ? (v.number ? `${v.number}${v.isWhatsapp ? ' (WhatsApp)' : ''}` : JSON.stringify(v)) : String(v)).join(', ') 
+                                  : typeof value === 'object' ? JSON.stringify(value) : String(value)}
                               </span>
                             </div>
                           ))}
@@ -181,6 +300,17 @@ export default function AdminUpdateRequests() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog 
+        isOpen={!!confirmConfig?.isOpen}
+        title={confirmConfig?.title || ''}
+        message={confirmConfig?.message || ''}
+        type={confirmConfig?.type || 'warning'}
+        onConfirm={() => {
+          if (confirmConfig?.onConfirm) confirmConfig.onConfirm();
+        }}
+        onCancel={() => setConfirmConfig(null)}
+      />
 
       {/* Global Style for hiding scrollbar */}
       <style dangerouslySetInnerHTML={{ __html: `

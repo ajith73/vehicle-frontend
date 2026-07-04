@@ -18,6 +18,7 @@ import AdminBulkUpload from './pages/AdminBulkUpload';
 import AdminUpdateRequests from './pages/AdminUpdateRequests';
 import AdminFeedback from './pages/AdminFeedback';
 import AdminDonations from './pages/AdminDonations';
+import AdminSettings from './pages/AdminSettings';
 
 import { Wrench, MessageSquare, Heart, Sun, Moon, Home, Map as MapIcon, UserCircle, List } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
@@ -65,15 +66,22 @@ function App() {
               <Wrench className="w-6 h-6" /> Vehicle Assist
             </Link>
             <div className="flex gap-2 sm:gap-6 items-center">
+              <Link to="/" className="hidden sm:flex items-center gap-1 text-sm font-medium hover:text-primary transition-colors">
+                <Home className="w-4 h-4" /> Home
+              </Link>
+              <Link to="/map" className="hidden sm:flex items-center gap-1 text-sm font-medium hover:text-primary transition-colors">
+                <MapIcon className="w-4 h-4" /> Map
+              </Link>
+              <Link to="/list" className="hidden sm:flex items-center gap-1 text-sm font-medium hover:text-primary transition-colors">
+                <List className="w-4 h-4" /> List
+              </Link>
               <Link to="/feedback" className="hidden sm:flex items-center gap-1 text-sm font-medium hover:text-primary transition-colors">
                 <MessageSquare className="w-4 h-4" /> Feedback
               </Link>
               <Link to="/donate" className="hidden sm:flex items-center gap-1 text-sm font-medium hover:text-primary transition-colors">
                 <Heart className="w-4 h-4 text-pink-500" /> Donate
               </Link>
-              <Link to="/admin/login" className="hidden sm:flex items-center gap-1 text-sm font-medium hover:text-primary transition-colors">
-                <UserCircle className="w-4 h-4" /> Admin
-              </Link>
+
               <button 
                 onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
                 className="p-2 rounded-full bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors"
@@ -146,6 +154,7 @@ function App() {
           <Route path="update-requests" element={<AdminUpdateRequests />} />
           <Route path="feedback" element={<AdminFeedback />} />
           <Route path="donations" element={<AdminDonations />} />
+          <Route path="settings" element={<AdminSettings />} />
           <Route path="users" element={<AdminUsers />} />
         </Route>
 

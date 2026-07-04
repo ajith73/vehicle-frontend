@@ -48,7 +48,7 @@ export default function AdminDashboard() {
   ];
 
   const canView = (screen: string) => {
-    if (profile?.role === 'Super Admin') return true;
+    if (localStorage.getItem('role') === 'Super Admin') return true;
     return profile?.allowedScreens?.includes(screen);
   };
 
@@ -227,6 +227,56 @@ export default function AdminDashboard() {
           </ul>
         )}
       </div>
+
+      {/* Recent Mechanics Records */}
+      {canView('Mechanics') && (
+        <div className="bg-card border border-border rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow mt-8">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+              <Wrench className="w-5 h-5 text-blue-500" /> Recent Mechanics Records
+            </h3>
+            <button onClick={() => navigate('/admin/mechanics')} className="text-sm font-bold text-primary hover:underline">View All</button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-muted/50 text-muted-foreground border-b border-border">
+                  <th className="p-3 font-medium text-sm">Name</th>
+                  <th className="p-3 font-medium text-sm">City</th>
+                  <th className="p-3 font-medium text-sm">Status</th>
+                  <th className="p-3 font-medium text-sm">Date</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {stats?.recentMechanics?.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="p-6 text-center text-muted-foreground">No mechanics registered yet.</td>
+                  </tr>
+                ) : (
+                  stats?.recentMechanics?.map((m: any) => (
+                    <tr key={m.id} className="hover:bg-muted/30 transition-colors">
+                      <td className="p-3 text-foreground font-medium text-sm">{m.businessName || m.name}</td>
+                      <td className="p-3 text-muted-foreground text-sm">{m.city || 'N/A'}</td>
+                      <td className="p-3">
+                        <span className={`px-2 py-0.5 rounded text-xs font-bold ${
+                          m.status === 'Approved' ? 'bg-green-100 text-green-700' :
+                          m.status === 'Pending' ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-red-100 text-red-700'
+                        }`}>
+                          {m.status}
+                        </span>
+                      </td>
+                      <td className="p-3 text-muted-foreground text-sm whitespace-nowrap">
+                        {new Date(m.createdAt).toLocaleDateString()}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

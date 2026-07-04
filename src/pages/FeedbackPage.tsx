@@ -1,8 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bug, Lightbulb, MessageCircle, Star, AlertTriangle, Send, CheckCircle2 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { useMechanics } from '../hooks/useMechanics';
 import { API_URL } from '../api/apiClient';
 
 const FEEDBACK_TYPES = [
@@ -21,7 +20,22 @@ export default function FeedbackPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   
-  const { mechanics } = useMechanics();
+  const [mechanics, setMechanics] = useState<any[]>([]);
+  
+  useEffect(() => {
+    const fetchPublicMechanics = async () => {
+      try {
+        const res = await fetch(`${API_URL}/public/mechanics`);
+        if (res.ok) {
+          const data = await res.json();
+          setMechanics(data);
+        }
+      } catch (e) {
+        console.error('Failed to load mechanics', e);
+      }
+    };
+    fetchPublicMechanics();
+  }, []);
   
   const showMechanicSelect = type === 'Wrong Mechanic Information';
 
@@ -53,7 +67,7 @@ export default function FeedbackPage() {
 
   if (success) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-73px)] p-4 sm:p-8 relative">
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-73px)] p-4 sm:p-8 pb-[80px] sm:pb-8 relative">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-green-500/10 via-background to-background -z-10" />
         <div className="max-w-md w-full bg-card/60 backdrop-blur-xl shadow-2xl rounded-3xl p-8 sm:p-12 border border-white/10 dark:border-white/5 text-center transform animate-in zoom-in duration-500">
           <div className="mx-auto w-24 h-24 bg-green-500/20 text-green-500 rounded-full flex items-center justify-center mb-6">
@@ -73,7 +87,7 @@ export default function FeedbackPage() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-73px)] p-4 sm:p-8 relative">
+    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-73px)] p-4 sm:p-8 pb-[80px] sm:pb-8 relative">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/10 via-background to-background -z-10" />
       
       <div className="max-w-xl w-full bg-card/60 backdrop-blur-xl shadow-2xl rounded-3xl p-6 sm:p-10 border border-white/10 dark:border-white/5">
@@ -114,7 +128,7 @@ export default function FeedbackPage() {
               >
                 <option value="">-- Choose a mechanic --</option>
                 {mechanics.map(m => (
-                  <option key={m.id} value={m.id}>{m.name} - {m.area}</option>
+                  <option key={m.id} value={m.id}>{m.businessName || m.name} - {m.area}</option>
                 ))}
               </select>
             </div>

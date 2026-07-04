@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Wrench, Users, LogOut, Menu, X, Sun, Moon, Edit3, UserCircle, CheckCircle, BellRing, MessageSquare, Heart } from 'lucide-react';
+import { LayoutDashboard, Wrench, Users, LogOut, Menu, X, Sun, Moon, Edit3, UserCircle, CheckCircle, BellRing, MessageSquare, Heart, Settings, ChevronLeft, ChevronRight } from 'lucide-react';
 import { API_URL } from '../api/apiClient';
 
 export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -93,6 +94,7 @@ export default function AdminLayout() {
     { name: 'Feedback', path: '/admin/feedback', icon: MessageSquare },
     { name: 'Donations', path: '/admin/donations', icon: Heart },
     { name: 'Users', path: '/admin/users', icon: Users },
+    { name: 'Settings', path: '/admin/settings', icon: Settings },
   ];
 
   const currentUserRole = localStorage.getItem('role');
@@ -102,7 +104,8 @@ export default function AdminLayout() {
     if (profile?.allowedScreens) {
       return profile.allowedScreens.includes(item.name);
     }
-    return true; // Fallback if no specific restrictions
+    if (item.name === 'Settings' && currentUserRole !== 'Super Admin') return false;
+    return true; 
   });
 
   return (
@@ -117,18 +120,27 @@ export default function AdminLayout() {
 
       {/* Sidebar */}
       <aside className={`
-        fixed inset-y-0 left-0 z-50 w-72 bg-card border-r border-border transition-transform duration-300 ease-in-out
+        fixed inset-y-0 left-0 z-50 bg-card border-r border-border transition-all duration-300 ease-in-out
         lg:relative lg:translate-x-0 flex flex-col shadow-sm
-        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        ${sidebarOpen ? 'translate-x-0 w-72' : '-translate-x-full lg:translate-x-0'}
+        ${isExpanded ? 'lg:w-72' : 'lg:w-20'}
       `}>
-        <div className="flex items-center justify-between p-4 border-b border-border">
-          <h2 className="text-xl font-bold text-primary">Admin Portal</h2>
-          <button className="lg:hidden text-muted-foreground" onClick={() => setSidebarOpen(false)}>
+        <div className={`flex items-center p-4 border-b border-border relative ${isExpanded ? 'justify-between' : 'justify-center lg:px-0'}`}>
+          <h2 className={`text-xl font-bold text-primary whitespace-nowrap overflow-hidden transition-all duration-300 ${isExpanded ? 'w-auto opacity-100' : 'w-0 opacity-0 lg:w-0 lg:opacity-0'}`}>Admin Portal</h2>
+          <button className="lg:hidden text-muted-foreground ml-auto" onClick={() => setSidebarOpen(false)}>
             <X size={24} />
+          </button>
+          {/* Desktop Toggle */}
+          <button 
+            className="hidden lg:flex absolute -right-3 top-5 bg-card border border-border rounded-full p-1 text-muted-foreground hover:text-primary z-50 shadow-sm"
+            onClick={() => setIsExpanded(!isExpanded)}
+            title={isExpanded ? "Collapse Sidebar" : "Expand Sidebar"}
+          >
+            {isExpanded ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
           </button>
         </div>
 
-        <nav className="flex-1 overflow-y-auto p-4 space-y-2">
+        <nav className="flex-1 overflow-y-auto overflow-x-hidden p-3 space-y-2">
           {filteredNavItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname.startsWith(item.path);
@@ -136,26 +148,39 @@ export default function AdminLayout() {
               <Link
                 key={item.path}
                 to={item.path}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                title={!isExpanded ? item.name : undefined}
+                className={`flex items-center gap-3 py-3 rounded-lg transition-colors group relative ${
+                  isExpanded ? 'px-4' : 'px-0 justify-center'
+                } ${
                   isActive 
                     ? 'bg-primary text-primary-foreground font-medium' 
                     : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
                 }`}
                 onClick={() => setSidebarOpen(false)}
               >
-                <Icon size={20} />
-                {item.name}
+                <Icon size={20} className="shrink-0" />
+                <span className={`whitespace-nowrap transition-all duration-300 overflow-hidden ${isExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0'}`}>
+                  {item.name}
+                </span>
+                
+                {/* Tooltip for collapsed state */}
+                {!isExpanded && (
+                  <div className="absolute left-full ml-4 px-2 py-1 bg-foreground text-background text-xs rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-md">
+                    {item.name}
+                    <div className="absolute top-1/2 -translate-y-1/2 -left-1 border-4 border-transparent border-r-foreground"></div>
+                  </div>
+                )}
               </Link>
             );
           })}
         </nav>
 
         {/* Bottom Profile Section */}
-        <div className="border-t border-border p-4 bg-muted/10">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3 overflow-hidden">
-              <UserCircle size={40} className="text-primary shrink-0" />
-              <div className="overflow-hidden">
+        <div className={`border-t border-border p-4 bg-muted/10 transition-all duration-300 ${isExpanded ? '' : 'flex flex-col items-center p-2'}`}>
+          <div className={`flex items-center justify-between mb-4 ${isExpanded ? '' : 'flex-col gap-4'}`}>
+            <div className={`flex items-center gap-3 overflow-hidden ${isExpanded ? '' : 'justify-center'}`}>
+              <UserCircle size={isExpanded ? 40 : 32} className="text-primary shrink-0" />
+              <div className={`overflow-hidden transition-all duration-300 ${isExpanded ? 'w-auto opacity-100' : 'w-0 opacity-0 h-0'}`}>
                 <p className="font-bold text-sm truncate">{profile?.username || 'Loading...'}</p>
                 <p className="text-xs text-muted-foreground truncate">{profile?.email || 'No email set'}</p>
               </div>
@@ -169,17 +194,20 @@ export default function AdminLayout() {
             </button>
           </div>
 
-          <div className="flex gap-2">
+          <div className={`flex gap-2 ${isExpanded ? '' : 'flex-col w-full'}`}>
             <button 
               onClick={toggleTheme}
-              className="flex items-center justify-center gap-2 flex-1 py-2 text-sm text-foreground bg-secondary hover:bg-secondary/80 rounded-lg transition-colors"
+              title={!isExpanded ? (theme === 'light' ? 'Dark Mode' : 'Light Mode') : undefined}
+              className={`flex items-center justify-center gap-2 py-2 text-sm text-foreground bg-secondary hover:bg-secondary/80 rounded-lg transition-colors ${isExpanded ? 'flex-1' : 'w-full'}`}
             >
               {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
-              {theme === 'light' ? 'Dark' : 'Light'} Mode
+              <span className={`whitespace-nowrap overflow-hidden transition-all duration-300 ${isExpanded ? 'opacity-100 max-w-full' : 'opacity-0 max-w-0 hidden'}`}>
+                {theme === 'light' ? 'Dark' : 'Light'} Mode
+              </span>
             </button>
             <button 
               onClick={handleLogout}
-              className="flex items-center justify-center p-2 text-red-500 bg-red-50 dark:bg-red-950 hover:bg-red-100 dark:hover:bg-red-900 rounded-lg transition-colors"
+              className={`flex items-center justify-center p-2 text-red-500 bg-red-50 dark:bg-red-950 hover:bg-red-100 dark:hover:bg-red-900 rounded-lg transition-colors ${isExpanded ? '' : 'w-full'}`}
               title="Logout"
             >
               <LogOut size={18} />

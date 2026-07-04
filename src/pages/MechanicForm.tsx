@@ -9,37 +9,55 @@ import { API_URL } from '../api/apiClient';
 
 const INDIAN_STATES = State.getStatesOfCountry('IN').map(s => ({ value: s.isoCode, label: s.name }));
 
-const DEFAULT_VEHICLES = [
-  { value: 'Two-Wheeler / Bike', label: 'Two-Wheeler / Bike' },
-  { value: 'Three-Wheeler / Auto', label: 'Three-Wheeler / Auto' },
-  { value: 'Four-Wheeler / Car', label: 'Four-Wheeler / Car' },
-  { value: 'Truck', label: 'Truck' },
-  { value: 'Bus', label: 'Bus' },
-  { value: 'Tractor', label: 'Tractor' },
-  { value: 'JCB', label: 'JCB' }
-];
-
-const DEFAULT_SERVICES = [
-  { value: 'Puncture Repair', label: 'Puncture Repair' },
-  { value: 'Battery Jumpstart', label: 'Battery Jumpstart' },
-  { value: 'Engine Diagnostics', label: 'Engine Diagnostics' },
-  { value: 'Towing Services', label: 'Towing Services' },
-  { value: 'Fuel Delivery', label: 'Fuel Delivery' },
-  { value: 'Accident Recovery', label: 'Accident Recovery' }
-];
+// Default options fetched from backend
+// DEFAULT_VEHICLES and DEFAULT_SERVICES are populated dynamically
 
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 export default function MechanicForm() {
   const navigate = useNavigate();
   const { id } = useParams();
-  const isEdit = Boolean(id);
+  const isEdit = Boolean(id) && id !== 'new' && id !== 'null' && id !== 'undefined';
   
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Dynamic dropdowns
+  const [vehicleOptions, setVehicleOptions] = useState<{value: string, label: string}[]>([]);
+  const [serviceOptions, setServiceOptions] = useState<{value: string, label: string}[]>([]);
+
+  useEffect(() => {
+    // Fetch dynamic options
+    const fetchOptions = async () => {
+      try {
+        const [vRes, sRes] = await Promise.all([
+          fetch(`${API_URL}/public/vehicles`),
+          fetch(`${API_URL}/public/services`)
+        ]);
+        const vData = await vRes.json();
+        const sData = await sRes.json();
+        setVehicleOptions(vData.map((v: any) => ({ value: v.name, label: v.name })));
+        setServiceOptions(sData.map((s: any) => ({ value: s.name, label: s.name })));
+      } catch (err) {
+        console.error('Failed to load settings options', err);
+      }
+    };
+    fetchOptions();
+  }, []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
   // States
-  const [name, setName] = useState('');
+  const [mechanicType, setMechanicType] = useState('Workshop / Garage');
+  const [businessName, setBusinessName] = useState('');
+  const [mechanicName, setMechanicName] = useState('');
+  const [landmark, setLandmark] = useState('');
+  const [serviceRadius, setServiceRadius] = useState<number | ''>('');
+  
+  const [evSupport, setEvSupport] = useState(false);
+  const [homeService, setHomeService] = useState(false);
+  const [roadsideAssistance, setRoadsideAssistance] = useState(false);
+  const [is24Hours, setIs24Hours] = useState(false);
+  const [holidayWorking, setHolidayWorking] = useState(false);
   const [description, setDescription] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [websiteUrl, setWebsiteUrl] = useState('');
@@ -74,7 +92,16 @@ export default function MechanicForm() {
           });
           if (res.ok) {
             const data = await res.json();
-            setName(data.name || '');
+            setMechanicType(data.mechanicType || 'Workshop / Garage');
+            setBusinessName(data.businessName || data.name || '');
+            setMechanicName(data.mechanicName || '');
+            setLandmark(data.landmark || '');
+            setServiceRadius(data.serviceRadius || '');
+            setEvSupport(data.evSupport || false);
+            setHomeService(data.homeService || false);
+            setRoadsideAssistance(data.roadsideAssistance || false);
+            setIs24Hours(data.is24Hours || false);
+            setHolidayWorking(data.holidayWorking || false);
             setDescription(data.description || '');
             setImageUrl(data.image || '');
             setWebsiteUrl(data.websiteUrl || '');
@@ -114,13 +141,14 @@ export default function MechanicForm() {
   }, [id, isEdit]);
 
   const validate = () => {
-    if (!name) return 'Name is required';
+    if (!businessName) return 'Business Name is required';
     if (phones.some(p => !p.number)) return 'All phone fields must be filled or removed';
     if (!address || !area || !stateOption || !cityOption) return 'Complete address is required';
     if (!latitude || !longitude) return 'Coordinates are required';
     if (vehicleTypes.length === 0) return 'At least one supported vehicle is required';
     if (serviceTypes.length === 0) return 'At least one service is required';
     if (operatingDays.length === 0) return 'Select at least one operating day';
+    if (!is24Hours && (!startTime || !endTime)) return 'Operating hours are required';
     return null;
   };
 
@@ -154,23 +182,33 @@ export default function MechanicForm() {
         : `${API_URL}/admin/mechanics`;
       
       const payload = {
-        name,
+        mechanicType,
+        name: businessName, // Legacy fallback
+        businessName,
+        mechanicName,
         description,
         image: imageUrl,
         websiteUrl,
         phone: phones,
         emails: emails.filter(e => e.trim() !== ''),
-        vehicleTypes: vehicleTypes.map(v => v.value),
-        serviceTypes: serviceTypes.map(s => s.value),
         address,
+        landmark,
         area,
-        city: cityOption?.value,
-        state: stateOption?.label,
+        city: cityOption?.value || '',
+        state: stateOption?.label || '',
         country: 'India',
         latitude: parseFloat(latitude) || 0,
         longitude: parseFloat(longitude) || 0,
+        serviceRadius: serviceRadius || null,
+        vehicleTypes: vehicleTypes.map(v => v.value),
+        serviceTypes: serviceTypes.map(s => s.value),
+        evSupport,
+        homeService,
+        roadsideAssistance,
+        is24Hours,
+        holidayWorking,
         operatingDays,
-        operatingHours: `${startTime} - ${endTime}`,
+        operatingHours: is24Hours ? '00:00 - 23:59' : `${startTime} - ${endTime}`,
         availability
       };
 
@@ -227,8 +265,34 @@ export default function MechanicForm() {
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium mb-1">Business / Mechanic Name <span className="text-red-500">*</span></label>
-                <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full p-2 rounded border border-border bg-background focus:border-primary outline-none" />
+                <label className="block text-sm font-medium mb-3">Mechanic Type <span className="text-red-500">*</span></label>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {[
+                    'Individual Mechanic', 'Workshop / Garage', 'Authorized Service Center', 
+                    'Mobile Mechanic', 'Towing Company', 'Fuel Delivery Partner'
+                  ].map(type => (
+                    <label key={type} className={`flex items-center gap-2 p-3 border rounded-lg cursor-pointer transition-colors ${mechanicType === type ? 'border-primary bg-primary/5 text-primary' : 'border-border hover:bg-secondary/50'}`}>
+                      <input 
+                        type="radio" 
+                        name="mechanicType" 
+                        value={type} 
+                        checked={mechanicType === type}
+                        onChange={e => setMechanicType(e.target.value)}
+                        className="accent-primary w-4 h-4"
+                      />
+                      <span className="text-sm font-medium">{type}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="md:col-span-1">
+                <label className="block text-sm font-medium mb-1">Business Name <span className="text-red-500">*</span></label>
+                <input type="text" value={businessName} onChange={e => setBusinessName(e.target.value)} placeholder="e.g. Raju Auto Works" className="w-full p-2 rounded border border-border bg-background focus:border-primary outline-none" required />
+              </div>
+              <div className="md:col-span-1">
+                <label className="block text-sm font-medium mb-1">Mechanic Name</label>
+                <input type="text" value={mechanicName} onChange={e => setMechanicName(e.target.value)} placeholder="e.g. Raju Bhai" className="w-full p-2 rounded border border-border bg-background focus:border-primary outline-none" />
               </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium mb-1 flex items-center gap-1"><Info size={16}/> Description</label>
@@ -335,7 +399,11 @@ export default function MechanicForm() {
               <label className="block text-sm font-medium mb-1">Street Address <span className="text-red-500">*</span></label>
               <input type="text" value={address} onChange={e => setAddress(e.target.value)} className="w-full p-2 rounded border border-border bg-background focus:border-primary outline-none" />
             </div>
-            <div>
+            <div className="md:col-span-1">
+              <label className="block text-sm font-medium mb-1">Landmark</label>
+              <input type="text" value={landmark} onChange={e => setLandmark(e.target.value)} className="w-full p-2 rounded border border-border bg-background focus:border-primary outline-none" placeholder="e.g. Near City Mall" />
+            </div>
+            <div className="md:col-span-1">
               <label className="block text-sm font-medium mb-1">Area / Locality <span className="text-red-500">*</span></label>
               <input type="text" value={area} onChange={e => setArea(e.target.value)} className="w-full p-2 rounded border border-border bg-background focus:border-primary outline-none" />
             </div>
@@ -400,30 +468,60 @@ export default function MechanicForm() {
           <h3 className="text-xl font-semibold mb-4 flex items-center gap-2 border-b border-border pb-2">
             <Wrench className="text-primary" size={24} /> Technical Capabilities
           </h3>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Supported Vehicles <span className="text-red-500">*</span></label>
-              <CreatableSelect
-                isMulti
-                options={DEFAULT_VEHICLES}
-                value={vehicleTypes}
-                onChange={(newValue) => setVehicleTypes(newValue as any)}
-                placeholder="Select or type to create new..."
-                className="react-select-container text-black"
-                classNamePrefix="react-select"
-              />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Supported Vehicles <span className="text-red-500">*</span></label>
+                  <Select
+                    isMulti
+                    name="vehicleTypes"
+                    options={vehicleOptions}
+                    className="basic-multi-select text-sm"
+                    value={vehicleTypes}
+                    onChange={(newValue) => setVehicleTypes(newValue as any)}
+                    placeholder="Select or type to create new..."
+                    classNamePrefix="react-select"
+                  />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Services Provided <span className="text-red-500">*</span></label>
+                  <Select
+                    isMulti
+                    name="serviceTypes"
+                    options={serviceOptions}
+                    className="basic-multi-select text-sm"
+                    value={serviceTypes}
+                    onChange={(newValue) => setServiceTypes(newValue as any)}
+                    placeholder="Select or type to create new..."
+                    classNamePrefix="react-select"
+                  />
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Services Provided <span className="text-red-500">*</span></label>
-              <CreatableSelect
-                isMulti
-                options={DEFAULT_SERVICES}
-                value={serviceTypes}
-                onChange={(newValue) => setServiceTypes(newValue as any)}
-                placeholder="Select or type to create new..."
-                className="react-select-container text-black"
-                classNamePrefix="react-select"
-              />
+
+            <div className="md:col-span-1">
+              <label className="block text-sm font-medium mb-1">Service Radius (km)</label>
+              <select value={serviceRadius} onChange={e => setServiceRadius(e.target.value === '' ? '' : Number(e.target.value))} className="w-full p-2 rounded border border-border bg-background focus:border-primary outline-none">
+                <option value="">Not Specified</option>
+                <option value={2}>2 km</option>
+                <option value={5}>5 km</option>
+                <option value={10}>10 km</option>
+                <option value={20}>20 km</option>
+              </select>
+            </div>
+
+            <div className="md:col-span-1 flex flex-col justify-center gap-3 mt-2 md:mt-0">
+              <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
+                <input type="checkbox" checked={evSupport} onChange={e => setEvSupport(e.target.checked)} className="accent-primary w-4 h-4" />
+                Electric Vehicle (EV) Service
+              </label>
+              <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
+                <input type="checkbox" checked={homeService} onChange={e => setHomeService(e.target.checked)} className="accent-primary w-4 h-4" />
+                Home Service Available
+              </label>
+              <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
+                <input type="checkbox" checked={roadsideAssistance} onChange={e => setRoadsideAssistance(e.target.checked)} className="accent-primary w-4 h-4" />
+                24x7 Roadside Assistance
+              </label>
             </div>
           </div>
         </div>
@@ -451,20 +549,36 @@ export default function MechanicForm() {
                         else setOperatingDays(operatingDays.filter(d => d !== day));
                       }}
                     />
-                    {day.substring(0, 3)}
+                {day.substring(0, 3)}
                   </label>
                 ))}
               </div>
             </div>
-
-            <div className="flex gap-4">
-              <div className="flex-1">
-                <label className="block text-sm font-medium mb-1">Start Time</label>
-                <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className="w-full p-2 rounded border border-border bg-background focus:border-primary outline-none" />
-              </div>
-              <div className="flex-1">
-                <label className="block text-sm font-medium mb-1">End Time</label>
-                <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className="w-full p-2 rounded border border-border bg-background focus:border-primary outline-none" />
+            
+            <div className="flex flex-col sm:flex-row gap-6">
+              {!is24Hours && (
+                <div className="flex gap-4 items-center flex-1">
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium mb-1">Opening Time</label>
+                    <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className="w-full p-2 rounded border border-border bg-background focus:border-primary outline-none" />
+                  </div>
+                  <span className="text-muted-foreground mt-5">to</span>
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium mb-1">Closing Time</label>
+                    <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className="w-full p-2 rounded border border-border bg-background focus:border-primary outline-none" />
+                  </div>
+                </div>
+              )}
+              
+              <div className="flex flex-col justify-center gap-3">
+                <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
+                  <input type="checkbox" checked={is24Hours} onChange={e => setIs24Hours(e.target.checked)} className="accent-primary w-4 h-4" />
+                  Open 24 Hours
+                </label>
+                <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
+                  <input type="checkbox" checked={holidayWorking} onChange={e => setHolidayWorking(e.target.checked)} className="accent-primary w-4 h-4" />
+                  Holiday Working
+                </label>
               </div>
             </div>
             

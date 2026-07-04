@@ -67,6 +67,15 @@
   }
 }
 
+/* Hide scrollbar for horizontal scrolling elements */
+.hide-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* react-select styling to blend with Shadcn */
 .react-select__control {
   @apply bg-background border-border rounded-md shadow-sm;

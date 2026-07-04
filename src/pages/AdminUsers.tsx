@@ -3,6 +3,10 @@ import { UserPlus, Users, Trash2, Edit2, KeyRound, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Select from 'react-select';
 import { API_URL } from '../api/apiClient';
+import { Pagination } from '../components/Pagination';
+import { ConfirmDialog } from '../components/ConfirmDialog';
+
+const ITEMS_PER_PAGE = 10;
 
 interface User {
   id: number;
@@ -31,6 +35,8 @@ export default function AdminUsers() {
   const [newUsername, setNewUsername] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [selectedScreens, setSelectedScreens] = useState<any[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [confirmConfig, setConfirmConfig] = useState<{isOpen: boolean, title: string, message: string, type: 'danger'|'warning'|'info'|'success', onConfirm: () => void} | null>(null);
   
   const token = localStorage.getItem('token');
   const currentUserRole = localStorage.getItem('role');
@@ -104,21 +110,28 @@ export default function AdminUsers() {
   };
 
   const handleDeleteUser = async (id: number) => {
-    if (!window.confirm('Are you sure you want to delete this admin? This cannot be undone.')) return;
-    const loadingToast = toast.loading('Deleting admin...');
-    try {
-      const res = await fetch(`${API_URL}/admin/users/${id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to delete user');
-      
-      toast.success('Admin deleted successfully!', { id: loadingToast });
-      fetchUsers();
-    } catch (err: any) {
-      toast.error(err.message, { id: loadingToast });
-    }
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Delete Admin?',
+      message: 'Are you sure you want to delete this admin? This cannot be undone.',
+      type: 'danger',
+      onConfirm: async () => {
+        const loadingToast = toast.loading('Deleting admin...');
+        try {
+          const res = await fetch(`${API_URL}/admin/users/${id}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Failed to delete user');
+          
+          toast.success('Admin deleted successfully!', { id: loadingToast });
+          fetchUsers();
+        } catch (err: any) {
+          toast.error(err.message, { id: loadingToast });
+        }
+      }
+    });
   };
 
   const closePopup = () => {
@@ -138,6 +151,12 @@ export default function AdminUsers() {
       </div>
     );
   }
+
+  const totalPages = Math.ceil(users.length / ITEMS_PER_PAGE);
+  const paginatedUsers = users.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   return (
     <div className="space-y-6">
@@ -178,10 +197,10 @@ export default function AdminUsers() {
             <tbody>
               {loading ? (
                 <tr><td colSpan={5} className="p-8 text-center text-muted-foreground animate-pulse">Loading users...</td></tr>
-              ) : users.length === 0 ? (
+              ) : paginatedUsers.length === 0 ? (
                 <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">No users found.</td></tr>
               ) : (
-                users.map(user => (
+                paginatedUsers.map(user => (
                   <tr key={user.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
                     <td className="p-4 font-medium">{user.username}</td>
                     <td className="p-4">
@@ -234,6 +253,13 @@ export default function AdminUsers() {
               )}
             </tbody>
           </table>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            totalItems={users.length}
+            itemsPerPage={ITEMS_PER_PAGE}
+          />
         </div>
       </div>
 
@@ -282,14 +308,27 @@ export default function AdminUsers() {
                   isMulti
                   name="screens"
                   options={AVAILABLE_SCREENS}
-                  className="basic-multi-select text-black"
+                  className="basic-multi-select"
                   classNamePrefix="select"
                   value={selectedScreens}
                   onChange={(newValue) => setSelectedScreens(newValue as any[])}
                   placeholder="Select access..."
                   menuPortalTarget={document.body}
                   menuPosition="fixed"
-                  styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }}
+                  styles={{ 
+                    menuPortal: base => ({ ...base, zIndex: 9999 }),
+                    control: base => ({ ...base, backgroundColor: 'hsl(var(--background))', borderColor: 'hsl(var(--border))' }),
+                    menu: base => ({ ...base, backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }),
+                    option: (base, state) => ({ 
+                      ...base, 
+                      backgroundColor: state.isFocused ? 'hsl(var(--muted))' : 'transparent', 
+                      color: 'hsl(var(--foreground))',
+                      cursor: 'pointer'
+                    }),
+                    multiValue: base => ({ ...base, backgroundColor: 'hsl(var(--primary) / 0.1)', borderRadius: '6px' }),
+                    multiValueLabel: base => ({ ...base, color: 'hsl(var(--primary))', fontWeight: 'bold' }),
+                    multiValueRemove: base => ({ ...base, color: 'hsl(var(--primary))', ':hover': { backgroundColor: 'hsl(var(--primary) / 0.2)', color: 'hsl(var(--primary))' } })
+                  }}
                 />
               </div>
 
@@ -305,6 +344,17 @@ export default function AdminUsers() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog 
+        isOpen={!!confirmConfig?.isOpen}
+        title={confirmConfig?.title || ''}
+        message={confirmConfig?.message || ''}
+        type={confirmConfig?.type || 'warning'}
+        onConfirm={() => {
+          if (confirmConfig?.onConfirm) confirmConfig.onConfirm();
+        }}
+        onCancel={() => setConfirmConfig(null)}
+      />
     </div>
   );
 }

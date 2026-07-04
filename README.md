@@ -1,5 +1,7 @@
 # MechanicFinder Frontend
 
+Live at - https://vehicle-frontend-m01u.onrender.com
+
 The frontend for **MechanicFinder** – an on-demand vehicle repair platform designed to help users instantly locate, route to, and contact nearby mechanics in emergency breakdown situations.
 
 Built with performance and premium UI aesthetics in mind, utilizing modern web tools and mapping engines.
@@ -15,7 +17,7 @@ Built with performance and premium UI aesthetics in mind, utilizing modern web t
 - **Interactive Draggable Map**: Dynamic Leaflet maps with custom marker clustering, bounding optimizations, and a native-feeling draggable bottom sheet.
 - **Dynamic Routing Options**: Integrated with OSRM to provide driving distances, ETA, and Fastest/Shortest route options.
 - **Micro-animations**: Premium user interface with smooth transitions, hover effects, and skeleton loaders.
-- **Administrative Dashboard**: Protected routes for admins to monitor platform metrics, approve mechanics, and view user feedback.
+- **Administrative Dashboard**: Protected routes for admins to monitor platform metrics, approve mechanics, view user feedback, and configure featured vehicle and service types.
 - **Vercel Ready**: Pre-configured `vercel.json` for seamless SPA deployment.
 
 ## 🛠️ Local Development

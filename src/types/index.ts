@@ -8,23 +8,40 @@ export interface User {
 
 export interface Mechanic {
   id: number;
-  name: string;
+  name?: string;
+  businessName?: string;
+  mechanicName?: string;
+  mechanicType?: string;
   phone: any; // Can be string or array of objects
   alternatePhone?: string;
   email?: any;
+  emails?: any;
   state: string;
   district: string;
   city: string;
+  country?: string;
   mapLink?: string;
   experience?: string;
   specializedVehicle?: string;
+  vehicleTypes?: any;
+  serviceTypes?: any;
   servicesAvailable?: string;
   status: string;
   description?: string;
   address?: string;
+  landmark?: string;
   area?: string;
   latitude?: number;
   longitude?: number;
+  serviceRadius?: number;
+  evSupport?: boolean;
+  homeService?: boolean;
+  roadsideAssistance?: boolean;
+  is24Hours?: boolean;
+  holidayWorking?: boolean;
+  operatingDays?: any;
+  operatingHours?: string;
+  availability?: boolean;
   websiteUrl?: string;
   imageUrl?: string;
   services?: any[];

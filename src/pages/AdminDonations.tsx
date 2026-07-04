@@ -1,10 +1,20 @@
 import { useState, useEffect } from 'react';
 import { Heart } from 'lucide-react';
 import { API_URL } from '../api/apiClient';
+import { Pagination } from '../components/Pagination';
+
+const ITEMS_PER_PAGE = 10;
 
 export default function AdminDonations() {
   const [donations, setDonations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const totalPages = Math.ceil(donations.length / ITEMS_PER_PAGE);
+  const paginatedDonations = donations.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   useEffect(() => {
     fetchDonations();
@@ -48,10 +58,10 @@ export default function AdminDonations() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {donations.length === 0 ? (
+              {paginatedDonations.length === 0 ? (
                 <tr><td colSpan={4} className="p-8 text-center text-muted-foreground">No donations found</td></tr>
               ) : (
-                donations.map((item) => (
+                paginatedDonations.map((item) => (
                   <tr key={item.id} className="hover:bg-muted/50 transition-colors">
                     <td className="p-4 font-medium text-foreground">{item.name || 'Anonymous'}</td>
                     <td className="p-4 text-green-600 font-bold font-mono">₹{item.amount.toFixed(2)}</td>
@@ -62,6 +72,13 @@ export default function AdminDonations() {
               )}
             </tbody>
           </table>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            totalItems={donations.length}
+            itemsPerPage={ITEMS_PER_PAGE}
+          />
         </div>
       </div>
     </div>

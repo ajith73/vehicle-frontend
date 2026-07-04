@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Wrench, Search, MapPin, Phone, MessageCircle, Navigation, ChevronLeft } from 'lucide-react';
+import { Wrench, Search, MapPin, Phone, MessageCircle, Navigation, ChevronLeft, ChevronDown } from 'lucide-react';
 import { API_URL } from '../api/apiClient';
 
 // Helper to calculate distance
@@ -22,11 +22,34 @@ export default function ListPage() {
   const [searchParams] = useSearchParams();
   const vehicleParam = searchParams.get('vehicle') || '';
   const serviceParam = searchParams.get('service') || '';
+  const searchParam = searchParams.get('search') || '';
   
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(searchParam);
   const [mechanics, setMechanics] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [userLocation, setUserLocation] = useState<[number, number]>([20.5937, 78.9629]);
+  
+  // Dynamic options
+  const [vehicleOptions, setVehicleOptions] = useState<string[]>([]);
+  const [serviceOptions, setServiceOptions] = useState<string[]>([]);
+
+  useEffect(() => {
+    const fetchOptions = async () => {
+      try {
+        const [vRes, sRes] = await Promise.all([
+          fetch(`${API_URL}/public/vehicles`),
+          fetch(`${API_URL}/public/services`)
+        ]);
+        const vData = await vRes.json();
+        const sData = await sRes.json();
+        setVehicleOptions(vData.map((v: any) => v.name));
+        setServiceOptions(sData.map((s: any) => s.name));
+      } catch (err) {
+        console.error('Failed to load settings options', err);
+      }
+    };
+    fetchOptions();
+  }, []);
 
   useEffect(() => {
     // 1. Get Location
@@ -65,7 +88,7 @@ export default function ListPage() {
 
   // Filter local search query
   const filteredMechanics = mechanics.filter(m => 
-    m.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    (m.businessName || m.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
     m.area.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -112,22 +135,34 @@ export default function ListPage() {
           </div>
           
           {/* Filter Chips */}
-          <div className="flex gap-2 mt-3 overflow-x-auto snap-x hide-scrollbar pb-1">
-            <button 
-              onClick={() => navigate('/list')}
-              className={`shrink-0 px-4 py-1.5 rounded-full text-sm font-bold border transition-colors ${!vehicleParam && !serviceParam ? 'bg-primary text-primary-foreground border-primary' : 'bg-card text-muted-foreground border-border hover:border-primary/50'}`}
-            >
-              All
-            </button>
-            {['Bike', 'Car', 'Auto', 'Truck', 'Bus'].map(v => (
-              <button
-                key={v}
-                onClick={() => navigate(`/list?vehicle=${v}&service=${serviceParam}`)}
-                className={`shrink-0 px-4 py-1.5 rounded-full text-sm font-bold border transition-colors ${vehicleParam === v ? 'bg-primary text-primary-foreground border-primary' : 'bg-card text-muted-foreground border-border hover:border-primary/50'}`}
+          <div className="flex gap-2 mt-4 overflow-x-auto snap-x hide-scrollbar pb-2">
+            <div className="relative shrink-0">
+              <select 
+                className="appearance-none bg-secondary/50 border border-border text-foreground text-sm font-bold px-4 py-2.5 pr-10 rounded-xl outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer shadow-sm"
+                value={vehicleParam}
+                onChange={(e) => navigate(`/list?vehicle=${e.target.value}&service=${serviceParam}`)}
               >
-                {v}
-              </button>
-            ))}
+                <option value="">Any Vehicle</option>
+                {vehicleOptions.map(v => (
+                  <option key={v} value={v}>{v}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none w-4 h-4" />
+            </div>
+            
+            <div className="relative shrink-0">
+              <select 
+                className="appearance-none bg-secondary/50 border border-border text-foreground text-sm font-bold px-4 py-2.5 pr-10 rounded-xl outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer shadow-sm"
+                value={serviceParam}
+                onChange={(e) => navigate(`/list?vehicle=${vehicleParam}&service=${e.target.value}`)}
+              >
+                <option value="">Any Service</option>
+                {serviceOptions.map(s => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none w-4 h-4" />
+            </div>
           </div>
         </div>
       </div>
@@ -160,41 +195,55 @@ export default function ListPage() {
             {filteredMechanics.map(mechanic => {
               const dist = getDistanceFromLatLonInKm(userLocation[0], userLocation[1], mechanic.latitude, mechanic.longitude).toFixed(1);
               return (
-                <div key={mechanic.id} className="bg-card border border-border rounded-2xl p-4 flex gap-4 shadow-sm hover:shadow-md transition-shadow">
-                  {mechanic.image ? (
-                    <img src={mechanic.image} alt={mechanic.name} className="w-20 h-20 rounded-xl object-cover shrink-0 bg-secondary" />
-                  ) : (
-                    <div className="w-20 h-20 rounded-xl bg-secondary flex items-center justify-center shrink-0">
-                      <Wrench className="w-8 h-8 text-muted-foreground/30" />
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0 flex flex-col justify-between">
-                    <div>
-                      <div className="flex justify-between items-start gap-2">
-                        <h4 className="font-bold text-foreground truncate">{mechanic.name}</h4>
-                        <span className="text-xs font-bold bg-secondary text-secondary-foreground px-2 py-1 rounded-md shrink-0">
-                          {dist} km
-                        </span>
+                  <div key={mechanic.id} className="bg-card border border-border/60 rounded-[24px] p-4 sm:p-5 flex flex-col gap-4 shadow-sm hover:shadow-xl hover:shadow-primary/5 hover:border-primary/40 transition-all duration-300 cursor-pointer group">
+                  <div className="flex gap-4">
+                    {mechanic.image ? (
+                      <div className="relative shrink-0 overflow-hidden rounded-2xl w-24 h-24 sm:w-28 sm:h-28">
+                        <img src={mechanic.image} alt={mechanic.businessName || mechanic.name} className="w-full h-full object-cover bg-secondary group-hover:scale-110 transition-transform duration-500" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
                       </div>
-                      <p className="text-xs text-muted-foreground truncate mt-1 flex items-center gap-1">
-                        <MapPin size={10} /> {mechanic.area}, {mechanic.city}
-                      </p>
+                    ) : (
+                      <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-secondary/50 flex items-center justify-center shrink-0 border border-border/50 group-hover:bg-primary/5 transition-colors duration-300">
+                        <Wrench className="w-8 h-8 text-muted-foreground/30" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+                      <div>
+                        <div className="flex justify-between items-start gap-2 mb-1.5">
+                          <h4 className="font-bold text-foreground text-lg leading-tight truncate group-hover:text-primary transition-colors">{mechanic.businessName || mechanic.name}</h4>
+                          <span className="text-xs font-black bg-primary/10 text-primary px-2.5 py-1 rounded-lg shrink-0">
+                            {dist} km
+                          </span>
+                        </div>
+                        <p className="text-[13px] text-muted-foreground truncate flex items-center gap-1.5 font-medium">
+                          <MapPin size={14} className="shrink-0 text-primary/70" /> <span className="truncate">{mechanic.landmark ? `${mechanic.landmark}, ` : ''}{mechanic.area}</span>
+                        </p>
+                      </div>
+                      
+                      {/* Tags */}
+                      <div className="flex gap-1.5 mt-3 flex-wrap">
+                         <span className="px-2 py-0.5 bg-green-500/10 text-green-600 rounded text-[10px] font-bold border border-green-500/20 tracking-wide uppercase">Available</span>
+                         {mechanic.is24Hours && <span className="px-2 py-0.5 bg-blue-500/10 text-blue-600 rounded text-[10px] font-bold border border-blue-500/20 tracking-wide uppercase">24/7</span>}
+                         {mechanic.evSupport && <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-600 rounded text-[10px] font-bold border border-emerald-500/20 tracking-wide uppercase">EV Ready</span>}
+                      </div>
                     </div>
-                    <div className="flex gap-2 mt-3">
-                       {mechanic.phone?.[0] && (
-                        <a href={`tel:${mechanic.phone[0].number}`} className="flex-1 bg-primary/10 text-primary h-11 rounded-xl flex justify-center items-center hover:bg-primary/20 active:scale-95 transition-all">
-                          <Phone size={18} />
-                        </a>
-                       )}
-                       {mechanic.phone?.[0]?.isWhatsapp && (
-                        <a href={`https://wa.me/91${mechanic.phone[0].number}`} target="_blank" rel="noreferrer" className="flex-1 bg-green-500/10 text-green-600 dark:text-green-400 h-11 rounded-xl flex justify-center items-center hover:bg-green-500/20 active:scale-95 transition-all">
-                          <MessageCircle size={18} />
-                        </a>
-                       )}
-                       <button onClick={() => navigate(`/map?vehicle=${vehicleParam}&service=${serviceParam}&routeTo=${mechanic.id}`)} className="flex-1 bg-secondary text-secondary-foreground h-11 rounded-xl flex justify-center items-center hover:bg-secondary/80 active:scale-95 transition-all shadow-sm">
-                         <Navigation size={18} />
-                       </button>
-                    </div>
+                  </div>
+                  
+                  {/* Action Buttons Row */}
+                  <div className="flex gap-2.5 pt-3 border-t border-border/40">
+                     {mechanic.phone?.[0] && (
+                      <a href={`tel:${mechanic.phone[0].number}`} className="flex-1 bg-secondary/80 hover:bg-primary hover:text-primary-foreground text-foreground h-11 rounded-xl flex justify-center items-center active:scale-95 transition-all font-bold text-[13px] gap-2 border border-border/50">
+                        <Phone size={16} /> <span className="hidden sm:inline">Call</span>
+                      </a>
+                     )}
+                     {mechanic.phone?.[0]?.isWhatsapp && (
+                      <a href={`https://wa.me/91${mechanic.phone[0].number}`} target="_blank" rel="noreferrer" className="flex-1 bg-secondary/80 hover:bg-green-600 hover:text-white text-foreground h-11 rounded-xl flex justify-center items-center active:scale-95 transition-all font-bold text-[13px] gap-2 border border-border/50">
+                        <MessageCircle size={16} /> <span className="hidden sm:inline">WhatsApp</span>
+                      </a>
+                     )}
+                     <button onClick={() => navigate(`/map?vehicle=${vehicleParam}&service=${serviceParam}&routeTo=${mechanic.id}`)} className="flex-[1.2] bg-primary text-primary-foreground h-11 rounded-xl flex justify-center items-center hover:bg-primary/90 active:scale-95 transition-all shadow-md shadow-primary/20 font-bold text-[13px] gap-2">
+                       <Navigation size={16} /> <span>Navigate</span>
+                     </button>
                   </div>
                 </div>
               );

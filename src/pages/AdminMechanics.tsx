@@ -1,10 +1,14 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
-import { Upload, Plus, Check, Edit3, Trash2, Search, Filter, Eye, X, MapPin, Phone, Settings } from 'lucide-react';
+import { Upload, Plus, Check, Edit3, Trash2, Search, Filter, Eye, X, MapPin, Phone, Settings, CheckCircle, XCircle, AlertCircle, Clock } from 'lucide-react';
 import { useMechanics } from '../hooks/useMechanics';
 import * as api from '../api/mechanics';
 import type { Mechanic } from '../types';
+import { Pagination } from '../components/Pagination';
+import { ConfirmDialog } from '../components/ConfirmDialog';
+
+const ITEMS_PER_PAGE = 10;
 
 export default function AdminMechanics() {
   const navigate = useNavigate();
@@ -13,6 +17,9 @@ export default function AdminMechanics() {
   const [statusFilter, setStatusFilter] = useState('All');
   const [deleteModalId, setDeleteModalId] = useState<number | null>(null);
   const [viewMechanicData, setViewMechanicData] = useState<Mechanic | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [confirmConfig, setConfirmConfig] = useState<{isOpen: boolean, title: string, message: string, type: 'danger'|'warning'|'info'|'success', onConfirm: () => void} | null>(null);
   const role = localStorage.getItem('role');
 
   const handleApprove = async (id: number) => {
@@ -26,22 +33,69 @@ export default function AdminMechanics() {
   };
 
   const handleDelete = async (id: number) => {
-    try {
-      await api.deleteMechanic(id);
-      toast.success('Mechanic deleted successfully');
-      setDeleteModalId(null);
-      refetch();
-    } catch (err) {
-      toast.error('Error deleting mechanic');
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Delete Mechanic?',
+      message: 'This action cannot be undone. Are you sure you want to delete this mechanic permanently?',
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          await api.deleteMechanic(id);
+          toast.success('Mechanic deleted successfully');
+          refetch();
+        } catch (err) {
+          toast.error('Error deleting mechanic');
+        }
+      }
+    });
+  };
+
+  const handleBulkStatusUpdate = async (newStatus: string) => {
+    if (selectedIds.length === 0) return;
+    
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Update Status?',
+      message: `Are you sure you want to mark ${selectedIds.length} mechanic(s) as ${newStatus}?`,
+      type: 'info',
+      onConfirm: async () => {
+        const loadingToast = toast.loading(`Updating ${selectedIds.length} mechanics...`);
+        try {
+          await Promise.all(selectedIds.map(id => api.updateMechanic(id, { status: newStatus })));
+          toast.success(`Successfully updated ${selectedIds.length} mechanic(s) to ${newStatus}`, { id: loadingToast });
+          setSelectedIds([]);
+          refetch();
+        } catch (err) {
+          toast.error('Error during bulk update', { id: loadingToast });
+        }
+      }
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.length === filteredMechanics.length && filteredMechanics.length > 0) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(filteredMechanics.map(m => m.id));
     }
   };
 
+  const toggleSelect = (id: number) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
   const filteredMechanics = mechanics.filter(m => {
-    const searchString = `${m.name} ${m.city} ${m.phone?.[0]?.number}`.toLowerCase();
+    const searchString = `${m.businessName || m.name} ${m.city} ${m.phone?.[0]?.number}`.toLowerCase();
     const matchesSearch = searchString.includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'All' || m.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  const totalPages = Math.ceil(filteredMechanics.length / ITEMS_PER_PAGE);
+  const paginatedMechanics = filteredMechanics.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   if (loading) return <div className="p-8 text-center text-foreground">Loading mechanics...</div>;
 
@@ -52,6 +106,34 @@ export default function AdminMechanics() {
           Mechanic Management
         </h2>
         <div className="flex items-center gap-3">
+          {selectedIds.length > 0 && role === 'Super Admin' && (
+            <div className="flex gap-2 mr-4 border-r border-border pr-4">
+              <button 
+                onClick={() => handleBulkStatusUpdate('Approved')}
+                className="flex items-center gap-2 px-3 py-1.5 bg-green-500/10 text-green-600 rounded-lg hover:bg-green-500 hover:text-white text-sm font-medium transition-colors"
+              >
+                <CheckCircle size={16} /> Approve
+              </button>
+              <button 
+                onClick={() => handleBulkStatusUpdate('Pending')}
+                className="flex items-center gap-2 px-3 py-1.5 bg-yellow-500/10 text-yellow-600 rounded-lg hover:bg-yellow-500 hover:text-white text-sm font-medium transition-colors"
+              >
+                <Clock size={16} /> Pending
+              </button>
+              <button 
+                onClick={() => handleBulkStatusUpdate('Rejected')}
+                className="flex items-center gap-2 px-3 py-1.5 bg-red-500/10 text-red-600 rounded-lg hover:bg-red-500 hover:text-white text-sm font-medium transition-colors"
+              >
+                <XCircle size={16} /> Reject
+              </button>
+              <button 
+                onClick={() => handleBulkStatusUpdate('Inactive')}
+                className="flex items-center gap-2 px-3 py-1.5 bg-gray-500/10 text-gray-600 rounded-lg hover:bg-gray-500 hover:text-white text-sm font-medium transition-colors"
+              >
+                <AlertCircle size={16} /> Inactive
+              </button>
+            </div>
+          )}
           <button 
             onClick={() => navigate('/admin/mechanics/bulk-upload')} 
             className="flex items-center gap-2 px-4 py-2 border border-border bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/80 font-medium transition-colors shadow-sm"
@@ -102,6 +184,16 @@ export default function AdminMechanics() {
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-muted text-muted-foreground border-b border-border">
+              {role === 'Super Admin' && (
+                <th className="p-4 w-12 text-center">
+                  <input 
+                    type="checkbox" 
+                    checked={selectedIds.length === filteredMechanics.length && filteredMechanics.length > 0}
+                    onChange={toggleSelectAll}
+                    className="w-4 h-4 rounded border-border text-primary focus:ring-primary/20 cursor-pointer"
+                  />
+                </th>
+              )}
               <th className="p-4 font-medium">Name</th>
               <th className="p-4 font-medium">Phone</th>
               <th className="p-4 font-medium">City</th>
@@ -110,14 +202,24 @@ export default function AdminMechanics() {
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {filteredMechanics.length === 0 ? (
+            {paginatedMechanics.length === 0 ? (
               <tr>
-                <td colSpan={5} className="p-8 text-center text-muted-foreground">No mechanics found matching your criteria.</td>
+                <td colSpan={role === 'Super Admin' ? 6 : 5} className="p-8 text-center text-muted-foreground">No mechanics found matching your criteria.</td>
               </tr>
             ) : (
-              filteredMechanics.map((m) => (
-                <tr key={m.id} className="hover:bg-muted/30 transition-colors">
-                  <td className="p-4 text-foreground font-medium">{m.name}</td>
+              paginatedMechanics.map((m) => (
+                <tr key={m.id} className={`hover:bg-muted/30 transition-colors ${selectedIds.includes(m.id) ? 'bg-primary/5' : ''}`}>
+                  {role === 'Super Admin' && (
+                    <td className="p-4 text-center">
+                      <input 
+                        type="checkbox" 
+                        checked={selectedIds.includes(m.id)}
+                        onChange={() => toggleSelect(m.id)}
+                        className="w-4 h-4 rounded border-border text-primary focus:ring-primary/20 cursor-pointer"
+                      />
+                    </td>
+                  )}
+                  <td className="p-4 text-foreground font-medium">{m.businessName || m.name}</td>
                   <td className="p-4 text-muted-foreground">{m.phone?.[0]?.number || 'N/A'}</td>
                   <td className="p-4 text-muted-foreground">{m.city || 'N/A'}</td>
                   <td className="p-4">
@@ -155,7 +257,7 @@ export default function AdminMechanics() {
                     </button>
                     {role === 'Super Admin' && (
                       <button 
-                        onClick={() => setDeleteModalId(m.id)}
+                        onClick={() => handleDelete(m.id)}
                         className="p-2 bg-destructive/10 text-destructive rounded-lg hover:bg-destructive hover:text-destructive-foreground transition-colors"
                         title="Delete"
                       >
@@ -168,36 +270,25 @@ export default function AdminMechanics() {
             )}
           </tbody>
         </table>
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          totalItems={filteredMechanics.length}
+          itemsPerPage={ITEMS_PER_PAGE}
+        />
       </div>
 
-      {/* Delete Confirmation Modal */}
-      {deleteModalId && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-card w-full max-w-sm rounded-2xl shadow-2xl p-6 animate-in zoom-in-95 duration-200 text-center">
-            <div className="w-16 h-16 bg-destructive/10 text-destructive rounded-full flex items-center justify-center mx-auto mb-4">
-              <Trash2 size={32} />
-            </div>
-            <h3 className="text-xl font-bold mb-2">Delete Mechanic?</h3>
-            <p className="text-muted-foreground text-sm mb-6">
-              This action cannot be undone. Are you sure you want to delete this mechanic permanently?
-            </p>
-            <div className="flex gap-3">
-              <button 
-                onClick={() => setDeleteModalId(null)}
-                className="flex-1 py-2.5 rounded-xl font-bold bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={() => handleDelete(deleteModalId)}
-                className="flex-1 py-2.5 rounded-xl font-bold bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors shadow-lg shadow-destructive/20"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog 
+        isOpen={!!confirmConfig?.isOpen}
+        title={confirmConfig?.title || ''}
+        message={confirmConfig?.message || ''}
+        type={confirmConfig?.type || 'warning'}
+        onConfirm={() => {
+          if (confirmConfig?.onConfirm) confirmConfig.onConfirm();
+        }}
+        onCancel={() => setConfirmConfig(null)}
+      />
 
       {/* View Details Modal */}
       {viewMechanicData && (
