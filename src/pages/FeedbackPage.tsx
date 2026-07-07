@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bug, Lightbulb, MessageCircle, Star, AlertTriangle, Send, CheckCircle2 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { API_URL } from '../api/apiClient';
+import Select from 'react-select';
+import { API_URL, apiClient } from '../api/apiClient';
 
 const FEEDBACK_TYPES = [
   { name: 'Bug Report', icon: Bug },
@@ -25,11 +26,8 @@ export default function FeedbackPage() {
   useEffect(() => {
     const fetchPublicMechanics = async () => {
       try {
-        const res = await fetch(`${API_URL}/public/mechanics`);
-        if (res.ok) {
-          const data = await res.json();
-          setMechanics(data);
-        }
+        const data = await apiClient<any>('/public/mechanics');
+        setMechanics(data);
       } catch (e) {
         console.error('Failed to load mechanics', e);
       }
@@ -44,21 +42,16 @@ export default function FeedbackPage() {
     setLoading(true);
     const loadingToast = toast.loading('Submitting feedback...');
     try {
-      const res = await fetch(`${API_URL}/public/feedback`, {
+      await apiClient('/public/feedback', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        data: { 
           type, 
           description,
           mechanicId: showMechanicSelect && mechanicId ? parseInt(mechanicId) : undefined 
-        })
+        }
       });
-      if (res.ok) {
-        toast.success('Feedback submitted successfully!', { id: loadingToast });
-        setSuccess(true);
-      } else {
-        toast.error('Failed to submit feedback.', { id: loadingToast });
-      }
+      toast.success('Feedback submitted successfully!', { id: loadingToast });
+      setSuccess(true);
     } catch (err) {
       toast.error('Network error submitting feedback.', { id: loadingToast });
     }
@@ -121,16 +114,27 @@ export default function FeedbackPage() {
           {showMechanicSelect && (
             <div className="space-y-3 animate-in slide-in-from-top-4 duration-300">
               <label className="block text-sm font-bold text-foreground ml-1">Select Mechanic (Optional)</label>
-              <select
-                value={mechanicId}
-                onChange={(e) => setMechanicId(e.target.value)}
-                className="w-full p-4 rounded-2xl border-2 border-border/50 bg-background/50 text-foreground focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none appearance-none"
-              >
-                <option value="">-- Choose a mechanic --</option>
-                {mechanics.map(m => (
-                  <option key={m.id} value={m.id}>{m.businessName || m.name} - {m.area}</option>
-                ))}
-              </select>
+              <Select
+                options={mechanics.map(m => ({ value: m.id.toString(), label: `${m.businessName || m.name} - ${m.area}` }))}
+                value={mechanicId ? { value: mechanicId, label: `${mechanics.find(m => m.id.toString() === mechanicId)?.businessName || mechanics.find(m => m.id.toString() === mechanicId)?.name} - ${mechanics.find(m => m.id.toString() === mechanicId)?.area}` } : null}
+                onChange={(selected: any) => setMechanicId(selected ? selected.value : '')}
+                isClearable
+                isSearchable
+                placeholder="-- Type to search a mechanic --"
+                unstyled
+                classNames={{
+                  control: (state) => 
+                    `p-2 rounded-2xl border-2 transition-all outline-none bg-background/50 text-foreground ${state.isFocused ? 'border-primary ring-4 ring-primary/10' : 'border-border/50'}`,
+                  menu: () => "bg-card border border-border mt-2 rounded-xl overflow-hidden shadow-xl z-50",
+                  option: (state) => `p-3 rounded-lg cursor-pointer transition-colors ${state.isFocused ? 'bg-primary/10 text-primary' : 'hover:bg-secondary text-foreground'}`,
+                  input: () => "text-foreground",
+                  singleValue: () => "text-foreground font-medium",
+                  placeholder: () => "text-muted-foreground",
+                  menuList: () => "p-1.5 flex flex-col gap-1",
+                  clearIndicator: () => "text-muted-foreground hover:text-foreground p-1",
+                  dropdownIndicator: () => "text-muted-foreground hover:text-foreground p-1",
+                }}
+              />
             </div>
           )}
 

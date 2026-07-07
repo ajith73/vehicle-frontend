@@ -1,51 +1,52 @@
+import axios, { type AxiosRequestConfig } from 'axios';
+
 export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-interface FetchOptions extends RequestInit {
+const axiosInstance = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+axiosInstance.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers['Authorization'] = `Bearer ${token}`;
+  }
+  return config;
+}, (error) => {
+  return Promise.reject(error);
+});
+
+axiosInstance.interceptors.response.use((response) => {
+  return response;
+}, (error) => {
+  if (error.response?.status === 401) {
+    localStorage.removeItem('token');
+    window.location.href = '/admin/login';
+  }
+  
+  const errorMsg = error.response?.data?.error || error.message || 'An error occurred';
+  error.message = errorMsg;
+  
+  return Promise.reject(error);
+});
+
+interface FetchOptions {
+  method?: string;
   data?: any;
+  headers?: any;
 }
 
 export async function apiClient<T>(endpoint: string, options: FetchOptions = {}): Promise<T> {
-  const token = localStorage.getItem('token');
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(options.headers as Record<string, string> || {})
+  const config: AxiosRequestConfig = {
+    url: endpoint,
+    method: options.method || 'GET',
+    data: options.data,
+    headers: options.headers,
   };
-
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-
-  const config: RequestInit = {
-    ...options,
-    headers
-  };
-
-  if (options.data) {
-    config.body = JSON.stringify(options.data);
-  }
-
-  const response = await fetch(`${API_URL}${endpoint}`, config);
-
-  if (!response.ok) {
-    if (response.status === 401) {
-      localStorage.removeItem('token');
-      window.location.href = '/admin/login';
-    }
-    
-    let errorMsg = 'An error occurred';
-    try {
-      const errorData = await response.json();
-      errorMsg = errorData.error || errorMsg;
-    } catch {
-      // Ignored
-    }
-    throw new Error(errorMsg);
-  }
-
-  // Handle 204 No Content
-  if (response.status === 204) {
-    return {} as T;
-  }
-
-  return response.json();
+  
+  const response = await axiosInstance(config);
+  return response.data;
 }

@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Heart, CreditCard, HeartHandshake, ArrowRight, CheckCircle2 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { API_URL } from '../api/apiClient';
+import { API_URL, apiClient } from '../api/apiClient';
 
-const SUGGESTED_AMOUNTS = [50, 100, 200, 500, 1000];
+const SUGGESTED_AMOUNTS = [100, 200, 500, 1000];
 
 export default function DonationPage() {
   const navigate = useNavigate();
@@ -13,26 +13,29 @@ export default function DonationPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const [isConsentOpen, setIsConsentOpen] = useState(false);
+  const [hasConsented, setHasConsented] = useState(false);
+
+  const handleInitiateDonation = (e: React.FormEvent) => {
     e.preventDefault();
+    setIsConsentOpen(true);
+  };
+
+  const handlePayment = async () => {
     setLoading(true);
     const loadingToast = toast.loading('Processing mock payment...');
     try {
-      const res = await fetch(`${API_URL}/public/donation`, {
+      await apiClient('/public/donation', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        data: { 
           amount: parseFloat(amount), 
           name,
           paymentReference: 'DUMMY_REF_' + Date.now() // Mock reference
-        })
+        }
       });
-      if (res.ok) {
-        toast.success('Donation successful!', { id: loadingToast });
-        setSuccess(true);
-      } else {
-        toast.error('Failed to process donation.', { id: loadingToast });
-      }
+      setIsConsentOpen(false);
+      toast.success('Donation successful!', { id: loadingToast });
+      setSuccess(true);
     } catch (err) {
       toast.error('Network error processing donation.', { id: loadingToast });
     }
@@ -61,7 +64,8 @@ export default function DonationPage() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-73px)] p-4 sm:p-8 pb-[80px] sm:pb-8 relative">
+    <>
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-73px)] p-4 sm:p-8 pb-[80px] sm:pb-8 relative">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/10 via-background to-background -z-10" />
       
       <div className="max-w-xl w-full bg-card/60 backdrop-blur-xl shadow-2xl rounded-3xl p-6 sm:p-10 border border-white/10 dark:border-white/5">
@@ -73,7 +77,7 @@ export default function DonationPage() {
           <p className="text-muted-foreground text-lg">Your donation helps us keep this service free for stranded vehicle owners.</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+        <form onSubmit={handleInitiateDonation} className="flex flex-col gap-6">
           <div className="space-y-4">
             <label className="block text-sm font-bold text-foreground ml-1">Select Amount (INR)</label>
             <div className="flex flex-wrap gap-3">
@@ -138,5 +142,44 @@ export default function DonationPage() {
         </form>
       </div>
     </div>
+      
+      {/* Consent Modal */}
+      {isConsentOpen && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-card w-full max-w-md rounded-[24px] shadow-2xl border border-border overflow-hidden flex flex-col p-6 sm:p-8">
+            <h3 className="text-2xl font-black text-foreground mb-4">Confirm Donation</h3>
+            <p className="text-muted-foreground text-sm mb-6 leading-relaxed">
+              By proceeding, you agree that this donation is voluntary and non-refundable. Your support helps us maintain the platform and keep it free for stranded drivers. No goods or services are provided in exchange for this contribution.
+            </p>
+            
+            <label className="flex items-start gap-3 cursor-pointer mb-8">
+              <input 
+                type="checkbox" 
+                className="mt-1 min-w-[20px] w-5 h-5 rounded-md border-2 border-border/50 text-primary focus:ring-primary/50 accent-primary" 
+                checked={hasConsented}
+                onChange={(e) => setHasConsented(e.target.checked)}
+              />
+              <span className="text-sm font-medium text-foreground">I understand and consent to make this voluntary donation.</span>
+            </label>
+            
+            <div className="flex gap-3 mt-auto">
+              <button 
+                onClick={() => setIsConsentOpen(false)}
+                className="flex-1 py-3.5 rounded-xl border-2 border-border/50 bg-transparent text-foreground font-bold hover:bg-secondary/50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handlePayment}
+                disabled={!hasConsented || loading}
+                className="flex-[2] py-3.5 rounded-xl bg-primary text-primary-foreground font-bold hover:bg-primary/90 disabled:opacity-50 disabled:hover:bg-primary transition-all flex justify-center items-center gap-2 shadow-lg shadow-primary/20 disabled:shadow-none"
+              >
+                {loading ? 'Processing...' : `Proceed to Pay ₹${amount}`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

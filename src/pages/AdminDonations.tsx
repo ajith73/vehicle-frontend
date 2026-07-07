@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Heart } from 'lucide-react';
-import { API_URL } from '../api/apiClient';
+import { API_URL, apiClient } from '../api/apiClient';
 import { Pagination } from '../components/Pagination';
 
 const ITEMS_PER_PAGE = 10;
@@ -22,14 +22,8 @@ export default function AdminDonations() {
 
   const fetchDonations = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${API_URL}/admin/donations`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setDonations(data);
-      }
+      const data = await apiClient<any>('/admin/donations');
+      setDonations(data);
     } catch (err) {
       console.error('Failed to fetch donations', err);
     }

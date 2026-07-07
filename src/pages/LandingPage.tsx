@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Car, Bike, Truck, Bus, Wrench, Droplets, BatteryWarning, ShieldAlert, Navigation, Zap, Search, MapPin, Tractor, Fan, Wind, Battery, Settings, Link as LinkIcon, Thermometer, AlertTriangle, Activity, Fuel, Key, Circle, AlignJustify, Scale, Disc, Sun, Moon, Star, Map, Compass, ChevronDown, ChevronUp } from 'lucide-react';
-import { API_URL } from '../api/apiClient';
+import { Car, Bike, Truck, Bus, Wrench, Droplets, BatteryWarning, ShieldAlert, Navigation, Zap, Search, MapPin, Tractor, Fan, Wind, Battery, Settings, Link as LinkIcon, Thermometer, AlertTriangle, Activity, Fuel, Key, Circle, AlignJustify, Scale, Disc, Sun, Moon, Star, Map, Compass, ChevronDown, ChevronUp, Edit2, Map as MapIcon2 } from 'lucide-react';
+import axios from 'axios';
+import { API_URL, apiClient } from '../api/apiClient';
+import { useLocationContext } from '../contexts/LocationContext';
+import { MapLocationPicker } from '../components/MapLocationPicker';
 
 const getGreeting = () => {
   const hour = new Date().getHours();
@@ -79,9 +82,10 @@ export default function LandingPage() {
   const navigate = useNavigate();
   const [selectedService, setSelectedService] = useState('');
   const [selectedVehicle, setSelectedVehicle] = useState('');
-const [searchQuery, setSearchQuery] = useState('');
-  const [locationName, setLocationName] = useState('Current Location');
-  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const { userLocation, locationName, setLocation, searchQuery, isLoading } = useLocationContext();
+  
+  // Local search query for the input bar (syncs with context initially)
+  const [localSearch, setLocalSearch] = useState('');
   
   // Dynamic options
   const [vehicles, setVehicles] = useState<any[]>([]);
@@ -91,15 +95,23 @@ const [searchQuery, setSearchQuery] = useState('');
   const [showAllVehicles, setShowAllVehicles] = useState(false);
   const [showAllServices, setShowAllServices] = useState(false);
 
+  // Manual location popup state
+  const [showLocationPopup, setShowLocationPopup] = useState(false);
+  const [showMapPicker, setShowMapPicker] = useState(false);
+  const [locationInput, setLocationInput] = useState('');
+  const [locationSuggestions, setLocationSuggestions] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (searchQuery) setLocalSearch(searchQuery);
+  }, [searchQuery]);
+
   useEffect(() => {
     const fetchOptions = async () => {
       try {
-        const [vRes, sRes] = await Promise.all([
-          fetch(`${API_URL}/public/vehicles`),
-          fetch(`${API_URL}/public/services`)
+        const [vData, sData] = await Promise.all([
+          apiClient<any>('/public/vehicles'),
+          apiClient<any>('/public/services')
         ]);
-        const vData = await vRes.json();
-        const sData = await sRes.json();
         setVehicles(vData);
         setServices(sData);
       } catch (err) {
@@ -107,64 +119,69 @@ const [searchQuery, setSearchQuery] = useState('');
       }
     };
     fetchOptions();
-    
-    const fetchIpLocation = async () => {
-      try {
-        const res = await fetch('https://get.geojs.io/v1/ip/geo.json');
-        const data = await res.json();
-        if (data && data.city) {
-          setLocationName(data.city);
-          setSearchQuery(data.city); // Auto-fill search input
-        }
-        if (data && data.latitude && data.longitude) {
-          setUserLocation([parseFloat(data.latitude), parseFloat(data.longitude)]);
-        }
-      } catch (err) {
-        console.warn('IP location fetch failed', err);
-      }
-    };
-
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          setUserLocation([position.coords.latitude, position.coords.longitude]);
-          try {
-            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.coords.latitude}&lon=${position.coords.longitude}`);
-            const data = await res.json();
-            const city = data.address.city || data.address.town || data.address.village || data.address.county || data.address.state_district || 'Your Location';
-            setLocationName(city);
-            setSearchQuery(city); // Auto-fill search input
-          } catch (err) {
-            console.error('Failed to get location name', err);
-            fetchIpLocation();
-          }
-        },
-        () => {
-          console.warn('Could not get geolocation, falling back to IP');
-          fetchIpLocation();
-        },
-        { timeout: 10000 }
-      );
-    } else {
-      fetchIpLocation();
-    }
   }, []);
+
+  // City suggestions for popup
+  useEffect(() => {
+    if (locationInput.length > 2) {
+      const delayFn = setTimeout(() => {
+        axios.get(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(locationInput)}`)
+          .then(res => res.data)
+          .then(data => {
+            if (Array.isArray(data)) {
+              setLocationSuggestions(data.map((item: any) => ({
+                matching_full_name: item.display_name,
+                lat: item.lat,
+                lon: item.lon
+              })));
+            }
+          })
+          .catch(err => console.error('Geocoding API error', err));
+      }, 500);
+      return () => clearTimeout(delayFn);
+    } else {
+      setLocationSuggestions([]);
+    }
+  }, [locationInput]);
+
+  // City suggestions for center search
+  const [centerSearchSuggestions, setCenterSearchSuggestions] = useState<any[]>([]);
+  useEffect(() => {
+    if (localSearch.length > 2 && localSearch !== locationName) {
+      const delayFn = setTimeout(() => {
+        axios.get(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(localSearch)}`)
+          .then(res => res.data)
+          .then(data => {
+            if (Array.isArray(data)) {
+              setCenterSearchSuggestions(data.map((item: any) => ({
+                matching_full_name: item.display_name,
+                lat: item.lat,
+                lon: item.lon
+              })));
+            }
+          })
+          .catch(err => console.error('Geocoding API error', err));
+      }, 500);
+      return () => clearTimeout(delayFn);
+    } else {
+      setCenterSearchSuggestions([]);
+    }
+  }, [localSearch, locationName]);
 
   // Fetch Nearby Mechanics
   useEffect(() => {
     const fetchMechanics = async () => {
       try {
-        const res = await fetch(`${API_URL}/public/mechanics?vehicleType=${selectedVehicle}&serviceType=${selectedService}`);
-        const data = await res.json();
+        const data = await apiClient<any>(`/public/mechanics?vehicleType=${selectedVehicle}&serviceType=${selectedService}`);
         
         let filtered = data;
         
         // If we have search query, filter by it (city, area, name)
-        if (searchQuery && searchQuery !== 'Current Location') {
+        if (localSearch && localSearch !== 'Current Location') {
           filtered = filtered.filter((m: any) => 
-            (m.businessName || m.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
-            (m.area || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (m.city || '').toLowerCase().includes(searchQuery.toLowerCase())
+            (m.businessName || m.name || '').toLowerCase().includes(localSearch.toLowerCase()) || 
+            (m.area || '').toLowerCase().includes(localSearch.toLowerCase()) ||
+            (m.city || '').toLowerCase().includes(localSearch.toLowerCase())
           );
         }
 
@@ -183,27 +200,30 @@ const [searchQuery, setSearchQuery] = useState('');
         console.error('Failed to fetch nearby mechanics', err);
       }
     };
-    fetchMechanics();
-  }, [selectedVehicle, selectedService, userLocation, searchQuery]);
+    if (!isLoading) {
+      fetchMechanics();
+    }
+  }, [selectedVehicle, selectedService, userLocation, localSearch, isLoading]);
 
   const handleSearch = () => {
-    navigate(`/list?search=${encodeURIComponent(searchQuery)}&vehicle=${selectedVehicle}&service=${selectedService}`);
+    navigate(`/list?search=${encodeURIComponent(localSearch)}&vehicle=${selectedVehicle}&service=${selectedService}`);
   };
 
   return (
     <div className="flex flex-col min-h-screen bg-background relative pb-20 sm:pb-0">
       
       {/* 1. Hero Section */}
-      <div className="relative pt-6 pb-12 px-4 sm:px-8 bg-card border-b border-border shadow-sm overflow-hidden flex flex-col items-center text-center">
+      <div className="relative pt-6 pb-12 px-4 sm:px-8 bg-card border-b border-border shadow-sm flex flex-col items-center text-center">
         {/* User Greeting & Location */}
         <div className="w-full max-w-3xl mx-auto flex flex-wrap justify-between items-center gap-3 mb-8 relative z-20">
           <div className="flex items-center gap-2 shrink-0">
             {new Date().getHours() >= 18 || new Date().getHours() < 5 ? <Moon className="w-5 h-5 text-indigo-400" /> : <Sun className="w-5 h-5 text-yellow-500" />}
             <span className="font-bold text-foreground text-base sm:text-lg">{getGreeting()}, User</span>
           </div>
-          <div className="flex items-center gap-1.5 bg-secondary/50 px-3 py-1.5 rounded-full border border-border cursor-pointer hover:bg-secondary/80 transition-colors shrink-0 max-w-full" onClick={() => setSearchQuery(locationName)}>
+          <div className="flex items-center gap-1.5 bg-secondary/50 px-3 py-1.5 rounded-full border border-border cursor-pointer hover:bg-secondary/80 transition-colors shrink-0 max-w-full" onClick={() => setShowLocationPopup(true)}>
             <MapPin className="w-4 h-4 text-primary shrink-0" />
             <span className="text-xs sm:text-sm font-semibold text-muted-foreground truncate">{locationName}</span>
+            <Edit2 className="w-3.5 h-3.5 text-muted-foreground ml-1 hover:text-primary transition-colors" />
           </div>
         </div>
 
@@ -217,25 +237,47 @@ const [searchQuery, setSearchQuery] = useState('');
           </p>
           
           <div className="relative max-w-md mx-auto w-full mt-6 flex gap-2">
-            <div className="relative flex-1 group">
+            <div className="relative flex-1 group z-50">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5 group-focus-within:text-primary transition-colors" />
               <input 
                 type="text" 
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                value={localSearch}
+                onChange={(e) => setLocalSearch(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 placeholder="Search area, city..." 
-                className="w-full pl-12 pr-12 py-4 bg-background border-2 border-border rounded-2xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 text-[16px] font-medium shadow-sm transition-all"
+                className="w-full pl-12 pr-12 py-4 bg-background border-2 border-border rounded-2xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 text-[16px] font-medium shadow-sm transition-all relative z-20"
               />
               <button 
                 onClick={handleSearch}
-                className="absolute right-2 top-1/2 -translate-y-1/2 bg-primary text-primary-foreground p-2 rounded-xl hover:bg-primary/90 transition-colors"
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-primary text-primary-foreground p-2 rounded-xl hover:bg-primary/90 transition-colors z-30"
               >
                 <Navigation className="w-5 h-5" />
               </button>
+              
+              {/* Dropdown for center search suggestions */}
+              {centerSearchSuggestions.length > 0 && (
+                <div className="absolute top-[110%] left-0 right-0 bg-card border border-border rounded-xl shadow-2xl max-h-60 overflow-y-auto z-[60] custom-scrollbar">
+                  {centerSearchSuggestions.map((sugg, idx) => {
+                    const cityName = sugg.matching_full_name.split(',')[0];
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => {
+                          setLocation([parseFloat(sugg.lat), parseFloat(sugg.lon)], cityName);
+                          setLocalSearch(cityName);
+                          setCenterSearchSuggestions([]);
+                        }}
+                        className="w-full text-left px-4 py-3 hover:bg-primary/10 text-sm font-medium border-b border-border last:border-0 transition-colors text-foreground flex items-center gap-2"
+                      >
+                        <MapPin className="w-4 h-4 text-primary shrink-0" /> {sugg.matching_full_name}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
             <button 
-              onClick={() => setSearchQuery(locationName)}
+              onClick={() => setLocalSearch(locationName)}
               title="Use Current Location"
               className="bg-primary/10 text-primary p-4 rounded-2xl border-2 border-primary/20 hover:bg-primary/20 hover:border-primary/40 transition-colors flex items-center justify-center shrink-0 shadow-sm"
             >
@@ -397,6 +439,77 @@ const [searchQuery, setSearchQuery] = useState('');
            )}
         </div>
       </div>
+
+      {showLocationPopup && (
+        <div className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-card border border-border shadow-xl rounded-2xl p-6 w-full max-w-md relative">
+            <h3 className="text-xl font-black mb-2 text-primary">Where are you located?</h3>
+            <p className="text-sm text-muted-foreground mb-6">We couldn't detect your location automatically. Please enter your city to find mechanics near you.</p>
+            <div className="relative">
+              <MapPin className="absolute left-3 top-3.5 w-5 h-5 text-muted-foreground" />
+              <input 
+                type="text" 
+                value={locationInput}
+                onChange={(e) => setLocationInput(e.target.value)}
+                placeholder="Enter city name..."
+                className="w-full pl-10 pr-4 py-3 rounded-xl border border-border bg-background focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm font-medium"
+                autoFocus
+              />
+              {locationSuggestions.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-xl shadow-lg max-h-60 overflow-y-auto z-10 custom-scrollbar">
+                  {locationSuggestions.map((sugg, idx) => {
+                    const cityName = sugg.matching_full_name.split(',')[0];
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => {
+                          setLocation([parseFloat(sugg.lat), parseFloat(sugg.lon)], cityName);
+                          setShowLocationPopup(false);
+                        }}
+                        className="w-full text-left px-4 py-3 hover:bg-primary/10 text-sm font-medium border-b border-border last:border-0 transition-colors"
+                      >
+                        {sugg.matching_full_name}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            <div className="mt-6 flex flex-col gap-3">
+              <button
+                onClick={() => {
+                  setShowLocationPopup(false);
+                  setShowMapPicker(true);
+                }}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary/10 text-primary font-bold hover:bg-primary/20 transition-colors"
+              >
+                <MapIcon2 className="w-5 h-5" /> 📍 Choose on Map
+              </button>
+              
+              <div className="flex justify-end">
+                <button 
+                  onClick={() => setShowLocationPopup(false)}
+                  className="px-4 py-2 rounded-xl text-sm font-bold text-muted-foreground hover:bg-secondary/80 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showMapPicker && (
+        <MapLocationPicker
+          initialLocation={userLocation}
+          onClose={() => setShowMapPicker(false)}
+          onSelect={(coords, name) => {
+            setLocation(coords, name);
+            setShowMapPicker(false);
+          }}
+        />
+      )}
+
     </div>
   );
 }

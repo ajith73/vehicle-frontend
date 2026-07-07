@@ -22,6 +22,7 @@ import AdminSettings from './pages/AdminSettings';
 
 import { Wrench, MessageSquare, Heart, Sun, Moon, Home, Map as MapIcon, UserCircle, List } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
+import { LocationProvider } from './contexts/LocationContext';
 
 function App() {
   // Default to system preference
@@ -59,7 +60,8 @@ function App() {
     const navigate = useNavigate();
     
     return (
-      <div className="min-h-[100dvh] flex flex-col bg-background text-foreground selection:bg-primary/20 pb-[72px] sm:pb-0">
+      <LocationProvider>
+        <div className="min-h-[100dvh] flex flex-col bg-background text-foreground selection:bg-primary/20 pb-[72px] sm:pb-0">
         <header className="hidden sm:block sticky top-0 z-50 p-4 border-b border-border bg-background/80 backdrop-blur-md shadow-sm">
           <div className="max-w-7xl mx-auto flex justify-between items-center w-full">
             <Link to="/" className="flex items-center gap-2 text-xl font-black text-primary hover:scale-105 transition-transform">
@@ -78,8 +80,8 @@ function App() {
               <Link to="/feedback" className="hidden sm:flex items-center gap-1 text-sm font-medium hover:text-primary transition-colors">
                 <MessageSquare className="w-4 h-4" /> Feedback
               </Link>
-              <Link to="/donate" className="hidden sm:flex items-center gap-1 text-sm font-medium hover:text-primary transition-colors">
-                <Heart className="w-4 h-4 text-pink-500" /> Donate
+              <Link to="/donate" className="hidden sm:flex items-center gap-1 text-sm font-bold text-pink-500 hover:text-pink-400 transition-colors">
+                <Heart className="w-4 h-4 text-pink-500 fill-pink-500/50 animate-pulse drop-shadow-[0_0_8px_rgba(236,72,153,0.8)]" /> Donate
               </Link>
 
               <button 
@@ -118,19 +120,20 @@ function App() {
               <MessageSquare className={`w-6 h-6 ${location.pathname === '/feedback' ? 'fill-primary/20' : ''}`} />
               <span className="text-[10px] font-bold">Feedback</span>
             </Link>
-            <Link to="/donate" className={`flex flex-col items-center gap-1 p-2 ${location.pathname === '/donate' ? 'text-pink-500' : 'text-muted-foreground'}`}>
-              <Heart className={`w-6 h-6 ${location.pathname === '/donate' ? 'fill-pink-500/20' : ''}`} />
+            <Link to="/donate" className={`flex flex-col items-center gap-1 p-2 ${location.pathname === '/donate' ? 'text-pink-500' : 'text-pink-500/80 hover:text-pink-500 transition-colors'}`}>
+              <Heart className={`w-6 h-6 text-pink-500 fill-pink-500/50 animate-pulse drop-shadow-[0_0_8px_rgba(236,72,153,0.8)]`} />
               <span className="text-[10px] font-bold">Donate</span>
             </Link>
           </div>
         </nav>
       </div>
+      </LocationProvider>
     );
   };
 
   return (
     <Router>
-      <Toaster position="top-right" toastOptions={{ className: 'dark:bg-card dark:text-foreground dark:border dark:border-border' }} />
+      <Toaster position="top-right" containerStyle={{ zIndex: 99999 }} toastOptions={{ className: 'dark:bg-card dark:text-foreground dark:border dark:border-border' }} />
       <Routes>
         {/* Public Routes with Header */}
         <Route element={<PublicLayout />}>

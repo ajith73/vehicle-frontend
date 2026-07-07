@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { UserPlus, Users, Trash2, Edit2, KeyRound, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Select from 'react-select';
-import { API_URL } from '../api/apiClient';
+import { API_URL, apiClient } from '../api/apiClient';
 import { Pagination } from '../components/Pagination';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 
@@ -43,11 +43,7 @@ export default function AdminUsers() {
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch(`${API_URL}/admin/users`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error('Failed to fetch users');
-      const data = await res.json();
+      const data = await apiClient<any>('/admin/users');
       setUsers(data);
     } catch (err: any) {
       setError(err.message);
@@ -65,16 +61,10 @@ export default function AdminUsers() {
     const loadingToast = toast.loading('Creating admin...');
     try {
       const allowedScreens = selectedScreens.map(s => s.value);
-      const res = await fetch(`${API_URL}/admin/users`, {
+      await apiClient('/admin/users', {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ username: newUsername, password: newPassword, allowedScreens })
+        data: { username: newUsername, password: newPassword, allowedScreens }
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to create user');
       
       closePopup();
       toast.success('Admin created successfully!', { id: loadingToast });
@@ -90,16 +80,10 @@ export default function AdminUsers() {
     const loadingToast = toast.loading('Updating admin...');
     try {
       const allowedScreens = selectedScreens.map(s => s.value);
-      const res = await fetch(`${API_URL}/admin/users/${editingUserId}`, {
+      await apiClient(`/admin/users/${editingUserId}`, {
         method: 'PUT',
-        headers: { 
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ username: newUsername, password: newPassword, allowedScreens })
+        data: { username: newUsername, password: newPassword, allowedScreens }
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to update user');
       
       closePopup();
       toast.success('Admin updated successfully!', { id: loadingToast });
@@ -118,12 +102,9 @@ export default function AdminUsers() {
       onConfirm: async () => {
         const loadingToast = toast.loading('Deleting admin...');
         try {
-          const res = await fetch(`${API_URL}/admin/users/${id}`, {
-            method: 'DELETE',
-            headers: { Authorization: `Bearer ${token}` }
+          await apiClient(`/admin/users/${id}`, {
+            method: 'DELETE'
           });
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error || 'Failed to delete user');
           
           toast.success('Admin deleted successfully!', { id: loadingToast });
           fetchUsers();

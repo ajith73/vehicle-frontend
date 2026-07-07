@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
-import { API_URL } from '../api/apiClient';
+import { API_URL, apiClient } from '../api/apiClient';
 
 export default function AdminLogin() {
   const navigate = useNavigate();
@@ -17,23 +17,16 @@ export default function AdminLogin() {
     setError('');
     
     try {
-      const res = await fetch(`${API_URL}/auth/login`, {
+      const data = await apiClient<any>('/auth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
+        data: { username, password }
       });
       
-      const data = await res.json();
-      
-      if (res.ok) {
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('role', data.role);
-        navigate('/admin/dashboard');
-      } else {
-        setError(data.error || 'Login failed');
-      }
-    } catch (err) {
-      setError('An error occurred during login');
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('role', data.role);
+      navigate('/admin/dashboard');
+    } catch (err: any) {
+      setError(err.message || 'An error occurred during login');
     }
     setLoading(false);
   };

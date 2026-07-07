@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { API_URL } from '../api/apiClient';
+import { API_URL, apiClient } from '../api/apiClient';
 import { Trash2, Plus, Settings, Edit2, X, Check, Save } from 'lucide-react';
 import Select from 'react-select';
 import { ConfirmDialog } from '../components/ConfirmDialog';
@@ -28,12 +28,7 @@ export default function AdminSettings() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [vRes, sRes] = await Promise.all([
-        fetch(`${API_URL}/public/vehicles`),
-        fetch(`${API_URL}/public/services`)
-      ]);
-      const vData = await vRes.json();
-      const sData = await sRes.json();
+      const [vData, sData] = await Promise.all([apiClient<any>(`/public/vehicles`), apiClient<any>(`/public/services`)]);
       setVehicles(vData);
       setServices(sData);
       

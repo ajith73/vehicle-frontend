@@ -3,7 +3,7 @@ import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import { Download, Upload, AlertCircle, CheckCircle, Save, Edit, Trash2, X, Eye } from 'lucide-react';
-import { API_URL } from '../api/apiClient';
+import { API_URL, apiClient } from '../api/apiClient';
 
 interface RowData {
   id: string; // internal id for table rendering
@@ -250,25 +250,15 @@ export default function AdminBulkUpload() {
     });
 
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${API_URL}/admin/mechanics/bulk`, {
+      await apiClient('/admin/mechanics/bulk', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ mechanics: payload })
+        data: { mechanics: payload }
       });
 
-      if (res.ok) {
-        toast('Bulk upload successful!');
-        navigate('/admin/mechanics');
-      } else {
-        const err = await res.json();
-        toast(err.error || 'Failed to bulk upload');
-      }
-    } catch (err) {
-      toast('Error connecting to server');
+      toast('Bulk upload successful!');
+      navigate('/admin/mechanics');
+    } catch (err: any) {
+      toast(err.message || 'Error connecting to server');
     }
     setLoading(false);
   };

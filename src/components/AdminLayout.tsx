@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Wrench, Users, LogOut, Menu, X, Sun, Moon, Edit3, UserCircle, CheckCircle, BellRing, MessageSquare, Heart, Settings, ChevronLeft, ChevronRight } from 'lucide-react';
-import { API_URL } from '../api/apiClient';
+import { API_URL, apiClient } from '../api/apiClient';
 
 export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -27,16 +27,10 @@ export default function AdminLayout() {
     // Fetch Profile
     const fetchProfile = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${API_URL}/admin/profile`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setProfile(data);
-          setEditUsername(data.username || '');
-          setEditEmail(data.email || '');
-        }
+        const data = await apiClient<any>('/admin/profile');
+        setProfile(data);
+        setEditUsername(data.username || '');
+        setEditEmail(data.email || '');
       } catch (err) {
         console.error(err);
       }
@@ -61,28 +55,18 @@ export default function AdminLayout() {
     e.preventDefault();
     setSaveLoading(true);
     try {
-      const token = localStorage.getItem('token');
       const payload: any = { username: editUsername, email: editEmail };
       if (editPassword) payload.password = editPassword;
-
-      const res = await fetch(`${API_URL}/admin/profile`, {
+      await apiClient('/admin/profile', {
         method: 'PUT',
-        headers: { 
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}` 
-        },
-        body: JSON.stringify(payload)
+        data: payload
       });
-      if (res.ok) {
-        toast('Profile updated successfully');
-        setProfile({ ...profile, username: editUsername, email: editEmail });
-        setShowEditProfile(false);
-        setEditPassword('');
-      } else {
-        toast('Failed to update profile');
-      }
+      toast('Profile updated successfully');
+      setProfile({ ...profile, username: editUsername, email: editEmail });
+      setShowEditProfile(false);
+      setEditPassword('');
     } catch (err) {
-      toast('Error connecting to server');
+      toast('Failed to update profile');
     }
     setSaveLoading(false);
   };

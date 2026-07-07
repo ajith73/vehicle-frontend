@@ -5,7 +5,7 @@ import CreatableSelect from 'react-select/creatable';
 import Select from 'react-select';
 import { User, Phone, MapPin, Wrench, CalendarClock, Plus, Trash2, Save, X, Info, Image, Globe, Map } from 'lucide-react';
 import { State, City } from 'country-state-city';
-import { API_URL } from '../api/apiClient';
+import { API_URL, apiClient } from '../api/apiClient';
 
 const INDIAN_STATES = State.getStatesOfCountry('IN').map(s => ({ value: s.isoCode, label: s.name }));
 
@@ -29,12 +29,7 @@ export default function MechanicForm() {
     // Fetch dynamic options
     const fetchOptions = async () => {
       try {
-        const [vRes, sRes] = await Promise.all([
-          fetch(`${API_URL}/public/vehicles`),
-          fetch(`${API_URL}/public/services`)
-        ]);
-        const vData = await vRes.json();
-        const sData = await sRes.json();
+        const [vData, sData] = await Promise.all([apiClient<any>(`/public/vehicles`), apiClient<any>(`/public/services`)]);
         setVehicleOptions(vData.map((v: any) => ({ value: v.name, label: v.name })));
         setServiceOptions(sData.map((s: any) => ({ value: s.name, label: s.name })));
       } catch (err) {
