@@ -1,13 +1,18 @@
 import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import axios from 'axios';
+import { reverseGeocodeName } from '../api/geocoding';
+
+export type LocationSource = 'geolocation' | 'ip' | 'manual' | 'none';
 
 interface LocationContextType {
   userLocation: [number, number] | null;
   locationName: string;
   searchQuery: string;
-  setLocation: (coords: [number, number] | null, name: string) => void;
+  setLocation: (coords: [number, number] | null, name: string, source?: LocationSource) => void;
   requestLocation: () => Promise<void>;
   isLoading: boolean;
+  locationSource: LocationSource;
+  locationMessage: string | null;
 }
 
 const LocationContext = createContext<LocationContextType | undefined>(undefined);
@@ -18,11 +23,19 @@ export const LocationProvider = ({ children }: { children: ReactNode }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [hasRequested, setHasRequested] = useState(false);
+  const [locationSource, setLocationSource] = useState<LocationSource>('none');
+  const [locationMessage, setLocationMessage] = useState<string | null>(null);
 
-  const setLocation = (coords: [number, number] | null, name: string) => {
+  const setLocation = (coords: [number, number] | null, name: string, source: LocationSource = 'manual') => {
     setUserLocation(coords);
     setLocationName(name);
     setSearchQuery(name);
+    setLocationSource(source);
+    setLocationMessage(
+      source === 'manual'
+        ? 'Using the location you selected manually. You can switch back to device location anytime.'
+        : null
+    );
   };
 
   const fetchIpLocation = async () => {
@@ -30,10 +43,16 @@ export const LocationProvider = ({ children }: { children: ReactNode }) => {
       const res = await axios.get('https://get.geojs.io/v1/ip/geo.json');
       const data = res.data;
       if (data && data.city) {
-        setLocation([parseFloat(data.latitude), parseFloat(data.longitude)], data.city);
+        setLocation([parseFloat(data.latitude), parseFloat(data.longitude)], data.city, 'ip');
+        setLocationMessage('Using an approximate network-based location. Enable device location for more accurate nearby results and routing.');
+      } else {
+        setLocationSource('none');
+        setLocationMessage('Location access is unavailable. You can still browse mechanics, but nearby distances and routing may be less accurate.');
       }
     } catch (err) {
       console.warn('IP location fetch failed', err);
+      setLocationSource('none');
+      setLocationMessage('We could not determine your location automatically. You can still browse mechanics, but nearby distances and routing may be unavailable.');
     } finally {
       setIsLoading(false);
     }
@@ -47,10 +66,9 @@ export const LocationProvider = ({ children }: { children: ReactNode }) => {
           const lat = position.coords.latitude;
           const lon = position.coords.longitude;
           try {
-            const res = await axios.get(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
-            const data = res.data;
-            const city = data.address.city || data.address.town || data.address.village || data.address.county || data.address.state_district || 'Your Location';
-            setLocation([lat, lon], city);
+            const city = await reverseGeocodeName([lat, lon]);
+            setLocation([lat, lon], city, 'geolocation');
+            setLocationMessage(null);
             setIsLoading(false);
           } catch (err) {
             console.error('Failed to get location name', err);
@@ -59,6 +77,7 @@ export const LocationProvider = ({ children }: { children: ReactNode }) => {
         },
         async () => {
           console.warn('Could not get geolocation, falling back to IP');
+          setLocationMessage('Location permission was denied or unavailable. Falling back to an approximate network-based location.');
           await fetchIpLocation();
         },
         { timeout: 10000 }
@@ -76,7 +95,7 @@ export const LocationProvider = ({ children }: { children: ReactNode }) => {
   }, [hasRequested]);
 
   return (
-    <LocationContext.Provider value={{ userLocation, locationName, searchQuery, setLocation, requestLocation, isLoading }}>
+    <LocationContext.Provider value={{ userLocation, locationName, searchQuery, setLocation, requestLocation, isLoading, locationSource, locationMessage }}>
       {children}
     </LocationContext.Provider>
   );

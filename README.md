@@ -1,48 +1,108 @@
-# MechanicFinder Frontend
+# Vehicle Assist Frontend
 
-Live at - https://vehicle-frontend-m01u.onrender.com
+React + Vite client for the Vehicle Assist platform. It provides public mechanic discovery flows and an admin dashboard for managing mechanics, users, feedback, donations, and home page settings.
 
-The frontend for **MechanicFinder** – an on-demand vehicle repair platform designed to help users instantly locate, route to, and contact nearby mechanics in emergency breakdown situations.
+## Stack
 
-Built with performance and premium UI aesthetics in mind, utilizing modern web tools and mapping engines.
+- React 19
+- TypeScript
+- Vite
+- React Router DOM
+- Tailwind CSS
+- Leaflet + React Leaflet
+- Axios
+- Recharts
+- XLSX
 
-## 🚀 Technologies Used
-- **Framework**: React 19 + Vite
-- **Language**: Strict TypeScript (`verbatimModuleSyntax` enforced)
-- **Styling**: Tailwind CSS + `lucide-react` icons
-- **Maps**: React-Leaflet + Leaflet Marker Cluster
-- **Routing**: React Router DOM (v7)
+## What The App Includes
 
-## 🎨 Core Features
-- **Interactive Draggable Map**: Dynamic Leaflet maps with custom marker clustering, bounding optimizations, and a native-feeling draggable bottom sheet.
-- **Dynamic Routing Options**: Integrated with OSRM to provide driving distances, ETA, and Fastest/Shortest route options.
-- **Micro-animations**: Premium user interface with smooth transitions, hover effects, and skeleton loaders.
-- **Administrative Dashboard**: Protected routes for admins to monitor platform metrics, approve mechanics, view user feedback, and configure featured vehicle and service types.
-- **Vercel Ready**: Pre-configured `vercel.json` for seamless SPA deployment.
+### Public experience
 
-## 🛠️ Local Development
+- Landing page with featured vehicle and service categories
+- Map view for nearby mechanics
+- List view for searchable mechanic results
+- Route preview using OSRM
+- Feedback submission flow
+- Donation submission flow
+- Light and dark theme support
 
-### 1. Install Dependencies
-```bash
-npm install
-```
+### Admin experience
 
-### 2. Environment Variables
-Create a `.env` file in the root directory:
+- Admin login
+- Dashboard with summary metrics, recent mechanics, charts, and activity data
+- Mechanic create and edit forms
+- Bulk mechanic upload from Excel/CSV
+- Mechanic approval and status workflows
+- Update-request review flow
+- User management
+- Feedback and donation management
+- Vehicle and service type configuration, including featured homepage ordering
+
+## Project Structure
+
+- `src/App.tsx`: route definitions for public and admin areas
+- `src/pages/`: public pages and admin screens
+- `src/components/`: shared layout, dialogs, pagination, and map helpers
+- `src/api/`: API client and endpoint helpers
+- `src/contexts/LocationContext.tsx`: browser location state
+- `public/`: PWA assets, redirects, service worker, and icons
+
+## Routes
+
+### Public routes
+
+- `/`
+- `/map`
+- `/list`
+- `/feedback`
+- `/donate`
+
+### Admin routes
+
+- `/admin/login`
+- `/admin/dashboard`
+- `/admin/mechanics`
+- `/admin/mechanics/new`
+- `/admin/mechanics/:id/edit`
+- `/admin/mechanics/bulk-upload`
+- `/admin/update-requests`
+- `/admin/feedback`
+- `/admin/donations`
+- `/admin/settings`
+- `/admin/users`
+
+## Environment Variables
+
+Create a `.env` file in `vehicle-frontend/`.
+
 ```env
-# Point this to your backend server. If deployed, use the production backend URL.
 VITE_API_URL=http://localhost:5000/api
 ```
 
-### 3. Run Development Server
+## Local Development
+
 ```bash
+npm install
 npm run dev
 ```
 
-## ☁️ Deployment (Vercel)
-This project is configured out-of-the-box for **Vercel**.
-1. Push this repository to GitHub.
-2. Import the project into your Vercel Dashboard.
-3. Ensure the Framework Preset is set to **Vite**.
-4. Under Environment Variables, add `VITE_API_URL` pointing to your hosted backend (e.g., `https://my-backend.vercel.app/api`).
-5. Deploy! (The included `vercel.json` automatically handles SPA routing fallback to `index.html`).
+Default dev server: `http://localhost:5173`
+
+## Scripts
+
+- `npm run dev`: start the Vite dev server
+- `npm run build`: type-check and create a production build
+- `npm run preview`: preview the production build locally
+- `npm run lint`: run `oxlint`
+
+## Integration Notes
+
+- Auth tokens are stored in `localStorage` and automatically attached to admin API requests.
+- A `401` response clears the saved token and redirects the user to `/admin/login`.
+- The map page depends on browser geolocation for the best experience.
+- Route rendering uses the public OSRM service.
+
+## Current Implementation Notes
+
+- The frontend builds successfully, but the production bundle is currently very large. The latest build generated a main JS bundle above 10 MB before gzip, so code-splitting is still pending.
+- Some admin pages use `fetch` directly while the rest of the app uses the shared Axios client, so API access patterns are not fully standardized yet.

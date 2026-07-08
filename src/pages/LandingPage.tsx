@@ -1,10 +1,49 @@
-import { useState, useEffect } from 'react';
+import { Suspense, lazy, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Car, Bike, Truck, Bus, Wrench, Droplets, BatteryWarning, ShieldAlert, Navigation, Zap, Search, MapPin, Tractor, Fan, Wind, Battery, Settings, Link as LinkIcon, Thermometer, AlertTriangle, Activity, Fuel, Key, Circle, AlignJustify, Scale, Disc, Sun, Moon, Star, Map, Compass, ChevronDown, ChevronUp, Edit2, Map as MapIcon2 } from 'lucide-react';
-import axios from 'axios';
-import { API_URL, apiClient } from '../api/apiClient';
-import { useLocationContext } from '../contexts/LocationContext';
+import {
+  Activity,
+  AlertTriangle,
+  AlignJustify,
+  Battery,
+  BatteryWarning,
+  Bike,
+  Bus,
+  Car,
+  ChevronDown,
+  ChevronUp,
+  Circle,
+  Compass,
+  Disc,
+  Droplets,
+  Edit2,
+  Fan,
+  Fuel,
+  Key,
+  Link as LinkIcon,
+  Map,
+  Map as MapIcon2,
+  MapPin,
+  Moon,
+  Navigation,
+  Scale,
+  Search,
+  Settings,
+  ShieldAlert,
+  Star,
+  Sun,
+  Thermometer,
+  Tractor,
+  Truck,
+  Wind,
+  Wrench,
+  Zap
+} from 'lucide-react';
+import { apiClient } from '../api/apiClient';
+import { searchPlaces, type PlaceSuggestion } from '../api/geocoding';
 import { MapLocationPicker } from '../components/MapLocationPicker';
+import { useLocationContext } from '../contexts/LocationContext';
+
+const MechanicSubmissionModal = lazy(() => import('../components/MechanicSubmissionModal'));
 
 const getGreeting = () => {
   const hour = new Date().getHours();
@@ -14,21 +53,21 @@ const getGreeting = () => {
 };
 
 const VEHICLE_ICONS: Record<string, any> = {
-  'Auto': Zap,
-  'Bike': Bike,
-  'Bus': Bus,
-  'Car': Car,
-  'Crane': Tractor,
+  Auto: Zap,
+  Bike,
+  Bus,
+  Car,
+  Crane: Tractor,
   'Earth Mover': Tractor,
   'Electric Bike': Zap,
   'Electric Car': Zap,
-  'JCB': Tractor,
-  'Pickup': Truck,
-  'SUV': Car,
-  'Scooter': Bike,
-  'Tractor': Tractor,
-  'Truck': Truck,
-  'Van': Truck
+  JCB: Tractor,
+  Pickup: Truck,
+  SUV: Car,
+  Scooter: Bike,
+  Tractor,
+  Truck,
+  Van: Truck
 };
 
 const SERVICE_ICONS: Record<string, any> = {
@@ -62,45 +101,65 @@ const SERVICE_ICONS: Record<string, any> = {
 const getVehicleIcon = (name: string) => VEHICLE_ICONS[name] || Navigation;
 const getServiceIcon = (name: string) => SERVICE_ICONS[name] || Wrench;
 
-
-// Helper to calculate distance
 function getDistanceFromLatLonInKm(lat1: number, lon1: number, lat2: number, lon2: number) {
   if (!lat1 || !lon1 || !lat2 || !lon2) return 999999;
-  var R = 6371; // Radius of the earth in km
-  var dLat = (lat2 - lat1) * (Math.PI / 180);
-  var dLon = (lon2 - lon1) * (Math.PI / 180);
-  var a = 
+  const R = 6371;
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * 
-    Math.sin(dLon / 2) * Math.sin(dLon / 2); 
-  var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)); 
-  var d = R * c; 
-  return d;
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
 }
+
+const getMechanicStatus = (mechanic: any) => {
+  if (mechanic.currentStatus) return mechanic.currentStatus;
+  if (mechanic.availability === false) return 'Closed';
+  return 'Available';
+};
 
 export default function LandingPage() {
   const navigate = useNavigate();
   const [selectedService, setSelectedService] = useState('');
   const [selectedVehicle, setSelectedVehicle] = useState('');
-  const { userLocation, locationName, setLocation, searchQuery, isLoading } = useLocationContext();
-  
-  // Local search query for the input bar (syncs with context initially)
+  const {
+    userLocation,
+    locationName,
+    setLocation,
+    searchQuery,
+    isLoading,
+    locationSource,
+    locationMessage,
+    requestLocation
+  } = useLocationContext();
+
   const [localSearch, setLocalSearch] = useState('');
-  
-  // Dynamic options
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [services, setServices] = useState<any[]>([]);
   const [nearbyMechanics, setNearbyMechanics] = useState<any[]>([]);
   const [isLoadingOptions, setIsLoadingOptions] = useState(true);
-  
   const [showAllVehicles, setShowAllVehicles] = useState(false);
   const [showAllServices, setShowAllServices] = useState(false);
-
-  // Manual location popup state
   const [showLocationPopup, setShowLocationPopup] = useState(false);
   const [showMapPicker, setShowMapPicker] = useState(false);
+  const [showMechanicSubmissionModal, setShowMechanicSubmissionModal] = useState(false);
   const [locationInput, setLocationInput] = useState('');
-  const [locationSuggestions, setLocationSuggestions] = useState<any[]>([]);
+  const [locationSuggestions, setLocationSuggestions] = useState<PlaceSuggestion[]>([]);
+  const [centerSearchSuggestions, setCenterSearchSuggestions] = useState<PlaceSuggestion[]>([]);
+
+  const locationBadge = locationSource === 'geolocation'
+    ? { label: 'Precise location', classes: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700' }
+    : locationSource === 'ip'
+      ? { label: 'Approximate location', classes: 'border-amber-500/30 bg-amber-500/10 text-amber-700' }
+      : locationSource === 'manual'
+        ? { label: 'Manual location', classes: 'border-blue-500/30 bg-blue-500/10 text-blue-700' }
+        : { label: 'Location unavailable', classes: 'border-border bg-secondary/60 text-muted-foreground' };
+
+  const popularServices = (services.filter((service) => service.isFeatured).slice(0, 4).length > 0
+    ? services.filter((service) => service.isFeatured).slice(0, 4)
+    : services.slice(0, 4));
 
   useEffect(() => {
     if (searchQuery) setLocalSearch(searchQuery);
@@ -109,86 +168,70 @@ export default function LandingPage() {
   useEffect(() => {
     const fetchOptions = async () => {
       try {
-        const [vData, sData] = await Promise.all([
+        const [vehicleData, serviceData] = await Promise.all([
           apiClient<any>('/public/vehicles'),
           apiClient<any>('/public/services')
         ]);
-        setVehicles(vData);
-        setServices(sData);
+        setVehicles(vehicleData);
+        setServices(serviceData);
       } catch (err) {
         console.error('Failed to load settings options', err);
       } finally {
         setIsLoadingOptions(false);
       }
     };
+
     fetchOptions();
   }, []);
 
-  // City suggestions for popup
   useEffect(() => {
-    if (locationInput.length > 2) {
-      const delayFn = setTimeout(() => {
-        axios.get(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(locationInput)}`)
-          .then(res => res.data)
-          .then(data => {
-            if (Array.isArray(data)) {
-              setLocationSuggestions(data.map((item: any) => ({
-                matching_full_name: item.display_name,
-                lat: item.lat,
-                lon: item.lon
-              })));
-            }
-          })
-          .catch(err => console.error('Geocoding API error', err));
-      }, 500);
-      return () => clearTimeout(delayFn);
-    } else {
+    if (locationInput.length <= 2) {
       setLocationSuggestions([]);
+      return;
     }
+
+    const delayFn = setTimeout(() => {
+      searchPlaces(locationInput)
+        .then((data) => setLocationSuggestions(data))
+        .catch((err) => console.error('Geocoding API error', err));
+    }, 500);
+
+    return () => clearTimeout(delayFn);
   }, [locationInput]);
 
-  // City suggestions for center search
-  const [centerSearchSuggestions, setCenterSearchSuggestions] = useState<any[]>([]);
   useEffect(() => {
-    if (localSearch.length > 2 && localSearch !== locationName) {
-      const delayFn = setTimeout(() => {
-        axios.get(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(localSearch)}`)
-          .then(res => res.data)
-          .then(data => {
-            if (Array.isArray(data)) {
-              setCenterSearchSuggestions(data.map((item: any) => ({
-                matching_full_name: item.display_name,
-                lat: item.lat,
-                lon: item.lon
-              })));
-            }
-          })
-          .catch(err => console.error('Geocoding API error', err));
-      }, 500);
-      return () => clearTimeout(delayFn);
-    } else {
+    if (localSearch.length <= 2 || localSearch === locationName) {
       setCenterSearchSuggestions([]);
+      return;
     }
+
+    const delayFn = setTimeout(() => {
+      searchPlaces(localSearch)
+        .then((data) => setCenterSearchSuggestions(data))
+        .catch((err) => console.error('Geocoding API error', err));
+    }, 500);
+
+    return () => clearTimeout(delayFn);
   }, [localSearch, locationName]);
 
-  // Fetch Nearby Mechanics
   useEffect(() => {
     const fetchMechanics = async () => {
       try {
         const data = await apiClient<any>(`/public/mechanics?vehicleType=${selectedVehicle}&serviceType=${selectedService}`);
-        
-        let filtered = data;
-        
-        // If we have search query, filter by it (city, area, name)
+
+        let filtered = data.map((mechanic: any) => ({
+          ...mechanic,
+          currentStatus: getMechanicStatus(mechanic)
+        }));
+
         if (localSearch && localSearch !== 'Current Location') {
-          filtered = filtered.filter((m: any) => 
-            (m.businessName || m.name || '').toLowerCase().includes(localSearch.toLowerCase()) || 
-            (m.area || '').toLowerCase().includes(localSearch.toLowerCase()) ||
-            (m.city || '').toLowerCase().includes(localSearch.toLowerCase())
+          filtered = filtered.filter((mechanic: any) =>
+            (mechanic.businessName || mechanic.name || '').toLowerCase().includes(localSearch.toLowerCase()) ||
+            (mechanic.area || '').toLowerCase().includes(localSearch.toLowerCase()) ||
+            (mechanic.city || '').toLowerCase().includes(localSearch.toLowerCase())
           );
         }
 
-        // Sort by distance if user location is available
         if (userLocation) {
           filtered.sort((a: any, b: any) => {
             const distA = getDistanceFromLatLonInKm(userLocation[0], userLocation[1], parseFloat(a.latitude), parseFloat(a.longitude));
@@ -196,13 +239,13 @@ export default function LandingPage() {
             return distA - distB;
           });
         }
-        
-        // Take top 50 (or whatever fits in UI)
+
         setNearbyMechanics(filtered.slice(0, 50));
       } catch (err) {
         console.error('Failed to fetch nearby mechanics', err);
       }
     };
+
     if (!isLoading) {
       fetchMechanics();
     }
@@ -212,320 +255,439 @@ export default function LandingPage() {
     navigate(`/list?search=${encodeURIComponent(localSearch)}&vehicle=${selectedVehicle}&service=${selectedService}`);
   };
 
+  const handleFindMechanicsNow = () => {
+    navigate(`/map?search=${encodeURIComponent(localSearch)}&vehicle=${selectedVehicle}&service=${selectedService}`);
+  };
+
+  const navigateToMechanic = (mechanicId: number) => {
+    navigate(`/map?vehicle=${selectedVehicle}&service=${selectedService}&routeTo=${mechanicId}`);
+  };
+
   return (
-    <div className="flex flex-col min-h-screen bg-background relative pb-20 sm:pb-0">
-      
-      {/* 1. Hero Section */}
-      <div className="relative pt-6 pb-12 px-4 sm:px-8 bg-card border-b border-border shadow-sm flex flex-col items-center text-center">
-        {/* User Greeting & Location */}
-        <div className="w-full max-w-3xl mx-auto flex flex-wrap justify-between items-center gap-3 mb-8 relative z-20">
+    <div className="flex min-h-screen flex-col bg-background relative pb-20 sm:pb-0">
+      <div className="relative flex flex-col items-center border-b border-border bg-card px-4 pt-6 pb-12 text-center shadow-sm sm:px-8">
+        <div className="relative z-20 mb-6 flex w-full max-w-3xl flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2 shrink-0">
-            {new Date().getHours() >= 18 || new Date().getHours() < 5 ? <Moon className="w-5 h-5 text-indigo-400" /> : <Sun className="w-5 h-5 text-yellow-500" />}
-            <span className="font-bold text-foreground text-base sm:text-lg">{getGreeting()}, User</span>
+            {new Date().getHours() >= 18 || new Date().getHours() < 5
+              ? <Moon className="h-5 w-5 text-indigo-400" />
+              : <Sun className="h-5 w-5 text-yellow-500" />}
+            <span className="text-base font-bold text-foreground sm:text-lg">{getGreeting()}, User</span>
           </div>
-          <div className="flex items-center gap-1.5 bg-secondary/50 px-3 py-1.5 rounded-full border border-border cursor-pointer hover:bg-secondary/80 transition-colors shrink-0 max-w-full" onClick={() => setShowLocationPopup(true)}>
-            <MapPin className="w-4 h-4 text-primary shrink-0" />
-            <span className="text-xs sm:text-sm font-semibold text-muted-foreground truncate">{locationName}</span>
-            <Edit2 className="w-3.5 h-3.5 text-muted-foreground ml-1 hover:text-primary transition-colors" />
+          <div
+            className="flex max-w-full shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-border bg-secondary/50 px-3 py-1.5 transition-colors hover:bg-secondary/80"
+            onClick={() => setShowLocationPopup(true)}
+          >
+            <MapPin className="h-4 w-4 shrink-0 text-primary" />
+            <span className="truncate text-xs font-semibold text-muted-foreground sm:text-sm">{locationName}</span>
+            <Edit2 className="ml-1 h-3.5 w-3.5 text-muted-foreground transition-colors hover:text-primary" />
           </div>
         </div>
 
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-secondary/20 z-0"></div>
-        <div className="relative z-10 max-w-3xl mx-auto w-full">
-          <h2 className="text-4xl sm:text-6xl font-black text-foreground mb-4 tracking-tight">
-            Get Back on the <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-blue-600">Road Faster</span>
+        <div className="relative z-20 mb-6 flex flex-col items-center gap-3">
+          <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold ${locationBadge.classes}`}>
+            <MapPin className="h-3.5 w-3.5" />
+            <span>{locationBadge.label}</span>
+          </div>
+          {locationMessage && (
+            <div className="mx-auto flex max-w-2xl items-start gap-3 rounded-2xl border border-amber-500/30 bg-card/90 px-4 py-3 text-left shadow-sm backdrop-blur">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+              <div className="min-w-0">
+                <p className="text-sm text-muted-foreground">{locationMessage}</p>
+                {locationSource !== 'geolocation' && (
+                  <button
+                    onClick={() => requestLocation()}
+                    className="mt-2 text-sm font-bold text-primary hover:underline"
+                  >
+                    Try device location
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="absolute inset-0 z-0 bg-gradient-to-br from-primary/10 via-background to-secondary/20"></div>
+        <div className="relative z-10 w-full max-w-3xl">
+          <h2 className="mb-4 text-4xl font-black tracking-tight text-foreground sm:text-6xl">
+            Get Back on the <span className="bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">Road Faster</span>
           </h2>
-          <p className="text-muted-foreground text-lg sm:text-xl font-medium mb-8 max-w-xl mx-auto">
+          <p className="mx-auto mb-8 max-w-xl text-lg font-medium text-muted-foreground sm:text-xl">
             Find the nearest expert mechanics for any vehicle, instantly.
           </p>
-          
-          <div className="relative max-w-md mx-auto w-full mt-6 flex gap-2">
-            <div className="relative flex-1 group z-50">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5 group-focus-within:text-primary transition-colors" />
-              <input 
-                type="text" 
+
+          <div className="relative mx-auto mt-6 flex w-full max-w-md gap-2">
+            <div className="relative z-50 flex-1 group">
+              <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary" />
+              <input
+                type="text"
                 value={localSearch}
                 onChange={(e) => setLocalSearch(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                placeholder="Search area, city..." 
-                className="w-full pl-12 pr-12 py-4 bg-background border-2 border-border rounded-2xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 text-[16px] font-medium shadow-sm transition-all relative z-20"
+                placeholder="Search area, city..."
+                className="relative z-20 w-full rounded-2xl border-2 border-border bg-background py-4 pl-12 pr-12 text-[16px] font-medium shadow-sm transition-all focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/20"
               />
-              <button 
+              <button
                 onClick={handleSearch}
-                className="absolute right-2 top-1/2 -translate-y-1/2 bg-primary text-primary-foreground p-2 rounded-xl hover:bg-primary/90 transition-colors z-30"
+                className="absolute right-2 top-1/2 z-30 -translate-y-1/2 rounded-xl bg-primary p-2 text-primary-foreground transition-colors hover:bg-primary/90"
               >
-                <Navigation className="w-5 h-5" />
+                <Navigation className="h-5 w-5" />
               </button>
-              
-              {/* Dropdown for center search suggestions */}
+
               {centerSearchSuggestions.length > 0 && (
-                <div className="absolute top-[110%] left-0 right-0 bg-card border border-border rounded-xl shadow-2xl max-h-60 overflow-y-auto z-[60] custom-scrollbar">
-                  {centerSearchSuggestions.map((sugg, idx) => {
-                    const cityName = sugg.matching_full_name.split(',')[0];
+                <div className="absolute left-0 right-0 top-[110%] z-[60] max-h-60 overflow-y-auto rounded-xl border border-border bg-card shadow-2xl custom-scrollbar">
+                  {centerSearchSuggestions.map((suggestion, idx) => {
+                    const cityName = suggestion.name.split(',')[0];
                     return (
                       <button
                         key={idx}
                         onClick={() => {
-                          setLocation([parseFloat(sugg.lat), parseFloat(sugg.lon)], cityName);
+                          setLocation([suggestion.lat, suggestion.lon], cityName, 'manual');
                           setLocalSearch(cityName);
                           setCenterSearchSuggestions([]);
                         }}
-                        className="w-full text-left px-4 py-3 hover:bg-primary/10 text-sm font-medium border-b border-border last:border-0 transition-colors text-foreground flex items-center gap-2"
+                        className="flex w-full items-center gap-2 border-b border-border px-4 py-3 text-left text-sm font-medium text-foreground transition-colors last:border-0 hover:bg-primary/10"
                       >
-                        <MapPin className="w-4 h-4 text-primary shrink-0" /> {sugg.matching_full_name}
+                        <MapPin className="h-4 w-4 shrink-0 text-primary" />
+                        {suggestion.name}
                       </button>
                     );
                   })}
                 </div>
               )}
             </div>
-            <button 
+            <button
               onClick={() => setLocalSearch(locationName)}
               title="Use Current Location"
-              className="bg-primary/10 text-primary p-4 rounded-2xl border-2 border-primary/20 hover:bg-primary/20 hover:border-primary/40 transition-colors flex items-center justify-center shrink-0 shadow-sm"
+              className="flex shrink-0 items-center justify-center rounded-2xl border-2 border-primary/20 bg-primary/10 p-4 text-primary shadow-sm transition-colors hover:border-primary/40 hover:bg-primary/20"
             >
-              <Compass className="w-6 h-6" />
+              <Compass className="h-6 w-6" />
             </button>
           </div>
         </div>
       </div>
-        
-      {/* 1.5. Vehicle Type Row */}
-      <div className="pt-10 px-4 sm:px-8 max-w-7xl mx-auto w-full">
-        <h3 className="font-bold text-xl mb-4 text-foreground flex items-center gap-2">
-          <Car className="text-primary w-6 h-6" /> Select Vehicle
+
+      <div className="mx-auto w-full max-w-7xl px-4 pt-10 sm:px-8">
+        <h3 className="mb-4 flex items-center gap-2 text-xl font-bold text-foreground">
+          <Car className="h-6 w-6 text-primary" /> Select Vehicle
         </h3>
-        {/* Mobile: Horizontal Scroll, Desktop: Grid */}
-        <div className="flex sm:grid sm:grid-cols-5 md:grid-cols-6 gap-2 sm:gap-3 pb-2 overflow-x-auto snap-x hide-scrollbar">
+        <div className="flex snap-x gap-2 overflow-x-auto pb-2 hide-scrollbar sm:grid sm:grid-cols-5 sm:gap-3 md:grid-cols-6">
           {isLoadingOptions ? (
             Array(6).fill(0).map((_, i) => (
-              <div key={i} className="flex-none w-24 sm:w-full h-20 md:h-24 rounded-2xl bg-secondary/50 animate-pulse border-2 border-border/50 shrink-0"></div>
+              <div key={i} className="h-20 w-24 shrink-0 rounded-2xl border-2 border-border/50 bg-secondary/50 animate-pulse sm:h-24 sm:w-full"></div>
             ))
           ) : (
             <>
               <button
                 onClick={() => setSelectedVehicle('')}
-                className={`flex-none w-24 sm:w-full flex flex-col items-center justify-center h-20 md:h-24 rounded-2xl border-2 transition-all hover:scale-[1.02] active:scale-95 snap-start ${
+                className={`flex h-20 w-24 snap-start flex-none flex-col items-center justify-center rounded-2xl border-2 transition-all active:scale-95 hover:scale-[1.02] sm:h-24 sm:w-full ${
                   selectedVehicle === '' ? 'border-primary bg-primary/10 text-primary shadow-md' : 'border-border bg-card text-muted-foreground hover:border-primary/50 hover:bg-secondary/50'
                 }`}
               >
-                <Zap className="w-6 h-6 mb-1" />
+                <Zap className="mb-1 h-6 w-6" />
                 <span className="text-xs font-bold">All</span>
               </button>
-          {vehicles
-            .filter(v => showAllVehicles || v.isFeatured || (!showAllVehicles && vehicles.every(vi => !vi.isFeatured)))
-            .map(v => {
-            const Icon = getVehicleIcon(v.name);
-            return (
-              <button
-                key={v.name}
-                onClick={() => setSelectedVehicle(v.name)}
-                className={`flex-none w-24 sm:w-full flex flex-col items-center justify-center h-20 md:h-24 rounded-2xl border-2 transition-all hover:scale-[1.02] active:scale-95 snap-start ${
-                  selectedVehicle === v.name ? 'border-primary bg-primary/10 text-primary shadow-md' : 'border-border bg-card text-muted-foreground hover:border-primary/50 hover:bg-secondary/50'
-                }`}
-              >
-                <Icon className="w-6 h-6 mb-1" />
-                <span className="text-[11px] sm:text-xs font-bold text-center leading-tight px-1">{v.name}</span>
-              </button>
-            );
-          })}
-          {vehicles.some(v => v.isFeatured) && vehicles.some(v => !v.isFeatured) && (
-            <button
-              onClick={() => setShowAllVehicles(!showAllVehicles)}
-              className="flex-none w-24 sm:w-full flex flex-col items-center justify-center h-20 md:h-24 rounded-2xl border-2 border-dashed border-border bg-transparent text-muted-foreground hover:text-primary hover:border-primary/50 transition-all snap-start"
-            >
-              {showAllVehicles ? <ChevronUp className="w-6 h-6 mb-1" /> : <ChevronDown className="w-6 h-6 mb-1" />}
-              <span className="text-[11px] sm:text-xs font-bold text-center leading-tight px-1">{showAllVehicles ? 'Show Less' : 'Show More'}</span>
-            </button>
-          )}
+              {vehicles
+                .filter((vehicle) => showAllVehicles || vehicle.isFeatured || (!showAllVehicles && vehicles.every((item) => !item.isFeatured)))
+                .map((vehicle) => {
+                  const Icon = getVehicleIcon(vehicle.name);
+                  return (
+                    <button
+                      key={vehicle.name}
+                      onClick={() => setSelectedVehicle(vehicle.name)}
+                      className={`flex h-20 w-24 snap-start flex-none flex-col items-center justify-center rounded-2xl border-2 transition-all active:scale-95 hover:scale-[1.02] sm:h-24 sm:w-full ${
+                        selectedVehicle === vehicle.name ? 'border-primary bg-primary/10 text-primary shadow-md' : 'border-border bg-card text-muted-foreground hover:border-primary/50 hover:bg-secondary/50'
+                      }`}
+                    >
+                      <Icon className="mb-1 h-6 w-6" />
+                      <span className="px-1 text-center text-[11px] font-bold leading-tight sm:text-xs">{vehicle.name}</span>
+                    </button>
+                  );
+                })}
+              {vehicles.some((vehicle) => vehicle.isFeatured) && vehicles.some((vehicle) => !vehicle.isFeatured) && (
+                <button
+                  onClick={() => setShowAllVehicles(!showAllVehicles)}
+                  className="flex h-20 w-24 snap-start flex-none flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border bg-transparent text-muted-foreground transition-all hover:border-primary/50 hover:text-primary sm:h-24 sm:w-full"
+                >
+                  {showAllVehicles ? <ChevronUp className="mb-1 h-6 w-6" /> : <ChevronDown className="mb-1 h-6 w-6" />}
+                  <span className="px-1 text-center text-[11px] font-bold leading-tight sm:text-xs">{showAllVehicles ? 'Show Less' : 'Show More'}</span>
+                </button>
+              )}
             </>
           )}
         </div>
       </div>
 
-      {/* 2. Services Row */}
-      <div className="pt-8 pb-4 px-4 sm:px-8 max-w-7xl mx-auto w-full">
-        <h3 className="font-bold text-xl mb-4 text-foreground flex items-center gap-2">
-          <Wrench className="text-primary w-6 h-6" /> Select Service
+      <div className="mx-auto w-full max-w-7xl px-4 pt-8 pb-4 sm:px-8">
+        <h3 className="mb-4 flex items-center gap-2 text-xl font-bold text-foreground">
+          <Wrench className="h-6 w-6 text-primary" /> Select Service
         </h3>
-        {/* Mobile: Horizontal Scroll, Desktop: Grid */}
-        <div className="flex sm:grid sm:grid-cols-5 md:grid-cols-7 gap-2 sm:gap-3 pb-2 overflow-x-auto snap-x hide-scrollbar">
+        <div className="flex snap-x gap-2 overflow-x-auto pb-2 hide-scrollbar sm:grid sm:grid-cols-5 sm:gap-3 md:grid-cols-7">
           {isLoadingOptions ? (
             Array(7).fill(0).map((_, i) => (
-              <div key={i} className="flex-none w-24 sm:w-full h-20 md:h-24 rounded-2xl bg-secondary/50 animate-pulse border-2 border-border/50 shrink-0"></div>
+              <div key={i} className="h-20 w-24 shrink-0 rounded-2xl border-2 border-border/50 bg-secondary/50 animate-pulse sm:h-24 sm:w-full"></div>
             ))
           ) : (
             <>
               <button
                 onClick={() => setSelectedService('')}
-                className={`flex-none w-24 sm:w-full flex flex-col items-center justify-center h-20 md:h-24 rounded-2xl border-2 transition-all hover:scale-[1.02] active:scale-95 snap-start ${
+                className={`flex h-20 w-24 snap-start flex-none flex-col items-center justify-center rounded-2xl border-2 transition-all active:scale-95 hover:scale-[1.02] sm:h-24 sm:w-full ${
                   selectedService === '' ? 'border-primary bg-primary/10 text-primary shadow-md' : 'border-border bg-card text-muted-foreground hover:border-primary/50 hover:bg-secondary/50'
                 }`}
               >
-                <Zap className="w-6 h-6 mb-1" />
+                <Zap className="mb-1 h-6 w-6" />
                 <span className="text-xs font-bold">All</span>
               </button>
-          {services
-            .filter(s => showAllServices || s.isFeatured || (!showAllServices && services.every(si => !si.isFeatured)))
-            .map(s => {
-            const Icon = getServiceIcon(s.name);
-            return (
-              <button
-                key={s.name}
-                onClick={() => setSelectedService(s.name)}
-                className={`flex-none w-24 sm:w-full flex flex-col items-center justify-center h-20 md:h-24 rounded-2xl border-2 transition-all hover:scale-[1.02] active:scale-95 snap-start ${
-                  selectedService === s.name ? 'border-primary bg-primary/10 text-primary shadow-md' : 'border-border bg-card text-muted-foreground hover:border-primary/50 hover:bg-secondary/50'
-                }`}
-              >
-                <Icon className="w-6 h-6 mb-1" />
-                <span className="text-[11px] sm:text-xs font-bold text-center leading-tight px-1">{s.name}</span>
-              </button>
-            );
-          })}
-          {services.some(s => s.isFeatured) && services.some(s => !s.isFeatured) && (
-            <button
-              onClick={() => setShowAllServices(!showAllServices)}
-              className="flex-none w-24 sm:w-full flex flex-col items-center justify-center h-20 md:h-24 rounded-2xl border-2 border-dashed border-border bg-transparent text-muted-foreground hover:text-primary hover:border-primary/50 transition-all snap-start"
-            >
-              {showAllServices ? <ChevronUp className="w-6 h-6 mb-1" /> : <ChevronDown className="w-6 h-6 mb-1" />}
-              <span className="text-[11px] sm:text-xs font-bold text-center leading-tight px-1">{showAllServices ? 'Show Less' : 'Show More'}</span>
-            </button>
-          )}
+              {services
+                .filter((service) => showAllServices || service.isFeatured || (!showAllServices && services.every((item) => !item.isFeatured)))
+                .map((service) => {
+                  const Icon = getServiceIcon(service.name);
+                  return (
+                    <button
+                      key={service.name}
+                      onClick={() => setSelectedService(service.name)}
+                      className={`flex h-20 w-24 snap-start flex-none flex-col items-center justify-center rounded-2xl border-2 transition-all active:scale-95 hover:scale-[1.02] sm:h-24 sm:w-full ${
+                        selectedService === service.name ? 'border-primary bg-primary/10 text-primary shadow-md' : 'border-border bg-card text-muted-foreground hover:border-primary/50 hover:bg-secondary/50'
+                      }`}
+                    >
+                      <Icon className="mb-1 h-6 w-6" />
+                      <span className="px-1 text-center text-[11px] font-bold leading-tight sm:text-xs">{service.name}</span>
+                    </button>
+                  );
+                })}
+              {services.some((service) => service.isFeatured) && services.some((service) => !service.isFeatured) && (
+                <button
+                  onClick={() => setShowAllServices(!showAllServices)}
+                  className="flex h-20 w-24 snap-start flex-none flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border bg-transparent text-muted-foreground transition-all hover:border-primary/50 hover:text-primary sm:h-24 sm:w-full"
+                >
+                  {showAllServices ? <ChevronUp className="mb-1 h-6 w-6" /> : <ChevronDown className="mb-1 h-6 w-6" />}
+                  <span className="px-1 text-center text-[11px] font-bold leading-tight sm:text-xs">{showAllServices ? 'Show Less' : 'Show More'}</span>
+                </button>
+              )}
             </>
           )}
         </div>
       </div>
 
-      <div className="px-4 sm:px-8 mt-6 max-w-3xl mx-auto w-full">
-        <button 
-          onClick={() => navigate(`/map?search=${encodeURIComponent(searchQuery)}&vehicle=${selectedVehicle}&service=${selectedService}`)}
-          className="w-full py-5 bg-primary text-primary-foreground font-black text-lg rounded-2xl shadow-[0_8px_30px_rgba(59,130,246,0.3)] hover:bg-primary/90 hover:-translate-y-1 active:translate-y-0 transition-all flex items-center justify-center gap-2"
+      <div className="mx-auto mt-6 w-full max-w-3xl px-4 sm:px-8">
+        <button
+          onClick={handleFindMechanicsNow}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-5 text-lg font-black text-primary-foreground shadow-[0_8px_30px_rgba(59,130,246,0.3)] transition-all hover:-translate-y-1 hover:bg-primary/90 active:translate-y-0"
         >
-          <Map className="w-6 h-6" />
+          <Map className="h-6 w-6" />
           Find Mechanics Now
         </button>
       </div>
 
-      {/* 4. Popular Services */}
-      <div className="pt-10 px-4 sm:px-8 max-w-7xl mx-auto w-full">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="font-bold text-xl text-foreground flex items-center gap-2">
-            <Star className="text-yellow-500 w-6 h-6" /> Popular Services
+      <div className="mx-auto w-full max-w-7xl px-4 pt-10 sm:px-8">
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="flex items-center gap-2 text-xl font-bold text-foreground">
+            <Star className="h-6 w-6 text-yellow-500" /> Popular Services
           </h3>
           <button onClick={() => navigate('/list')} className="text-sm font-bold text-primary hover:underline">See All</button>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {['Engine Repair', 'Battery Replacement', 'Tyre Replacement', 'Oil Change'].map(s => {
-            const Icon = getServiceIcon(s);
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {popularServices.map((service) => {
+            const Icon = getServiceIcon(service.name);
             return (
-              <div key={s} onClick={() => navigate(`/list?service=${s}`)} className="bg-card border border-border p-4 rounded-2xl flex flex-col items-center gap-2 cursor-pointer hover:border-primary/50 hover:bg-secondary/30 transition-all shadow-sm">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                  <Icon className="w-6 h-6" />
+              <div
+                key={service.id || service.name}
+                onClick={() => navigate(`/list?service=${encodeURIComponent(service.name)}`)}
+                className="flex cursor-pointer flex-col items-center gap-2 rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:border-primary/50 hover:bg-secondary/30"
+              >
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <Icon className="h-6 w-6" />
                 </div>
-                <span className="font-bold text-sm text-center">{s}</span>
+                <span className="text-center text-sm font-bold">{service.name}</span>
               </div>
-            )
+            );
           })}
         </div>
       </div>
 
-      {/* 5. Nearby Mechanics */}
-      <div className="pt-10 pb-12 px-4 sm:px-8 max-w-7xl mx-auto w-full">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="font-bold text-xl text-foreground flex items-center gap-2">
-            <Map className="text-green-500 w-6 h-6" /> Nearby Mechanics
+      <div className="mx-auto w-full max-w-7xl px-4 pt-10 pb-12 sm:px-8">
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="flex items-center gap-2 text-xl font-bold text-foreground">
+            <Map className="h-6 w-6 text-green-500" /> Nearby Mechanics
           </h3>
-          <button onClick={() => navigate('/list?useLocation=true')} className="text-sm font-bold text-primary hover:underline">View Map</button>
+          <button onClick={() => navigate(`/map?vehicle=${selectedVehicle}&service=${selectedService}`)} className="text-sm font-bold text-primary hover:underline">View Map</button>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-           {nearbyMechanics.length > 0 ? nearbyMechanics.slice(0, 5).map((mechanic) => {
-             const distance = userLocation ? getDistanceFromLatLonInKm(userLocation[0], userLocation[1], parseFloat(mechanic.latitude), parseFloat(mechanic.longitude)).toFixed(1) : '?';
-             return (
-               <div key={mechanic.id} className="bg-card border border-border rounded-2xl p-4 flex items-center gap-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate(`/list?search=${encodeURIComponent(mechanic.businessName || mechanic.name)}`)}>
-                 <div className="w-16 h-16 rounded-xl bg-secondary flex items-center justify-center text-2xl shrink-0 overflow-hidden">
-                   {mechanic.imageUrl ? <img src={mechanic.imageUrl} alt={mechanic.businessName} className="w-full h-full object-cover" /> : '🛠️'}
-                 </div>
-                 <div className="min-w-0 flex-1">
-                   <h4 className="font-bold text-foreground truncate">{mechanic.businessName || mechanic.name}</h4>
-                   <p className="text-xs text-muted-foreground mt-1 truncate">{distance} km away • {mechanic.area}</p>
-                 </div>
-               </div>
-             );
-           }) : (
-             <div className="col-span-full py-8 text-center text-muted-foreground">
-               No mechanics found in this area for the selected filters.
-             </div>
-           )}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+          {nearbyMechanics.length > 0 ? nearbyMechanics.slice(0, 5).map((mechanic) => {
+            const distance = userLocation
+              ? getDistanceFromLatLonInKm(userLocation[0], userLocation[1], parseFloat(mechanic.latitude), parseFloat(mechanic.longitude)).toFixed(1)
+              : '?';
+            const status = mechanic.currentStatus || 'Available';
+            const previewServices = Array.isArray(mechanic.serviceTypes) ? mechanic.serviceTypes.slice(0, 2) : [];
+
+            return (
+              <div
+                key={mechanic.id}
+                className="cursor-pointer rounded-2xl border border-border bg-card p-4 transition-shadow hover:shadow-md"
+                onClick={() => navigateToMechanic(mechanic.id)}
+              >
+                <div className="flex items-center gap-4">
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-secondary text-2xl">
+                    {mechanic.image || mechanic.imageUrl
+                      ? <img src={mechanic.image || mechanic.imageUrl} alt={mechanic.businessName || mechanic.name} className="h-full w-full object-cover" />
+                      : '🛠️'}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <h4 className="truncate font-bold text-foreground">{mechanic.businessName || mechanic.name}</h4>
+                      <span className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-bold ${status === 'Available' ? 'bg-green-500/10 text-green-600' : 'bg-amber-500/10 text-amber-700'}`}>
+                        {status}
+                      </span>
+                    </div>
+                    <p className="mt-1 truncate text-xs text-muted-foreground">{distance} km away • {mechanic.area}</p>
+                    {previewServices.length > 0 && (
+                      <p className="mt-1 truncate text-xs text-muted-foreground">{previewServices.join(' • ')}</p>
+                    )}
+                  </div>
+                </div>
+                <div className="mt-4 flex gap-2">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigateToMechanic(mechanic.id);
+                    }}
+                    className="flex-1 rounded-xl border border-border bg-secondary/70 px-3 py-2 text-sm font-bold text-foreground hover:bg-secondary"
+                  >
+                    View
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigateToMechanic(mechanic.id);
+                    }}
+                    className="flex-1 rounded-xl bg-primary px-3 py-2 text-sm font-bold text-primary-foreground hover:bg-primary/90"
+                  >
+                    Navigate
+                  </button>
+                </div>
+              </div>
+            );
+          }) : (
+            <div className="col-span-full rounded-2xl border border-border bg-card px-6 py-8 text-center">
+              <p className="text-base font-bold text-foreground">No nearby mechanics found for the current filters.</p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Try changing the selected service, switching vehicle type, or choosing a different location to widen the search.
+              </p>
+              <div className="mt-4 flex flex-col justify-center gap-3 sm:flex-row">
+                <button
+                  onClick={() => {
+                    setSelectedService('');
+                    setSelectedVehicle('');
+                    setLocalSearch('');
+                  }}
+                  className="rounded-xl border border-border bg-secondary/70 px-4 py-2 text-sm font-bold text-foreground hover:bg-secondary"
+                >
+                  Clear Filters
+                </button>
+                <button
+                  onClick={() => setShowLocationPopup(true)}
+                  className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground hover:bg-primary/90"
+                >
+                  Change Location
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* 6. Essential Stations (Quick Find) */}
-      <div className="pt-2 pb-16 px-4 sm:px-8 max-w-7xl mx-auto w-full">
-        <h3 className="font-bold text-xl text-foreground flex items-center gap-2 mb-4">
-          <Activity className="text-blue-500 w-6 h-6" /> Essential Stations
+      <div className="mx-auto w-full max-w-7xl px-4 pt-2 pb-16 sm:px-8">
+        <h3 className="mb-4 flex items-center gap-2 text-xl font-bold text-foreground">
+          <Activity className="h-6 w-6 text-blue-500" /> Essential Stations
         </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <button 
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <button
             onClick={() => window.open('https://www.google.com/maps/search/fuel+station+near+me', '_blank')}
-            className="bg-card border border-border rounded-2xl p-5 flex flex-col items-center justify-center gap-3 hover:shadow-md hover:border-primary/50 transition-all cursor-pointer group"
+            className="group flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border border-border bg-card p-5 transition-all hover:border-primary/50 hover:shadow-md"
           >
-            <div className="w-14 h-14 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-500 group-hover:scale-110 transition-transform">
-              <Fuel className="w-7 h-7" />
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-orange-500/10 text-orange-500 transition-transform group-hover:scale-110">
+              <Fuel className="h-7 w-7" />
             </div>
             <span className="font-bold text-foreground">Fuel Station ⛽</span>
           </button>
-          
-          <button 
+
+          <button
             onClick={() => window.open('https://www.google.com/maps/search/ev+charging+station+near+me', '_blank')}
-            className="bg-card border border-border rounded-2xl p-5 flex flex-col items-center justify-center gap-3 hover:shadow-md hover:border-primary/50 transition-all cursor-pointer group"
+            className="group flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border border-border bg-card p-5 transition-all hover:border-primary/50 hover:shadow-md"
           >
-            <div className="w-14 h-14 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 group-hover:scale-110 transition-transform">
-              <Zap className="w-7 h-7" />
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500 transition-transform group-hover:scale-110">
+              <Zap className="h-7 w-7" />
             </div>
             <span className="font-bold text-foreground">EV Charging Station ⚡</span>
           </button>
-          
-          <button 
+
+          <button
             onClick={() => window.open('https://www.google.com/maps/search/puc+center+near+me', '_blank')}
-            className="bg-card border border-border rounded-2xl p-5 flex flex-col items-center justify-center gap-3 hover:shadow-md hover:border-primary/50 transition-all cursor-pointer group"
+            className="group flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border border-border bg-card p-5 transition-all hover:border-primary/50 hover:shadow-md"
           >
-            <div className="w-14 h-14 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500 group-hover:scale-110 transition-transform">
-              <ShieldAlert className="w-7 h-7" />
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-500/10 text-blue-500 transition-transform group-hover:scale-110">
+              <ShieldAlert className="h-7 w-7" />
             </div>
             <span className="font-bold text-foreground">PUC Station 🛡️</span>
           </button>
         </div>
       </div>
 
+      <div className="mx-auto w-full max-w-7xl px-4 pb-20 sm:px-8">
+        <div className="overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/8 via-card to-secondary/30 shadow-sm">
+          <div className="grid gap-6 px-5 py-6 sm:px-8 sm:py-8 lg:grid-cols-[1.3fr_0.7fr] lg:items-center">
+            <div>
+              <p className="text-sm font-black uppercase tracking-[0.2em] text-primary">Mechanic / Service Provider</p>
+              <h3 className="mt-2 text-2xl font-black text-foreground sm:text-3xl">Create a new listing or update your existing record</h3>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
+                If you are a mechanic, workshop, towing partner, or roadside service provider, you can submit your details here.
+                Search your current record first, or create a new request if you are not listed yet.
+              </p>
+            </div>
+            <div className="flex flex-col gap-3 rounded-2xl border border-border bg-background/70 p-4 sm:p-5">
+              <p className="text-sm font-semibold text-foreground">What happens next?</p>
+              <p className="text-sm text-muted-foreground">
+                Your submission goes to the Super Admin for review before it becomes live or updates the current listing.
+              </p>
+              <button
+                onClick={() => setShowMechanicSubmissionModal(true)}
+                className="mt-2 inline-flex items-center justify-center rounded-2xl bg-primary px-5 py-3 text-sm font-black text-primary-foreground transition-colors hover:bg-primary/90"
+              >
+                Create or Update Record
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {showLocationPopup && (
-        <div className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-sm flex items-center justify-center sm:p-4">
-          <div className="bg-card sm:border sm:border-border shadow-xl sm:rounded-2xl p-6 w-full h-full sm:h-auto sm:max-w-md relative flex flex-col justify-center">
-            <h3 className="text-xl font-black mb-2 text-primary">Where are you located?</h3>
-            <p className="text-sm text-muted-foreground mb-6">We couldn't detect your location automatically. Please enter your city to find mechanics near you.</p>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/80 backdrop-blur-sm sm:p-4">
+          <div className="relative flex h-full w-full flex-col justify-center bg-card p-6 shadow-xl sm:h-auto sm:max-w-md sm:rounded-2xl sm:border sm:border-border">
+            <h3 className="mb-2 text-xl font-black text-primary">Where are you located?</h3>
+            <p className="mb-6 text-sm text-muted-foreground">Choose a city or pin your area on the map to improve nearby results and routing.</p>
             <div className="relative">
-              <MapPin className="absolute left-3 top-3.5 w-5 h-5 text-muted-foreground" />
-              <input 
-                type="text" 
+              <MapPin className="absolute left-3 top-3.5 h-5 w-5 text-muted-foreground" />
+              <input
+                type="text"
                 value={locationInput}
                 onChange={(e) => setLocationInput(e.target.value)}
                 placeholder="Enter city name..."
-                className="w-full pl-10 pr-4 py-3 rounded-xl border border-border bg-background focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm font-medium"
+                className="w-full rounded-xl border border-border bg-background py-3 pl-10 pr-4 text-sm font-medium transition-all focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                 autoFocus
               />
               {locationSuggestions.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-xl shadow-lg max-h-60 overflow-y-auto z-10 custom-scrollbar">
-                  {locationSuggestions.map((sugg, idx) => {
-                    const cityName = sugg.matching_full_name.split(',')[0];
+                <div className="absolute left-0 right-0 top-full z-10 mt-2 max-h-60 overflow-y-auto rounded-xl border border-border bg-card shadow-lg custom-scrollbar">
+                  {locationSuggestions.map((suggestion, idx) => {
+                    const cityName = suggestion.name.split(',')[0];
                     return (
                       <button
                         key={idx}
                         onClick={() => {
-                          setLocation([parseFloat(sugg.lat), parseFloat(sugg.lon)], cityName);
+                          setLocation([suggestion.lat, suggestion.lon], cityName, 'manual');
                           setShowLocationPopup(false);
                         }}
-                        className="w-full text-left px-4 py-3 hover:bg-primary/10 text-sm font-medium border-b border-border last:border-0 transition-colors"
+                        className="w-full border-b border-border px-4 py-3 text-left text-sm font-medium transition-colors last:border-0 hover:bg-primary/10"
                       >
-                        {sugg.matching_full_name}
+                        {suggestion.name}
                       </button>
                     );
                   })}
@@ -538,15 +700,15 @@ export default function LandingPage() {
                   setShowLocationPopup(false);
                   setShowMapPicker(true);
                 }}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary/10 text-primary font-bold hover:bg-primary/20 transition-colors"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary/10 px-4 py-3 font-bold text-primary transition-colors hover:bg-primary/20"
               >
-                <MapIcon2 className="w-5 h-5" /> 📍 Choose on Map
+                <MapIcon2 className="h-5 w-5" /> 📍 Choose on Map
               </button>
-              
+
               <div className="flex justify-end">
-                <button 
+                <button
                   onClick={() => setShowLocationPopup(false)}
-                  className="px-4 py-2 rounded-xl text-sm font-bold text-muted-foreground hover:bg-secondary/80 transition-colors"
+                  className="rounded-xl px-4 py-2 text-sm font-bold text-muted-foreground transition-colors hover:bg-secondary/80"
                 >
                   Close
                 </button>
@@ -561,12 +723,18 @@ export default function LandingPage() {
           initialLocation={userLocation}
           onClose={() => setShowMapPicker(false)}
           onSelect={(coords, name) => {
-            setLocation(coords, name);
+            setLocation(coords, name, 'manual');
             setShowMapPicker(false);
           }}
         />
       )}
 
+      <Suspense fallback={null}>
+        <MechanicSubmissionModal
+          isOpen={showMechanicSubmissionModal}
+          onClose={() => setShowMechanicSubmissionModal(false)}
+        />
+      </Suspense>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { API_URL, apiClient } from '../api/apiClient';
+import { apiClient } from '../api/apiClient';
 import { Trash2, Plus, Settings, Edit2, X, Check, Save } from 'lucide-react';
 import Select from 'react-select';
 import { ConfirmDialog } from '../components/ConfirmDialog';
@@ -24,6 +24,11 @@ export default function AdminSettings() {
   const [editingServiceName, setEditingServiceName] = useState('');
   
   const [confirmConfig, setConfirmConfig] = useState<{isOpen: boolean, title: string, message: string, type: 'danger'|'warning'|'info'|'success', onConfirm: () => void} | null>(null);
+
+  const getErrorMessage = (err: unknown, fallback: string) => {
+    if (err instanceof Error && err.message) return err.message;
+    return fallback;
+  };
 
   const fetchData = async () => {
     try {
@@ -58,23 +63,15 @@ export default function AdminSettings() {
     e.preventDefault();
     if (!newVehicle.trim()) return;
     try {
-      const res = await fetch(`${API_URL}/admin/vehicles`, {
+      await apiClient('/admin/vehicles', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({ name: newVehicle })
+        data: { name: newVehicle }
       });
-      if (res.ok) {
-        toast.success('Vehicle added');
-        setNewVehicle('');
-        fetchData();
-      } else {
-        toast.error('Failed to add vehicle');
-      }
+      toast.success('Vehicle added');
+      setNewVehicle('');
+      fetchData();
     } catch (err) {
-      toast.error('Error connecting to server');
+      toast.error(getErrorMessage(err, 'Failed to add vehicle'));
     }
   };
 
@@ -86,18 +83,13 @@ export default function AdminSettings() {
       type: 'danger',
       onConfirm: async () => {
         try {
-          const res = await fetch(`${API_URL}/admin/vehicles/${id}`, {
-            method: 'DELETE',
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+          await apiClient(`/admin/vehicles/${id}`, {
+            method: 'DELETE'
           });
-          if (res.ok) {
-            toast.success('Vehicle deleted');
-            fetchData();
-          } else {
-            toast.error('Failed to delete vehicle');
-          }
+          toast.success('Vehicle deleted');
+          fetchData();
         } catch (err) {
-          toast.error('Error connecting to server');
+          toast.error(getErrorMessage(err, 'Failed to delete vehicle'));
         }
       }
     });
@@ -106,23 +98,15 @@ export default function AdminSettings() {
   const handleUpdateVehicle = async (id: number) => {
     if (!editingVehicleName.trim()) return;
     try {
-      const res = await fetch(`${API_URL}/admin/vehicles/${id}`, {
+      await apiClient(`/admin/vehicles/${id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({ name: editingVehicleName })
+        data: { name: editingVehicleName }
       });
-      if (res.ok) {
-        toast.success('Vehicle updated');
-        setEditingVehicleId(null);
-        fetchData();
-      } else {
-        toast.error('Failed to update vehicle');
-      }
+      toast.success('Vehicle updated');
+      setEditingVehicleId(null);
+      fetchData();
     } catch (err) {
-      toast.error('Error connecting to server');
+      toast.error(getErrorMessage(err, 'Failed to update vehicle'));
     }
   };
 
@@ -130,23 +114,15 @@ export default function AdminSettings() {
     e.preventDefault();
     if (!newService.trim()) return;
     try {
-      const res = await fetch(`${API_URL}/admin/services`, {
+      await apiClient('/admin/services', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({ name: newService })
+        data: { name: newService }
       });
-      if (res.ok) {
-        toast.success('Service added');
-        setNewService('');
-        fetchData();
-      } else {
-        toast.error('Failed to add service');
-      }
+      toast.success('Service added');
+      setNewService('');
+      fetchData();
     } catch (err) {
-      toast.error('Error connecting to server');
+      toast.error(getErrorMessage(err, 'Failed to add service'));
     }
   };
 
@@ -158,18 +134,13 @@ export default function AdminSettings() {
       type: 'danger',
       onConfirm: async () => {
         try {
-          const res = await fetch(`${API_URL}/admin/services/${id}`, {
-            method: 'DELETE',
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+          await apiClient(`/admin/services/${id}`, {
+            method: 'DELETE'
           });
-          if (res.ok) {
-            toast.success('Service deleted');
-            fetchData();
-          } else {
-            toast.error('Failed to delete service');
-          }
+          toast.success('Service deleted');
+          fetchData();
         } catch (err) {
-          toast.error('Error connecting to server');
+          toast.error(getErrorMessage(err, 'Failed to delete service'));
         }
       }
     });
@@ -178,23 +149,15 @@ export default function AdminSettings() {
   const handleUpdateService = async (id: number) => {
     if (!editingServiceName.trim()) return;
     try {
-      const res = await fetch(`${API_URL}/admin/services/${id}`, {
+      await apiClient(`/admin/services/${id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({ name: editingServiceName })
+        data: { name: editingServiceName }
       });
-      if (res.ok) {
-        toast.success('Service updated');
-        setEditingServiceId(null);
-        fetchData();
-      } else {
-        toast.error('Failed to update service');
-      }
+      toast.success('Service updated');
+      setEditingServiceId(null);
+      fetchData();
     } catch (err) {
-      toast.error('Error connecting to server');
+      toast.error(getErrorMessage(err, 'Failed to update service'));
     }
   };
 
@@ -204,33 +167,21 @@ export default function AdminSettings() {
       const vehicleIds = featuredVehicles.map(v => v.value);
       const serviceIds = featuredServices.map(s => s.value);
       
-      const [vRes, sRes] = await Promise.all([
-        fetch(`${API_URL}/admin/vehicles/featured`, {
+      await Promise.all([
+        apiClient('/admin/vehicles/featured', {
           method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          },
-          body: JSON.stringify({ ids: vehicleIds })
+          data: { ids: vehicleIds }
         }),
-        fetch(`${API_URL}/admin/services/featured`, {
+        apiClient('/admin/services/featured', {
           method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          },
-          body: JSON.stringify({ ids: serviceIds })
+          data: { ids: serviceIds }
         })
       ]);
-      
-      if (vRes.ok && sRes.ok) {
-        toast.success('Featured configuration saved');
-        fetchData();
-      } else {
-        toast.error('Failed to save featured configuration');
-      }
+
+      toast.success('Featured configuration saved');
+      fetchData();
     } catch (err) {
-      toast.error('Error connecting to server');
+      toast.error(getErrorMessage(err, 'Failed to save featured configuration'));
     } finally {
       setSavingFeatured(false);
     }

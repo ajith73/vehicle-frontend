@@ -1,28 +1,38 @@
-import { BrowserRouter as Router, Routes, Route, Navigate, Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, Link, Outlet, useLocation } from 'react-router-dom';
+import { useState, useEffect, lazy, Suspense } from 'react';
 
-import LandingPage from './pages/LandingPage';
-import ListPage from './pages/ListPage';
-import MapPage from './pages/MapPage';
-import FeedbackPage from './pages/FeedbackPage';
-import DonationPage from './pages/DonationPage';
-
-import AdminLogin from './pages/AdminLogin';
-import AdminDashboard from './pages/AdminDashboard';
-import AdminMechanics from './pages/AdminMechanics';
-import AdminUsers from './pages/AdminUsers';
-import MechanicForm from './pages/MechanicForm';
 import AdminLayout from './components/AdminLayout';
 
-import AdminBulkUpload from './pages/AdminBulkUpload';
-import AdminUpdateRequests from './pages/AdminUpdateRequests';
-import AdminFeedback from './pages/AdminFeedback';
-import AdminDonations from './pages/AdminDonations';
-import AdminSettings from './pages/AdminSettings';
-
-import { Wrench, MessageSquare, Heart, Sun, Moon, Home, Map as MapIcon, UserCircle, List } from 'lucide-react';
+import { Wrench, MessageSquare, Heart, Sun, Moon, Home, Map as MapIcon, List } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
 import { LocationProvider } from './contexts/LocationContext';
+
+const LandingPage = lazy(() => import('./pages/LandingPage'));
+const ListPage = lazy(() => import('./pages/ListPage'));
+const MapPage = lazy(() => import('./pages/MapPage'));
+const FeedbackPage = lazy(() => import('./pages/FeedbackPage'));
+const DonationPage = lazy(() => import('./pages/DonationPage'));
+const AdminLogin = lazy(() => import('./pages/AdminLogin'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const AdminMechanics = lazy(() => import('./pages/AdminMechanics'));
+const AdminUsers = lazy(() => import('./pages/AdminUsers'));
+const MechanicForm = lazy(() => import('./pages/MechanicForm'));
+const AdminBulkUpload = lazy(() => import('./pages/AdminBulkUpload'));
+const AdminUpdateRequests = lazy(() => import('./pages/AdminUpdateRequests'));
+const AdminFeedback = lazy(() => import('./pages/AdminFeedback'));
+const AdminDonations = lazy(() => import('./pages/AdminDonations'));
+const AdminSettings = lazy(() => import('./pages/AdminSettings'));
+
+function RouteLoader() {
+  return (
+    <div className="min-h-[50vh] flex items-center justify-center px-4">
+      <div className="flex items-center gap-3 rounded-2xl border border-border bg-card px-5 py-4 shadow-sm">
+        <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
+        <span className="text-sm font-medium text-muted-foreground">Loading page...</span>
+      </div>
+    </div>
+  );
+}
 
 function App() {
   // Default to system preference
@@ -57,7 +67,6 @@ function App() {
   // Layout for public pages
   const PublicLayout = () => {
     const location = useLocation();
-    const navigate = useNavigate();
     
     return (
       <LocationProvider>
@@ -134,36 +143,38 @@ function App() {
   return (
     <Router>
       <Toaster position="top-right" containerStyle={{ zIndex: 99999 }} toastOptions={{ className: 'dark:bg-card dark:text-foreground dark:border dark:border-border' }} />
-      <Routes>
-        {/* Public Routes with Header */}
-        <Route element={<PublicLayout />}>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/list" element={<ListPage />} />
-          <Route path="/map" element={<MapPage />} />
-          <Route path="/feedback" element={<FeedbackPage />} />
-          <Route path="/donate" element={<DonationPage />} />
-        </Route>
-        
-        {/* Admin Login (No Layout) */}
-        <Route path="/admin/login" element={<AdminLogin />} />
-        
-        {/* Admin Protected Routes with Sidebar Layout */}
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route path="dashboard" element={<AdminDashboard />} />
-          <Route path="mechanics" element={<AdminMechanics />} />
-          <Route path="mechanics/new" element={<MechanicForm />} />
-          <Route path="mechanics/:id/edit" element={<MechanicForm />} />
-          <Route path="mechanics/bulk-upload" element={<AdminBulkUpload />} />
-          <Route path="update-requests" element={<AdminUpdateRequests />} />
-          <Route path="feedback" element={<AdminFeedback />} />
-          <Route path="donations" element={<AdminDonations />} />
-          <Route path="settings" element={<AdminSettings />} />
-          <Route path="users" element={<AdminUsers />} />
-        </Route>
+      <Suspense fallback={<RouteLoader />}>
+        <Routes>
+          {/* Public Routes with Header */}
+          <Route element={<PublicLayout />}>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/list" element={<ListPage />} />
+            <Route path="/map" element={<MapPage />} />
+            <Route path="/feedback" element={<FeedbackPage />} />
+            <Route path="/donate" element={<DonationPage />} />
+          </Route>
+          
+          {/* Admin Login (No Layout) */}
+          <Route path="/admin/login" element={<AdminLogin />} />
+          
+          {/* Admin Protected Routes with Sidebar Layout */}
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="mechanics" element={<AdminMechanics />} />
+            <Route path="mechanics/new" element={<MechanicForm />} />
+            <Route path="mechanics/:id/edit" element={<MechanicForm />} />
+            <Route path="mechanics/bulk-upload" element={<AdminBulkUpload />} />
+            <Route path="update-requests" element={<AdminUpdateRequests />} />
+            <Route path="feedback" element={<AdminFeedback />} />
+            <Route path="donations" element={<AdminDonations />} />
+            <Route path="settings" element={<AdminSettings />} />
+            <Route path="users" element={<AdminUsers />} />
+          </Route>
 
-        {/* Fallback */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
     </Router>
   );
 }

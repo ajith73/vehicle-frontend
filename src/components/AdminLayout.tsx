@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Wrench, Users, LogOut, Menu, X, Sun, Moon, Edit3, UserCircle, CheckCircle, BellRing, MessageSquare, Heart, Settings, ChevronLeft, ChevronRight } from 'lucide-react';
-import { API_URL, apiClient } from '../api/apiClient';
+import { LayoutDashboard, Wrench, Users, LogOut, Menu, X, Sun, Moon, Edit3, UserCircle, CheckCircle, BellRing, MessageSquare, Heart, Settings, ChevronLeft, ChevronRight, ShieldAlert, ShieldCheck } from 'lucide-react';
+import { apiClient } from '../api/apiClient';
 
 export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -82,15 +82,32 @@ export default function AdminLayout() {
   ];
 
   const currentUserRole = localStorage.getItem('role');
+  const routeAccessMap: Record<string, string> = {
+    '/admin/dashboard': 'Dashboard',
+    '/admin/mechanics': 'Mechanics',
+    '/admin/update-requests': 'Updates',
+    '/admin/feedback': 'Feedback',
+    '/admin/donations': 'Donations',
+    '/admin/users': 'Users',
+    '/admin/settings': 'Settings',
+  };
+
+  const canAccessScreen = (screen: string) => {
+    if (currentUserRole === 'Super Admin') return true;
+    if (!profile?.allowedScreens) return false;
+    return profile.allowedScreens.includes(screen);
+  };
   
   const filteredNavItems = navItems.filter(item => {
-    if (currentUserRole === 'Super Admin') return true;
-    if (profile?.allowedScreens) {
-      return profile.allowedScreens.includes(item.name);
-    }
-    if (item.name === 'Settings' && currentUserRole !== 'Super Admin') return false;
-    return true; 
+    return canAccessScreen(item.name);
   });
+
+  const activeScreen = Object.entries(routeAccessMap).find(([path]) => location.pathname.startsWith(path))?.[1];
+  const hasRouteAccess = !activeScreen || canAccessScreen(activeScreen);
+  const visibleScreens = currentUserRole === 'Super Admin'
+    ? navItems.map((item) => item.name)
+    : (profile?.allowedScreens || []);
+  const permissionsResolved = currentUserRole === 'Super Admin' || profile !== null;
 
   return (
     <div className="flex h-screen bg-background text-foreground overflow-hidden">
@@ -167,6 +184,17 @@ export default function AdminLayout() {
               <div className={`overflow-hidden transition-all duration-300 ${isExpanded ? 'w-auto opacity-100' : 'w-0 opacity-0 h-0'}`}>
                 <p className="font-bold text-sm truncate">{profile?.username || 'Loading...'}</p>
                 <p className="text-xs text-muted-foreground truncate">{profile?.email || 'No email set'}</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-bold ${currentUserRole === 'Super Admin' ? 'bg-primary/15 text-primary' : 'bg-blue-500/15 text-blue-600'}`}>
+                    {currentUserRole === 'Super Admin' ? <ShieldCheck size={12} /> : <ShieldAlert size={12} />}
+                    {currentUserRole || 'Admin'}
+                  </span>
+                  {currentUserRole !== 'Super Admin' && (
+                    <span className="inline-flex items-center rounded-full bg-secondary px-2 py-1 text-[10px] font-medium text-muted-foreground">
+                      {visibleScreens.length} module{visibleScreens.length === 1 ? '' : 's'} enabled
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
             <button 
@@ -213,7 +241,34 @@ export default function AdminLayout() {
         {/* Scrollable Content Area */}
         <div className="flex-1 overflow-auto p-4 lg:p-8">
           <div className="mx-auto max-w-6xl">
-            <Outlet />
+            {permissionsResolved && !hasRouteAccess && activeScreen ? (
+              <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-8 shadow-sm">
+                <div className="mb-4 flex items-center gap-3">
+                  <div className="rounded-xl bg-amber-500/15 p-3 text-amber-600">
+                    <ShieldAlert size={24} />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-foreground">Access Restricted</h2>
+                    <p className="text-sm text-muted-foreground">Your account does not currently include permission for the `{activeScreen}` module.</p>
+                  </div>
+                </div>
+                <div className="mb-6 rounded-xl border border-border bg-card p-4">
+                  <p className="mb-2 text-sm font-semibold text-foreground">Current access rules</p>
+                  <p className="text-sm text-muted-foreground">`Super Admin` can access all modules. `Admin` users can only access the modules listed in their `allowedScreens` configuration.</p>
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    Enabled modules for this account: {visibleScreens.length > 0 ? visibleScreens.join(', ') : 'None'}
+                  </p>
+                </div>
+                <button
+                  onClick={() => navigate('/admin/dashboard')}
+                  className="rounded-xl bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/90"
+                >
+                  Go to Dashboard
+                </button>
+              </div>
+            ) : (
+              <Outlet />
+            )}
           </div>
         </div>
       </main>

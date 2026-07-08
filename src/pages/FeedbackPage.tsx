@@ -3,14 +3,23 @@ import { useNavigate } from 'react-router-dom';
 import { Bug, Lightbulb, MessageCircle, Star, AlertTriangle, Send, CheckCircle2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Select from 'react-select';
-import { API_URL, apiClient } from '../api/apiClient';
+import { apiClient } from '../api/apiClient';
 
 const FEEDBACK_TYPES = [
-  { name: 'Bug Report', icon: Bug },
-  { name: 'Wrong Mechanic Information', icon: AlertTriangle },
-  { name: 'Suggestion', icon: Lightbulb },
-  { name: 'UI Improvement', icon: Star },
-  { name: 'Other', icon: MessageCircle }
+  { name: 'Bug Report', icon: Bug, prompt: 'Tell us what broke, where it happened, and how we can reproduce it.' },
+  { name: 'Wrong Mechanic Information', icon: AlertTriangle, prompt: 'Report incorrect phone numbers, addresses, timing, services, or closed shops.' },
+  { name: 'Suggestion', icon: Lightbulb, prompt: 'Share an idea that would make the platform more useful in real roadside situations.' },
+  { name: 'UI Improvement', icon: Star, prompt: 'Point out screens that feel confusing, crowded, slow, or hard to use.' },
+  { name: 'Other', icon: MessageCircle, prompt: 'Anything else you want the team to know.' }
+];
+
+const MECHANIC_FEEDBACK_SUGGESTIONS = [
+  'Wrong phone number',
+  'Address or landmark is incorrect',
+  'Business is permanently closed',
+  'Service types are inaccurate',
+  'Operating hours are wrong',
+  'Mechanic is duplicated',
 ];
 
 export default function FeedbackPage() {
@@ -18,6 +27,7 @@ export default function FeedbackPage() {
   const [type, setType] = useState(FEEDBACK_TYPES[0].name);
   const [description, setDescription] = useState('');
   const [mechanicId, setMechanicId] = useState('');
+  const [mechanicSearch, setMechanicSearch] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   
@@ -36,6 +46,27 @@ export default function FeedbackPage() {
   }, []);
   
   const showMechanicSelect = type === 'Wrong Mechanic Information';
+  const selectedType = FEEDBACK_TYPES.find((item) => item.name === type) || FEEDBACK_TYPES[0];
+  const filteredMechanicOptions = mechanicSearch.trim().length < 2
+    ? []
+    : mechanics
+        .filter((m) => {
+          const haystack = `${m.businessName || m.name || ''} ${m.area || ''} ${m.city || ''}`.toLowerCase();
+          return haystack.includes(mechanicSearch.trim().toLowerCase());
+        })
+        .slice(0, 8)
+        .map((m) => ({
+          value: m.id.toString(),
+          label: `${m.businessName || m.name}${m.area ? `, ${m.area}` : ''}${m.city ? `, ${m.city}` : ''}`
+        }));
+
+  const applySuggestion = (suggestion: string) => {
+    setDescription((current) => {
+      if (!current.trim()) return `${suggestion}: `;
+      if (current.includes(suggestion)) return current;
+      return `${suggestion}\n${current}`;
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -109,18 +140,26 @@ export default function FeedbackPage() {
                 </button>
               ))}
             </div>
+            <div className="rounded-2xl border border-border/50 bg-background/50 p-4 text-sm text-muted-foreground">
+              {selectedType.prompt}
+            </div>
           </div>
 
           {showMechanicSelect && (
             <div className="space-y-3 animate-in slide-in-from-top-4 duration-300">
               <label className="block text-sm font-bold text-foreground ml-1">Select Mechanic (Optional)</label>
+              <p className="text-sm text-muted-foreground">Start typing at least 2 characters to search suggestions. We will not show the full mechanic list by default.</p>
               <Select
-                options={mechanics.map(m => ({ value: m.id.toString(), label: `${m.businessName || m.name} - ${m.area}` }))}
-                value={mechanicId ? { value: mechanicId, label: `${mechanics.find(m => m.id.toString() === mechanicId)?.businessName || mechanics.find(m => m.id.toString() === mechanicId)?.name} - ${mechanics.find(m => m.id.toString() === mechanicId)?.area}` } : null}
+                options={filteredMechanicOptions}
+                value={mechanicId ? filteredMechanicOptions.find((option) => option.value === mechanicId) || null : null}
                 onChange={(selected: any) => setMechanicId(selected ? selected.value : '')}
+                onInputChange={(value, meta) => {
+                  if (meta.action === 'input-change') setMechanicSearch(value);
+                }}
                 isClearable
                 isSearchable
-                placeholder="-- Type to search a mechanic --"
+                placeholder="Type mechanic name, area, or city..."
+                noOptionsMessage={() => mechanicSearch.trim().length < 2 ? 'Type 2 or more characters to search' : 'No matching mechanics found'}
                 unstyled
                 classNames={{
                   control: (state) => 
@@ -135,6 +174,18 @@ export default function FeedbackPage() {
                   dropdownIndicator: () => "text-muted-foreground hover:text-foreground p-1",
                 }}
               />
+              <div className="flex flex-wrap gap-2 pt-1">
+                {MECHANIC_FEEDBACK_SUGGESTIONS.map((suggestion) => (
+                  <button
+                    key={suggestion}
+                    type="button"
+                    onClick={() => applySuggestion(suggestion)}
+                    className="rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/10"
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 

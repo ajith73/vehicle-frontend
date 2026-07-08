@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
-import axios from 'axios';
 import { MapPin, X, Navigation, Check, Search } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
+import { reverseGeocodeName, searchPlaces } from '../api/geocoding';
 
 // Custom Map Marker Icon
 const customIcon = new L.DivIcon({
@@ -52,16 +52,9 @@ export function MapLocationPicker({ initialLocation, onSelect, onClose }: MapLoc
   useEffect(() => {
     if (searchInput.length > 2) {
       const timeout = setTimeout(() => {
-        axios.get(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchInput)}`)
-          .then(res => res.data)
-          .then(data => {
-            if (Array.isArray(data)) {
-              setSearchSuggestions(data.map((item: any) => ({
-                name: item.display_name,
-                lat: parseFloat(item.lat),
-                lon: parseFloat(item.lon)
-              })));
-            }
+        searchPlaces(searchInput)
+          .then((data) => {
+            setSearchSuggestions(data);
           })
           .catch(err => console.error('Geocoding search error', err));
       }, 500);
@@ -76,14 +69,7 @@ export function MapLocationPicker({ initialLocation, onSelect, onClose }: MapLoc
     const fetchAddress = async () => {
       setIsGeocoding(true);
       try {
-        const res = await axios.get(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${coords[0]}&lon=${coords[1]}`);
-        const data = res.data;
-        if (data && data.address) {
-          const name = data.address.city || data.address.town || data.address.village || data.address.suburb || data.address.county || 'Pinned Location';
-          setAddressName(name);
-        } else {
-          setAddressName('Pinned Location');
-        }
+        setAddressName(await reverseGeocodeName(coords));
       } catch (err) {
         setAddressName('Pinned Location');
       } finally {

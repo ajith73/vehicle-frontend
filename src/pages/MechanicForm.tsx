@@ -1,13 +1,9 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { useNavigate, useParams } from 'react-router-dom';
-import CreatableSelect from 'react-select/creatable';
 import Select from 'react-select';
 import { User, Phone, MapPin, Wrench, CalendarClock, Plus, Trash2, Save, X, Info, Image, Globe, Map } from 'lucide-react';
-import { State, City } from 'country-state-city';
-import { API_URL, apiClient } from '../api/apiClient';
-
-const INDIAN_STATES = State.getStatesOfCountry('IN').map(s => ({ value: s.isoCode, label: s.name }));
+import { apiClient } from '../api/apiClient';
 
 // Default options fetched from backend
 // DEFAULT_VEHICLES and DEFAULT_SERVICES are populated dynamically
@@ -18,8 +14,6 @@ export default function MechanicForm() {
   const navigate = useNavigate();
   const { id } = useParams();
   const isEdit = Boolean(id) && id !== 'new' && id !== 'null' && id !== 'undefined';
-  
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Dynamic dropdowns
   const [vehicleOptions, setVehicleOptions] = useState<{value: string, label: string}[]>([]);
@@ -38,6 +32,25 @@ export default function MechanicForm() {
     };
     fetchOptions();
   }, []);
+
+  useEffect(() => {
+    const loadStates = async () => {
+      try {
+        const { default: State } = await import('country-state-city/lib/state');
+        setStateOptions(
+          State.getStatesOfCountry('IN').map((state) => ({
+            value: state.isoCode,
+            label: state.name
+          }))
+        );
+      } catch (err) {
+        console.error('Failed to load state data', err);
+      }
+    };
+
+    loadStates();
+  }, []);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
@@ -61,6 +74,10 @@ export default function MechanicForm() {
   
   const [address, setAddress] = useState('');
   const [area, setArea] = useState('');
+  const [stateOptions, setStateOptions] = useState<{value: string, label: string}[]>([]);
+  const [cityOptions, setCityOptions] = useState<{value: string, label: string}[]>([]);
+  const [pendingStateName, setPendingStateName] = useState('');
+  const [pendingCityName, setPendingCityName] = useState('');
   
   const [stateOption, setStateOption] = useState<{value: string, label: string} | null>(null);
   const [cityOption, setCityOption] = useState<{value: string, label: string} | null>(null);
@@ -90,59 +107,90 @@ export default function MechanicForm() {
   const [availability, setAvailability] = useState(true);
 
   useEffect(() => {
+    const loadCities = async () => {
+      if (!stateOption) {
+        setCityOptions([]);
+        return;
+      }
+
+      try {
+        const { default: City } = await import('country-state-city/lib/city');
+        setCityOptions(
+          City.getCitiesOfState('IN', stateOption.value).map((city) => ({
+            value: city.name,
+            label: city.name
+          }))
+        );
+      } catch (err) {
+        console.error('Failed to load city data', err);
+        setCityOptions([]);
+      }
+    };
+
+    loadCities();
+  }, [stateOption]);
+
+  useEffect(() => {
+    if (!pendingStateName || stateOptions.length === 0) return;
+
+    const matchedState = stateOptions.find((state) => state.label === pendingStateName);
+    if (matchedState) {
+      setStateOption(matchedState);
+    }
+  }, [pendingStateName, stateOptions]);
+
+  useEffect(() => {
+    if (!pendingCityName || cityOptions.length === 0) return;
+
+    const matchedCity = cityOptions.find((city) => city.value === pendingCityName);
+    if (matchedCity) {
+      setCityOption(matchedCity);
+    }
+  }, [pendingCityName, cityOptions]);
+
+  useEffect(() => {
     if (isEdit) {
       const fetchMechanic = async () => {
         try {
-          const token = localStorage.getItem('token');
-          const res = await fetch(`${API_URL}/admin/mechanics/${id}`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          if (res.ok) {
-            const data = await res.json();
-            setMechanicType(data.mechanicType || 'Workshop / Garage');
-            setBusinessName(data.businessName || data.name || '');
-            setMechanicName(data.mechanicName || '');
-            setLandmark(data.landmark || '');
-            setServiceRadius(data.serviceRadius || '');
-            setEvSupport(data.evSupport || false);
-            setHomeService(data.homeService || false);
-            setRoadsideAssistance(data.roadsideAssistance || false);
-            setIs24Hours(data.is24Hours || false);
-            setHolidayWorking(data.holidayWorking || false);
-            setDescription(data.description || '');
-            setImageUrl(data.image || '');
-            setWebsiteUrl(data.websiteUrl || '');
-            const phonesData = data.phone || [];
-            const mobilePhones = phonesData.filter((p: any) => !p.isTelephone);
-            const telPhone = phonesData.find((p: any) => p.isTelephone);
-            setPhones(mobilePhones.length ? mobilePhones : [{ number: '', isWhatsapp: false }]);
-            if (telPhone) setTelephone(telPhone.number);
-            setEmails(data.emails?.length ? data.emails : ['']);
-            setAddress(data.address || '');
-            setArea(data.area || '');
-            setLatitude(data.latitude?.toString() || '');
-            setLongitude(data.longitude?.toString() || '');
-            
-            // Reconstruct vehicle/service types
-            setVehicleTypes(data.vehicleTypes?.map((v: string) => ({ value: v, label: v })) || []);
-            setServiceTypes(data.serviceTypes?.map((s: string) => ({ value: s, label: s })) || []);
-            setOperatingDays(data.operatingDays || []);
-            
-            if (data.operatingHours) {
-              const [sTime, eTime] = data.operatingHours.split(' - ');
-              if (sTime) setStartTime(sTime);
-              if (eTime) setEndTime(eTime);
-            }
-            
-            setAvailability(data.availability);
-            
-            // For state and city, we have the state label stored. Need to find ISO code for react-select value
-            const stateObj = State.getStatesOfCountry('IN').find(s => s.name === data.state);
-            if (stateObj) {
-              setStateOption({ value: stateObj.isoCode, label: stateObj.name });
-              setCityOption({ value: data.city, label: data.city });
-            }
+          const data = await apiClient<any>(`/admin/mechanics/${id}`);
+          setMechanicType(data.mechanicType || 'Workshop / Garage');
+          setBusinessName(data.businessName || data.name || '');
+          setMechanicName(data.mechanicName || '');
+          setLandmark(data.landmark || '');
+          setServiceRadius(data.serviceRadius || '');
+          setEvSupport(data.evSupport || false);
+          setHomeService(data.homeService || false);
+          setRoadsideAssistance(data.roadsideAssistance || false);
+          setIs24Hours(data.is24Hours || false);
+          setHolidayWorking(data.holidayWorking || false);
+          setDescription(data.description || '');
+          setImageUrl(data.image || '');
+          setWebsiteUrl(data.websiteUrl || '');
+          const phonesData = data.phone || [];
+          const mobilePhones = phonesData.filter((p: any) => !p.isTelephone);
+          const telPhone = phonesData.find((p: any) => p.isTelephone);
+          setPhones(mobilePhones.length ? mobilePhones : [{ number: '', isWhatsapp: false }]);
+          if (telPhone) setTelephone(telPhone.number);
+          setEmails(data.emails?.length ? data.emails : ['']);
+          setAddress(data.address || '');
+          setArea(data.area || '');
+          setLatitude(data.latitude?.toString() || '');
+          setLongitude(data.longitude?.toString() || '');
+          
+          // Reconstruct vehicle/service types
+          setVehicleTypes(data.vehicleTypes?.map((v: string) => ({ value: v, label: v })) || []);
+          setServiceTypes(data.serviceTypes?.map((s: string) => ({ value: s, label: s })) || []);
+          setOperatingDays(data.operatingDays || []);
+          
+          if (data.operatingHours) {
+            const [sTime, eTime] = data.operatingHours.split(' - ');
+            if (sTime) setStartTime(sTime);
+            if (eTime) setEndTime(eTime);
           }
+          
+          setAvailability(data.availability);
+          setPendingStateName(data.state || '');
+          setPendingCityName(data.city || '');
         } catch (err) {
           console.error(err);
         }
@@ -189,11 +237,6 @@ export default function MechanicForm() {
     setError('');
     
     try {
-      const token = localStorage.getItem('token');
-      const url = isEdit 
-        ? `${API_URL}/admin/mechanics/${id}`
-        : `${API_URL}/admin/mechanics`;
-      
       const finalPhones = phones.filter(p => p.number && p.number.trim() !== '');
       if (telephone.trim() !== '') {
         finalPhones.push({ number: telephone.trim(), isWhatsapp: false, isTelephone: true } as any);
@@ -230,25 +273,15 @@ export default function MechanicForm() {
         availability
       };
 
-      const res = await fetch(url, {
+      await apiClient(isEdit ? `/admin/mechanics/${id}` : '/admin/mechanics', {
         method: isEdit ? 'PUT' : 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
+        data: payload
       });
 
-      if (res.ok) {
-        toast(isEdit ? 'Update request submitted' : 'Mechanic created successfully');
-        navigate('/admin/mechanics');
-      } else {
-        const err = await res.json();
-        setError(err.error || 'Failed to save mechanic');
-        window.scrollTo(0, 0);
-      }
+      toast(isEdit ? 'Update request submitted' : 'Mechanic created successfully');
+      navigate('/admin/mechanics');
     } catch (err) {
-      setError('An error occurred while saving');
+      setError(err instanceof Error ? err.message : 'An error occurred while saving');
       window.scrollTo(0, 0);
     }
     setLoading(false);
@@ -444,10 +477,11 @@ export default function MechanicForm() {
             <div>
               <label className="block text-sm font-medium mb-1">State <span className="text-red-500">*</span></label>
               <Select 
-                options={INDIAN_STATES}
+                options={stateOptions}
                 value={stateOption}
                 onChange={(option) => {
                   setStateOption(option as any);
+                  setPendingCityName('');
                   setCityOption(null); // Reset city when state changes
                 }}
                 className="react-select-container text-black"
@@ -458,7 +492,7 @@ export default function MechanicForm() {
             <div>
               <label className="block text-sm font-medium mb-1">City <span className="text-red-500">*</span></label>
               <Select 
-                options={stateOption ? City.getCitiesOfState('IN', stateOption.value).map(c => ({ value: c.name, label: c.name })) : []}
+                options={cityOptions}
                 value={cityOption}
                 onChange={(option) => setCityOption(option as any)}
                 isDisabled={!stateOption}

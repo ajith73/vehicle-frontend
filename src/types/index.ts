@@ -43,6 +43,7 @@ export interface Mechanic {
   operatingHours?: string;
   availability?: boolean;
   websiteUrl?: string;
+  image?: string;
   imageUrl?: string;
   services?: any[];
   startTime?: string;

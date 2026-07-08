@@ -1,14 +1,14 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker, Polyline, useMap, useMapEvents, Circle } from 'react-leaflet';
-import MarkerClusterGroup from 'react-leaflet-cluster';
-import { X, Phone, MessageCircle, ExternalLink, MapPin, Navigation, ChevronLeft, LocateFixed, Mail, Globe, Clock, Settings2, MessageSquare, Wrench, Heart, Eye } from 'lucide-react';
+import { MapContainer, TileLayer, Marker, Polyline, useMap, useMapEvents, Circle, Tooltip } from 'react-leaflet';
+import { X, Phone, MessageCircle, MapPin, Navigation, ChevronLeft, LocateFixed, Mail, Globe, Settings2, MessageSquare, Wrench, Heart, Eye, AlertTriangle, Search } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import axios from 'axios';
-import { API_URL, apiClient } from '../api/apiClient';
+import { apiClient } from '../api/apiClient';
 import { useLocationContext } from '../contexts/LocationContext';
 import toast from 'react-hot-toast';
+import { buildMechanicSearchParams, parseMechanicFilterParam, type MechanicSort } from '../utils/mechanicSearch';
+import Select, { type StylesConfig } from 'react-select';
 
 // Icons
 const userIcon = new L.DivIcon({
@@ -29,8 +29,18 @@ const getMarkerIcon = (colorClass: string) => new L.DivIcon({
 });
 
 const availableIcon = getMarkerIcon('bg-green-500');
-const busyIcon = getMarkerIcon('bg-yellow-500');
 const closedIcon = getMarkerIcon('bg-red-500');
+const selectedIcon = new L.DivIcon({
+  className: 'bg-transparent border-none',
+  html: `<div class="relative flex h-12 w-12 items-center justify-center">
+           <div class="absolute inset-0 rounded-full bg-blue-500/25 animate-ping"></div>
+           <div class="relative flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-white border-2 border-white shadow-xl">
+             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3" fill="currentColor"/></svg>
+           </div>
+         </div>`,
+  iconSize: [48, 48],
+  iconAnchor: [24, 40],
+});
 
 function ChangeView({ center }: { center: [number, number] }) {
   const map = useMap();
@@ -93,17 +103,10 @@ const isCurrentlyAvailable = (mechanic: any) => {
   }
 };
 
-const getMechanicStatus = (m: any) => {
-  if (!isCurrentlyAvailable(m)) return 'Closed';
-  // Mock logic: randomly make 20% busy if they are available
-  // In real app, this would come from backend (m.currentStatus === 'Busy')
-  if (m.currentStatus === 'Busy' || (m.id % 5 === 0)) return 'Busy'; 
-  return 'Available';
-};
+const getMechanicStatus = (m: any) => m?.currentStatus || (isCurrentlyAvailable(m) ? 'Available' : 'Closed');
 
 const getIconForStatus = (status: string) => {
   if (status === 'Available') return availableIcon;
-  if (status === 'Busy') return busyIcon;
   return closedIcon;
 };
 
@@ -115,15 +118,76 @@ const FEEDBACK_OPTIONS = [
   'Permanently closed'
 ];
 
+const selectStyles: StylesConfig<{ value: string; label: string }, true> = {
+  control: (base, state) => ({
+    ...base,
+    backgroundColor: 'rgb(248 250 252 / 0.15)',
+    borderColor: state.isFocused ? 'rgb(59 130 246 / 0.7)' : 'rgb(148 163 184 / 0.35)',
+    boxShadow: state.isFocused ? '0 0 0 2px rgb(59 130 246 / 0.18)' : 'none',
+    minHeight: 44
+  }),
+  menu: (base) => ({
+    ...base,
+    backgroundColor: 'rgb(15 23 42)',
+    border: '1px solid rgb(71 85 105)',
+    overflow: 'hidden'
+  }),
+  menuPortal: (base) => ({
+    ...base,
+    zIndex: 9999
+  }),
+  option: (base, state) => ({
+    ...base,
+    backgroundColor: state.isFocused ? 'rgb(30 41 59)' : 'rgb(15 23 42)',
+    color: 'rgb(241 245 249)',
+    cursor: 'pointer'
+  }),
+  input: (base) => ({
+    ...base,
+    color: 'rgb(15 23 42)'
+  }),
+  placeholder: (base) => ({
+    ...base,
+    color: 'rgb(100 116 139)'
+  }),
+  singleValue: (base) => ({
+    ...base,
+    color: 'rgb(15 23 42)'
+  }),
+  multiValue: (base) => ({
+    ...base,
+    backgroundColor: 'rgb(59 130 246 / 0.15)'
+  }),
+  multiValueLabel: (base) => ({
+    ...base,
+    color: 'rgb(30 64 175)',
+    fontWeight: 700
+  }),
+  multiValueRemove: (base) => ({
+    ...base,
+    color: 'rgb(30 64 175)',
+    ':hover': {
+      backgroundColor: 'rgb(59 130 246 / 0.22)',
+      color: 'rgb(30 64 175)'
+    }
+  })
+};
+
+const toggleMultiValue = (value: string, selected: string[]) =>
+  selected.includes(value) ? selected.filter((item) => item !== value) : [...selected, value];
+
 export default function MapPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const vehicle = searchParams.get('vehicle');
-  const service = searchParams.get('service');
+  const vehicleParams = parseMechanicFilterParam(searchParams.get('vehicle'));
+  const serviceParams = parseMechanicFilterParam(searchParams.get('service'));
+  const search = searchParams.get('search') || '';
   const routeTo = searchParams.get('routeTo');
+  const radiusParam = Number(searchParams.get('radius') || '5');
+  const sortParam = (searchParams.get('sort') as MechanicSort) || 'Nearest';
   
   const [mechanics, setMechanics] = useState<any[]>([]);
-  const { userLocation, isLoading: locationLoading } = useLocationContext();
+  const { userLocation, isLoading: locationLoading, locationSource, locationMessage, requestLocation } = useLocationContext();
   const [mapBounds, setMapBounds] = useState<L.LatLngBounds | null>(null);
   
   const [mechanicsLoading, setMechanicsLoading] = useState(true);
@@ -133,6 +197,9 @@ export default function MapPage() {
   // Sheet states: 0 = collapsed (25%), 1 = half (50%), 2 = full (100%)
   const [sheetState, setSheetState] = useState<0 | 1 | 2>(0);
   const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [dragOffset, setDragOffset] = useState(0);
+  const [filterTouchStart, setFilterTouchStart] = useState<number | null>(null);
+  const [filterDragOffset, setFilterDragOffset] = useState(0);
   
   const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
   const [routeCoords, setRouteCoords] = useState<[number, number][]>([]);
@@ -144,14 +211,22 @@ export default function MapPage() {
   
   // Controls state
   const [showControls, setShowControls] = useState(false);
-  const [radius, setRadius] = useState<number>(5); // Default 5km
+  const [radius, setRadius] = useState<number>(Number.isFinite(radiusParam) ? radiusParam : 5);
   const [routeOption, setRouteOption] = useState<'Fastest' | 'Shortest' | 'Avoid Toll'>('Fastest');
-  const [sortBy, setSortBy] = useState<'Nearest' | 'Available'>('Nearest');
+  const [sortBy, setSortBy] = useState<'Nearest' | 'Available'>(sortParam === 'Available' ? 'Available' : 'Nearest');
 
   // Feedback Modal State
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [selectedFeedback, setSelectedFeedback] = useState<string[]>([]);
   const [feedbackText, setFeedbackText] = useState('');
+  const [vehicleOptions, setVehicleOptions] = useState<string[]>([]);
+  const [serviceOptions, setServiceOptions] = useState<string[]>([]);
+  const [searchDraft, setSearchDraft] = useState(search);
+  const [pendingVehicles, setPendingVehicles] = useState<string[]>(vehicleParams);
+  const [pendingServices, setPendingServices] = useState<string[]>(serviceParams);
+
+  const vehicleSelectOptions = vehicleOptions.map((item) => ({ value: item, label: item }));
+  const serviceSelectOptions = serviceOptions.map((item) => ({ value: item, label: item }));
 
   const toggleFeedbackOption = (option: string) => {
     setSelectedFeedback(prev => 
@@ -186,37 +261,32 @@ export default function MapPage() {
 
     const fetchRoute = async () => {
       try {
-        const res = await axios.get(`https://router.project-osrm.org/route/v1/driving/${userLocation[1]},${userLocation[0]};${selectedMechanic.longitude},${selectedMechanic.latitude}?overview=full&geometries=geojson&alternatives=true`);
-        const data = res.data;
-        
-        if (data.routes && data.routes.length > 0) {
-          // Sort routes based on option
-          let bestRoute = data.routes[0];
-          if (routeOption === 'Shortest') {
-            bestRoute = data.routes.reduce((prev: any, curr: any) => prev.distance < curr.distance ? prev : curr);
-          } else if (routeOption === 'Fastest') {
-            bestRoute = data.routes.reduce((prev: any, curr: any) => prev.duration < curr.duration ? prev : curr);
-          } // Note: Avoid Toll is hard to implement with public OSRM, so we fallback to fastest
-
-          const coords = bestRoute.geometry.coordinates.map((c: number[]) => [c[1], c[0]]);
-          setRouteCoords(coords);
-          
-          const distKm = (bestRoute.distance / 1000).toFixed(1);
-          setDrivingDistance(distKm);
-
-          const durationMins = Math.round(bestRoute.duration / 60);
-          if (durationMins > 60) {
-            setDrivingTime(`${Math.floor(durationMins / 60)}h ${durationMins % 60}m`);
-          } else {
-            setDrivingTime(`${durationMins} min`);
+        const data = await apiClient<any>('/public/route', {
+          method: 'POST',
+          data: {
+            startLat: userLocation[0],
+            startLng: userLocation[1],
+            endLat: selectedMechanic.latitude,
+            endLng: selectedMechanic.longitude,
+            routeOption
           }
+        });
 
+        if (data.routeCoords?.length > 0) {
+          const coords = data.routeCoords as [number, number][];
+          setRouteCoords(coords);
+          setDrivingDistance(String(data.distanceKm));
+
+          const durationMins = data.durationMinutes as number;
+          setDrivingTime(durationMins > 60
+            ? `${Math.floor(durationMins / 60)}h ${durationMins % 60}m`
+            : `${durationMins} min`);
           if (mapInstance) {
             mapInstance.fitBounds(coords, { padding: [50, 50] });
           }
         }
       } catch (err) {
-        console.error("Failed to fetch route", err);
+        toast.error('Route service is temporarily unavailable. Please try again.');
       }
     };
     
@@ -230,10 +300,40 @@ export default function MapPage() {
   };
 
   useEffect(() => {
+    setRadius(Number.isFinite(radiusParam) ? radiusParam : 5);
+    setSortBy(sortParam === 'Available' ? 'Available' : 'Nearest');
+    setSearchDraft(search);
+    setPendingVehicles(vehicleParams);
+    setPendingServices(serviceParams);
+  }, [radiusParam, sortParam, search, searchParams]);
+
+  useEffect(() => {
+    const fetchOptions = async () => {
+      try {
+        const [vehicleData, serviceData] = await Promise.all([
+          apiClient<any>('/public/vehicles'),
+          apiClient<any>('/public/services')
+        ]);
+        setVehicleOptions(vehicleData.map((item: any) => item.name));
+        setServiceOptions(serviceData.map((item: any) => item.name));
+      } catch (err) {
+        console.error('Failed to load map filter options', err);
+      }
+    };
+
+    fetchOptions();
+  }, [radiusParam, sortParam]);
+
+  useEffect(() => {
     const fetchMechanics = async () => {
       setMechanicsLoading(true);
       try {
-        let data = await apiClient<any>(`/public/mechanics?vehicleType=${vehicle || ''}&serviceType=${service || ''}`);
+        const params = buildMechanicSearchParams({
+          vehicle: vehicleParams,
+          service: serviceParams,
+          search
+        });
+        let data = await apiClient<any>(`/public/mechanics?${params.toString()}`);
         
         // Add status and distance
         data = data.map((m: any) => ({
@@ -261,11 +361,11 @@ export default function MapPage() {
       }
     };
     if (!locationLoading) fetchMechanics();
-  }, [vehicle, service, userLocation, routeTo, locationLoading]);
+  }, [search, userLocation, routeTo, locationLoading, searchParams]);
 
   // Derived state: filtered and sorted mechanics
   const visibleMechanics = useMemo(() => {
-    let filtered = mechanics.filter(m => m.distance <= radius);
+    let filtered = userLocation ? mechanics.filter(m => m.distance <= radius) : mechanics;
 
     filtered.sort((a, b) => {
       if (sortBy === 'Available') {
@@ -276,6 +376,73 @@ export default function MapPage() {
     });
     return filtered;
   }, [mechanics, radius, sortBy]);
+
+  const visibleInBoundsCount = useMemo(() => {
+    if (!mapBounds) return visibleMechanics.length;
+    return visibleMechanics.filter((mechanic) => mapBounds.contains([mechanic.latitude, mechanic.longitude])).length;
+  }, [visibleMechanics, mapBounds]);
+
+  const syncQuery = (updates: {
+    search?: string;
+    vehicle?: string[];
+    service?: string[];
+    radius?: number;
+    sort?: 'Nearest' | 'Available';
+    routeTo?: string | number | null;
+  }) => {
+    const params = buildMechanicSearchParams({
+      search: updates.search ?? search,
+      vehicle: updates.vehicle ?? vehicleParams,
+      service: updates.service ?? serviceParams,
+      radius: updates.radius ?? radius,
+      sort: updates.sort ?? sortBy,
+      routeTo: updates.routeTo === null ? undefined : updates.routeTo ?? routeTo ?? undefined
+    });
+    navigate(`/map?${params.toString()}`, { replace: true });
+  };
+
+  const openExternalNavigation = (mechanic = selectedMechanic) => {
+    if (!mechanic) return;
+    const destination = `${mechanic.latitude},${mechanic.longitude}`;
+    const origin = userLocation ? `&origin=${encodeURIComponent(`${userLocation[0]},${userLocation[1]}`)}` : '';
+    window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}${origin}`, '_blank', 'noopener,noreferrer');
+  };
+
+  const positionedVisibleMechanics = useMemo(() => {
+    const grouped = new Map<string, any[]>();
+    visibleMechanics.forEach((mechanic) => {
+      const key = `${mechanic.latitude.toFixed(6)},${mechanic.longitude.toFixed(6)}`;
+      const existing = grouped.get(key) || [];
+      existing.push(mechanic);
+      grouped.set(key, existing);
+    });
+
+    return visibleMechanics.map((mechanic) => {
+      const key = `${mechanic.latitude.toFixed(6)},${mechanic.longitude.toFixed(6)}`;
+      const group = grouped.get(key) || [mechanic];
+      const index = group.findIndex((item) => item.id === mechanic.id);
+
+      if (group.length <= 1 || index === -1) {
+        return { ...mechanic, displayLatitude: mechanic.latitude, displayLongitude: mechanic.longitude };
+      }
+
+      const angle = (Math.PI * 2 * index) / group.length;
+      const offset = 0.00018;
+      return {
+        ...mechanic,
+        displayLatitude: mechanic.latitude + Math.cos(angle) * offset,
+        displayLongitude: mechanic.longitude + Math.sin(angle) * offset
+      };
+    });
+  }, [visibleMechanics]);
+
+  const selectedMechanicPosition = useMemo(() => {
+    if (!selectedMechanic) return null;
+    const positioned = positionedVisibleMechanics.find((mechanic) => mechanic.id === selectedMechanic.id);
+    return positioned
+      ? [positioned.displayLatitude, positioned.displayLongitude] as [number, number]
+      : [selectedMechanic.latitude, selectedMechanic.longitude] as [number, number];
+  }, [positionedVisibleMechanics, selectedMechanic]);
 
   // Derived state: nearby alternatives to selected mechanic
   const nearbyMechanics = useMemo(() => {
@@ -292,6 +459,14 @@ export default function MapPage() {
 
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStart(e.targetTouches[0].clientY);
+    setDragOffset(0);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStart === null) return;
+    const currentY = e.targetTouches[0].clientY;
+    const delta = currentY - touchStart;
+    setDragOffset(Math.max(-120, Math.min(180, delta)));
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
@@ -313,6 +488,28 @@ export default function MapPage() {
       }
     }
     setTouchStart(null);
+    setDragOffset(0);
+  };
+
+  const handleFilterTouchStart = (e: React.TouchEvent) => {
+    setFilterTouchStart(e.targetTouches[0].clientY);
+    setFilterDragOffset(0);
+  };
+
+  const handleFilterTouchMove = (e: React.TouchEvent) => {
+    if (filterTouchStart === null) return;
+    const delta = e.targetTouches[0].clientY - filterTouchStart;
+    setFilterDragOffset(Math.max(0, Math.min(220, delta)));
+  };
+
+  const handleFilterTouchEnd = (e: React.TouchEvent) => {
+    if (filterTouchStart === null) return;
+    const distance = e.changedTouches[0].clientY - filterTouchStart;
+    if (distance > 80) {
+      setShowControls(false);
+    }
+    setFilterTouchStart(null);
+    setFilterDragOffset(0);
   };
 
   const getSheetHeightClass = () => {
@@ -329,6 +526,43 @@ export default function MapPage() {
 
   return (
     <div className="flex-1 w-full relative bg-background flex flex-col min-h-0">
+      {locationMessage && (
+        <div className="absolute left-4 right-4 top-4 z-[1200] sm:left-1/2 sm:right-auto sm:w-[520px] sm:-translate-x-1/2">
+          <div className="rounded-2xl border border-amber-500/30 bg-card/95 p-4 shadow-xl backdrop-blur">
+            {/* <div className="flex items-start gap-3">
+              <div className="rounded-xl bg-amber-500/15 p-2 text-amber-600">
+                <AlertTriangle className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-foreground">
+                  {locationSource === 'ip' ? 'Approximate location in use' : 'Location unavailable'}
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">{locationMessage}</p>
+              </div>
+              <button
+                onClick={() => requestLocation()}
+                className="shrink-0 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+              >
+                Retry
+              </button>
+            </div> */}
+          </div>
+        </div>
+      )}
+
+      <div className="absolute left-4 top-4 z-[390] max-w-[calc(100%-5rem)] rounded-2xl border border-border bg-card/95 px-4 py-3 shadow-lg backdrop-blur sm:left-4 sm:right-auto sm:max-w-sm">
+        <p className="text-sm font-bold text-foreground">
+          {visibleMechanics.length} mechanics match your filters
+        </p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          {visibleInBoundsCount} currently visible in this map area
+        </p>
+        <div className="mt-2 flex flex-wrap gap-2 text-[11px] font-semibold text-muted-foreground">
+          {vehicleParams.length > 0 && <span className="rounded-full bg-secondary px-2.5 py-1">Vehicle: {vehicleParams.length}</span>}
+          {serviceParams.length > 0 && <span className="rounded-full bg-secondary px-2.5 py-1">Service: {serviceParams.length}</span>}
+        </div>
+      </div>
+
       {isLoading && (
         <div className="absolute inset-0 z-[2000] flex items-center justify-center bg-background/80 backdrop-blur-md">
           <div className="flex flex-col items-center gap-5 p-8 bg-card rounded-3xl shadow-2xl border border-border/50 animate-in zoom-in-95 duration-300">
@@ -352,20 +586,76 @@ export default function MapPage() {
         <button
           onClick={locateUser}
           className="bg-primary text-primary-foreground p-3 rounded-full shadow-lg hover:bg-primary/90 transition-colors w-12 h-12 flex items-center justify-center"
+          title={userLocation ? 'Center on my location' : 'Location not available'}
         >
           <LocateFixed className="w-6 h-6" />
         </button>
       </div>
 
       {showControls && (
-        <div className="absolute top-20 right-4 z-[400] bg-card p-4 rounded-2xl shadow-xl border border-border animate-in slide-in-from-top-4 text-sm w-64">
+        <>
+        <div className="fixed inset-0 z-[390] bg-black/35 backdrop-blur-[1px] sm:hidden" onClick={() => setShowControls(false)}></div>
+        <div
+          className="fixed inset-x-0 bottom-0 z-[400] max-h-[78vh] overflow-y-auto rounded-t-[28px] border border-border bg-card p-4 shadow-2xl animate-in slide-in-from-bottom-8 sm:absolute sm:inset-auto sm:top-20 sm:right-4 sm:w-[340px] sm:max-h-[82vh] sm:rounded-2xl sm:slide-in-from-top-4"
+          onTouchStart={handleFilterTouchStart}
+          onTouchMove={handleFilterTouchMove}
+          onTouchEnd={handleFilterTouchEnd}
+          style={filterDragOffset !== 0 ? { transform: `translateY(${filterDragOffset}px)` } : undefined}
+        >
+          <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-muted sm:hidden"></div>
+          <div className="mb-4 rounded-xl border border-border bg-secondary/30 p-3">
+            <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Current Filters</p>
+            <p className="mt-1 text-sm font-semibold text-foreground">{search ? `Search: ${search}` : 'No text search applied'}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{vehicleParams.length > 0 ? `${vehicleParams.length} vehicles` : 'Any vehicle'} • {serviceParams.length > 0 ? `${serviceParams.length} services` : 'Any service'} • {radius === 50000 ? 'Any distance' : `${radius} km`} • {sortBy}</p>
+          </div>
+          <div className="mb-4">
+            <label className="mb-2 block text-sm font-bold text-foreground">Vehicle Type</label>
+            <Select
+              isMulti
+              isSearchable
+              placeholder="Select vehicle types"
+              options={vehicleSelectOptions}
+              value={vehicleSelectOptions.filter((option) => pendingVehicles.includes(option.value))}
+              onChange={(selected) => {
+                const nextValues = selected.map((option) => option.value);
+                setPendingVehicles(nextValues);
+                syncQuery({ vehicle: nextValues, service: pendingServices, routeTo: null });
+              }}
+              className="text-sm"
+              classNamePrefix="map-filter-select"
+              styles={selectStyles}
+              menuPortalTarget={document.body}
+            />
+          </div>
+          <div className="mb-4">
+            <label className="mb-2 block text-sm font-bold text-foreground">Service Type</label>
+            <Select
+              isMulti
+              isSearchable
+              placeholder="Select service types"
+              options={serviceSelectOptions}
+              value={serviceSelectOptions.filter((option) => pendingServices.includes(option.value))}
+              onChange={(selected) => {
+                const nextValues = selected.map((option) => option.value);
+                setPendingServices(nextValues);
+                syncQuery({ vehicle: pendingVehicles, service: nextValues, routeTo: null });
+              }}
+              className="text-sm"
+              classNamePrefix="map-filter-select"
+              styles={selectStyles}
+              menuPortalTarget={document.body}
+            />
+          </div>
           <div className="mb-4">
             <p className="font-bold mb-2">Search Radius</p>
             <div className="flex flex-wrap gap-2">
               {[1, 3, 5, 10, 50, 50000].map(r => (
                 <button 
                   key={r}
-                  onClick={() => setRadius(r)}
+                  onClick={() => {
+                    setRadius(r);
+                    syncQuery({ radius: r });
+                  }}
                   className={`px-3 py-1 rounded-full text-xs font-bold ${radius === r ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}
                 >
                   {r === 50000 ? 'Any' : `${r}km`}
@@ -380,7 +670,11 @@ export default function MapPage() {
               {['Nearest', 'Available'].map(s => (
                 <button 
                   key={s}
-                  onClick={() => setSortBy(s as any)}
+                  onClick={() => {
+                    const nextSort = s as 'Nearest' | 'Available';
+                    setSortBy(nextSort);
+                    syncQuery({ sort: nextSort });
+                  }}
                   className={`px-3 py-1 rounded-full text-xs font-bold ${sortBy === s ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}
                 >
                   {s}
@@ -403,7 +697,21 @@ export default function MapPage() {
               ))}
             </div>
           </div>
+          <button
+            onClick={() => {
+              setRouteOption('Fastest');
+              setRadius(5);
+              setSortBy('Nearest');
+              setPendingVehicles([]);
+              setPendingServices([]);
+              navigate(`/map?${buildMechanicSearchParams({ radius: 5, sort: 'Nearest' }).toString()}`, { replace: true });
+            }}
+            className="w-full rounded-xl border border-border bg-secondary/60 px-3 py-2 text-xs font-bold text-foreground hover:bg-secondary"
+          >
+            Reset Controls
+          </button>
         </div>
+        </>
       )}
 
       <MapContainer 
@@ -426,21 +734,46 @@ export default function MapPage() {
         
         {userLocation && <Marker position={userLocation} icon={userIcon} />}
 
-        <MarkerClusterGroup chunkedLoading maxClusterRadius={40}>
-          {visibleMechanics.map((mechanic) => (
-            <Marker 
-              key={mechanic.id} 
-              position={[mechanic.latitude, mechanic.longitude]}
-              icon={getIconForStatus(mechanic.currentStatus)}
-              eventHandlers={{
-                click: () => {
-                  setSelectedMechanic(mechanic);
-                  setSheetState(1);
-                }
-              }}
-            />
-          ))}
-        </MarkerClusterGroup>
+        {positionedVisibleMechanics.filter((mechanic) => mechanic.id !== selectedMechanic?.id).map((mechanic) => (
+          <Marker 
+            key={mechanic.id} 
+            position={[mechanic.displayLatitude, mechanic.displayLongitude]}
+            icon={getIconForStatus(mechanic.currentStatus)}
+            eventHandlers={{
+              click: () => {
+                setSelectedMechanic(mechanic);
+                setSheetState(1);
+              }
+            }}
+          >
+            <Tooltip direction="top" offset={[0, -22]} opacity={0.95}>
+              <div className="min-w-[130px]">
+                <p className="font-semibold">{mechanic.businessName || mechanic.name}</p>
+                <p className="text-xs text-muted-foreground">{mechanic.area}</p>
+              </div>
+            </Tooltip>
+          </Marker>
+        ))}
+
+        {selectedMechanic && selectedMechanicPosition && (
+          <Marker
+            position={selectedMechanicPosition}
+            icon={selectedIcon}
+            zIndexOffset={1000}
+            eventHandlers={{
+              click: () => {
+                setSheetState(1);
+              }
+            }}
+          >
+            <Tooltip direction="top" offset={[0, -24]} opacity={1} permanent={false}>
+              <div className="min-w-[140px]">
+                <p className="font-semibold">{selectedMechanic.businessName || selectedMechanic.name}</p>
+                <p className="text-xs text-muted-foreground">{selectedMechanic.area}</p>
+              </div>
+            </Tooltip>
+          </Marker>
+        )}
 
         {routeCoords.length > 0 && (
           <Polyline positions={routeCoords} pathOptions={{ color: '#3b82f6', weight: 5, opacity: 0.8 }} />
@@ -452,9 +785,11 @@ export default function MapPage() {
         <>
 
           <div 
-            className={`fixed sm:absolute bottom-0 sm:bottom-[10%] sm:left-4 sm:top-1/2 sm:-translate-y-1/2 w-full sm:w-[400px] z-[500] flex flex-col pointer-events-none rounded-t-3xl sm:rounded-2xl overflow-hidden shadow-2xl transition-all duration-300 transform translate-y-0 pb-safe pb-[72px] sm:pb-0 ${getSheetHeightClass()}`}
+            className={`fixed sm:absolute bottom-0 sm:bottom-[10%] sm:left-4 sm:top-1/2 sm:-translate-y-1/2 w-full sm:w-[400px] z-[500] flex flex-col pointer-events-none rounded-t-3xl sm:rounded-2xl overflow-hidden shadow-2xl pb-safe pb-[72px] sm:pb-0 ${getSheetHeightClass()} ${touchStart !== null ? 'transition-none' : 'transition-all duration-300'}`}
             onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
+            style={dragOffset !== 0 ? { transform: `translateY(${dragOffset}px)` } : undefined}
           >
             <div className="bg-card border-t sm:border border-border flex flex-col pointer-events-auto h-full w-full">
               {/* Mobile handle */}
@@ -494,7 +829,7 @@ export default function MapPage() {
                     
                     <div className="flex items-center gap-2 mt-2">
                       <div className="flex items-center gap-1 text-xs font-bold px-2 py-1 bg-secondary rounded-md">
-                        <div className={`w-2 h-2 rounded-full ${getMechanicStatus(selectedMechanic) === 'Available' ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
+                        <div className={`w-2 h-2 rounded-full ${getMechanicStatus(selectedMechanic) === 'Available' ? 'bg-green-500' : 'bg-red-500'}`}></div>
                         {getMechanicStatus(selectedMechanic)}
                       </div>
                       <div className="text-xs font-bold text-primary px-2 py-1 bg-primary/10 rounded-md whitespace-nowrap">
@@ -532,8 +867,7 @@ export default function MapPage() {
                      </a>
                    )}
                    <button onClick={() => {
-                     setRouteCoords([]);
-                     navigate(`/map?routeTo=${selectedMechanic.id}`);
+                     openExternalNavigation(selectedMechanic);
                    }} className="p-3 bg-secondary text-secondary-foreground rounded-full hover:bg-secondary/80 border border-border shadow-sm transition-colors shrink-0">
                      <Navigation className="w-5 h-5" />
                    </button>
@@ -556,6 +890,9 @@ export default function MapPage() {
                       <h4 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
                         <MapPin className="w-5 h-5 text-primary" /> Nearby Mechanics
                       </h4>
+                      <p className="mb-3 text-xs text-muted-foreground">
+                        Closest alternatives to this mechanic based on current map results.
+                      </p>
                       <div className="flex flex-col gap-3">
                         {nearbyMechanics.map((m: any) => (
                           <div 
@@ -695,7 +1032,7 @@ export default function MapPage() {
                 <div className="bg-secondary/30 p-4 rounded-2xl border border-border/50">
                   <span className="text-[10px] font-black text-muted-foreground uppercase tracking-wider block mb-1.5">Current Status</span>
                   <div className="flex items-center gap-2">
-                    <div className={`w-2.5 h-2.5 rounded-full shadow-sm ${getMechanicStatus(selectedMechanicForDetails) === 'Available' ? 'bg-green-500 shadow-green-500/50' : 'bg-yellow-500 shadow-yellow-500/50'}`}></div>
+                    <div className={`w-2.5 h-2.5 rounded-full shadow-sm ${getMechanicStatus(selectedMechanicForDetails) === 'Available' ? 'bg-green-500 shadow-green-500/50' : 'bg-red-500 shadow-red-500/50'}`}></div>
                     <span className="font-bold text-sm text-foreground">{getMechanicStatus(selectedMechanicForDetails)}</span>
                   </div>
                 </div>
