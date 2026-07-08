@@ -58,7 +58,7 @@ export default function AdminDashboard() {
   if (canView('Updates')) engagementData.push({ name: 'Edits', value: stats?.pendingRequests || 0, fill: '#8b5cf6' });
 
   return (
-    <div className="p-8 max-w-7xl mx-auto w-full animate-in fade-in zoom-in-95 duration-500">
+    <div className="p-4 sm:p-8 max-w-7xl mx-auto w-full animate-in fade-in zoom-in-95 duration-500">
       <div className="flex items-center gap-3 mb-8">
         <div className="p-2.5 bg-primary/10 rounded-xl">
           <LayoutDashboard className="w-7 h-7 text-primary" />

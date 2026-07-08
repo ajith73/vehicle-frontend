@@ -8,12 +8,11 @@ import 'leaflet/dist/leaflet.css';
 // Custom Map Marker Icon
 const customIcon = new L.DivIcon({
   className: 'bg-transparent border-none',
-  html: `<div class="relative w-8 h-8 bg-primary rounded-full border-2 border-white shadow-lg flex items-center justify-center text-white">
-           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-           <div class="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2 h-2 bg-primary rotate-45 border-r-2 border-b-2 border-white"></div>
+  html: `<div class="relative w-10 h-10 flex items-center justify-center text-primary drop-shadow-md -translate-y-2">
+           <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="currentColor" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3" fill="white"/></svg>
          </div>`,
-  iconSize: [32, 36],
-  iconAnchor: [16, 36],
+  iconSize: [36, 36],
+  iconAnchor: [18, 36],
 });
 
 interface MapLocationPickerProps {
@@ -110,8 +109,8 @@ export function MapLocationPicker({ initialLocation, onSelect, onClose }: MapLoc
   };
 
   return (
-    <div className="fixed inset-0 z-[200] bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-card border border-border shadow-2xl rounded-2xl w-full max-w-2xl h-[80vh] flex flex-col overflow-hidden relative animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-[200] bg-background/80 backdrop-blur-sm flex items-center justify-center sm:p-4">
+      <div className="bg-card sm:border sm:border-border shadow-2xl sm:rounded-2xl w-full h-full sm:max-w-2xl sm:h-[80vh] flex flex-col overflow-hidden relative animate-in fade-in zoom-in-95 duration-200">
         
         {/* Header */}
         <div className="p-4 border-b border-border flex items-center justify-between bg-card">

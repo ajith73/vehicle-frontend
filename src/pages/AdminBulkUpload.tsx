@@ -13,6 +13,7 @@ interface RowData {
   mechanicName: string;
   phone: string;
   whatsappNumber: string;
+  telNumber: string;
   email: string;
   address: string;
   area: string;
@@ -51,8 +52,8 @@ export default function AdminBulkUpload() {
 
   const generateTemplate = () => {
     const wsData = [
-      ['mechanicType', 'businessName', 'mechanicName', 'phone', 'whatsappNumber', 'email', 'address', 'area', 'city', 'state', 'landmark', 'latitude', 'longitude', 'serviceRadius', 'evSupport', 'homeService', 'roadsideAssistance', 'is24Hours', 'holidayWorking', 'vehicleTypes', 'serviceTypes', 'operatingDays', 'operatingHours', 'description', 'imageUrl', 'websiteUrl', 'googleMapsUrl'],
-      ['Workshop / Garage', 'Test Mechanic', 'Raju', '9876543210', '9876543210', 'test@example.com', '123 Main St', 'Downtown', 'Mumbai', 'Maharashtra', 'Near Station', '19.0760', '72.8777', '10', 'FALSE', 'TRUE', 'TRUE', 'FALSE', 'FALSE', 'Bike, Car', 'Puncture Repair', 'Monday, Tuesday', '09:00 - 18:00', 'Best workshop in town', 'https://example.com/img.jpg', 'https://example.com', 'https://goo.gl/maps/...']
+      ['mechanicType', 'businessName', 'mechanicName', 'phone', 'whatsappNumber', 'telNumber', 'email', 'address', 'area', 'city', 'state', 'landmark', 'latitude', 'longitude', 'serviceRadius', 'evSupport', 'homeService', 'roadsideAssistance', 'is24Hours', 'holidayWorking', 'vehicleTypes', 'serviceTypes', 'operatingDays', 'operatingHours', 'description', 'imageUrl', 'websiteUrl', 'googleMapsUrl'],
+      ['Workshop / Garage', 'Test Mechanic', 'Raju', '9876543210', '9876543210', '04422223333', 'test@example.com', '123 Main St', 'Downtown', 'Mumbai', 'Maharashtra', 'Near Station', '19.0760', '72.8777', '10', 'FALSE', 'TRUE', 'TRUE', 'FALSE', 'FALSE', 'Bike, Car', 'Puncture Repair', 'Monday, Tuesday', '09:00 - 18:00', 'Best workshop in town', 'https://example.com/img.jpg', 'https://example.com', 'https://goo.gl/maps/...']
     ];
     const ws = XLSX.utils.aoa_to_sheet(wsData);
     const wb = XLSX.utils.book_new();
@@ -61,17 +62,20 @@ export default function AdminBulkUpload() {
   };
 
   const validateRow = (row: any): string | undefined => {
-    // We treat businessName as the primary name requirement, fallback to name for backward compat
     const bName = row.businessName || row.name;
-    if (!bName || !row.phone || !row.address || !row.area || !row.city || !row.state || !row.latitude || !row.longitude || !row.vehicleTypes || !row.serviceTypes) {
-      return 'Missing required fields';
+    if (!bName || (!row.phone && !row.telNumber) || !row.address || !row.area || !row.city || !row.state || !row.latitude || !row.longitude || !row.vehicleTypes || !row.serviceTypes) {
+      return 'Missing required fields (Name, Address, Types, and at least one Phone/Tel Number)';
     }
     if (isNaN(parseFloat(row.latitude)) || isNaN(parseFloat(row.longitude))) {
       return 'Latitude and Longitude must be numbers';
     }
-    const phoneClean = String(row.phone).replace(/\D/g, '');
-    if (phoneClean.length !== 10) {
-      return 'Phone number must be 10 digits';
+    const phoneClean = row.phone ? String(row.phone).replace(/\D/g, '') : '';
+    const telClean = row.telNumber ? String(row.telNumber).replace(/\D/g, '') : '';
+    if (phoneClean && phoneClean.length !== 10) {
+      return 'Mobile phone number must be 10 digits';
+    }
+    if (telClean && telClean.length < 5) {
+      return 'Tel number must be valid';
     }
     if (row.email && !/^\S+@\S+\.\S+$/.test(String(row.email))) {
       return 'Invalid email format';
@@ -113,6 +117,7 @@ export default function AdminBulkUpload() {
           mechanicName: row.mechanicName || '',
           phone: row.phone || '',
           whatsappNumber: row.whatsappNumber || '',
+          telNumber: row.telNumber || '',
           email: row.email || '',
           address: row.address || '',
           area: row.area || '',
@@ -215,9 +220,18 @@ export default function AdminBulkUpload() {
       const phones = [];
       if (row.phone) phones.push({ number: String(row.phone).replace(/\D/g, ''), isWhatsapp: false });
       if (row.whatsappNumber) phones.push({ number: String(row.whatsappNumber).replace(/\D/g, ''), isWhatsapp: true });
+      if (row.telNumber) phones.push({ number: String(row.telNumber).replace(/\D/g, ''), isWhatsapp: false, isTelephone: true } as any);
+
+      // Normalize mechanicType to match backend Enums
+      let normalizedMechanicType = row.mechanicType || 'Workshop / Garage';
+      if (normalizedMechanicType === 'Freelance Mechanic' || normalizedMechanicType === 'Mechanic') {
+        normalizedMechanicType = 'Individual Mechanic';
+      } else if (normalizedMechanicType === 'Service Center') {
+        normalizedMechanicType = 'Authorized Service Center';
+      }
 
       return {
-        mechanicType: row.mechanicType === 'Freelance Mechanic' ? 'Individual Mechanic' : row.mechanicType,
+        mechanicType: normalizedMechanicType,
         name: row.businessName || row.name, // Ensure compatibility with backend models if needed
         businessName: row.businessName,
         mechanicName: row.mechanicName,
@@ -242,7 +256,7 @@ export default function AdminBulkUpload() {
         operatingDays: row.operatingDays ? String(row.operatingDays).split(',').map(s => s.trim()).filter(Boolean) : [],
         operatingHours: row.operatingHours || '09:00 - 18:00',
         description: row.description,
-        imageUrl: row.imageUrl,
+        image: row.imageUrl,
         websiteUrl: row.websiteUrl,
         googleMapsUrl: row.googleMapsUrl,
         availability: true
@@ -264,8 +278,8 @@ export default function AdminBulkUpload() {
   };
 
   return (
-    <div className="p-8 max-w-full mx-auto pb-12">
-      <div className="flex justify-between items-center mb-8">
+    <div className="p-4 sm:p-8 max-w-full mx-auto pb-12">
+      <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-4 mb-8">
         <h2 className="text-3xl font-bold text-foreground flex items-center gap-2">
           Bulk Upload Mechanics
         </h2>
@@ -429,7 +443,11 @@ export default function AdminBulkUpload() {
                       <label className="block text-sm font-medium mb-1">Mechanic Type</label>
                       <select value={editingRow.mechanicType} onChange={e => setEditingRow({...editingRow, mechanicType: e.target.value})} className="w-full p-2 rounded border border-border bg-background focus:border-primary outline-none">
                         <option value="Workshop / Garage">Workshop / Garage</option>
-                        <option value="Freelance Mechanic">Freelance Mechanic</option>
+                        <option value="Individual Mechanic">Individual Mechanic</option>
+                        <option value="Authorized Service Center">Authorized Service Center</option>
+                        <option value="Mobile Mechanic">Mobile Mechanic</option>
+                        <option value="Towing Company">Towing Company</option>
+                        <option value="Fuel Delivery Partner">Fuel Delivery Partner</option>
                       </select>
                     </div>
                     <div>
@@ -450,14 +468,18 @@ export default function AdminBulkUpload() {
                 {/* Contact Info */}
                 <div>
                   <h4 className="text-lg font-semibold mb-4 border-b border-border pb-2 text-primary">Contact & Links</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div>
-                      <label className="block text-sm font-medium mb-1">Phone <span className="text-red-500">*</span></label>
+                      <label className="block text-sm font-medium mb-1">Mobile Phone</label>
                       <input type="text" value={editingRow.phone} onChange={e => setEditingRow({...editingRow, phone: e.target.value})} className="w-full p-2 rounded border border-border bg-background focus:border-primary outline-none" />
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-1">WhatsApp</label>
                       <input type="text" value={editingRow.whatsappNumber} onChange={e => setEditingRow({...editingRow, whatsappNumber: e.target.value})} className="w-full p-2 rounded border border-border bg-background focus:border-primary outline-none" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Tel Number</label>
+                      <input type="text" value={editingRow.telNumber} onChange={e => setEditingRow({...editingRow, telNumber: e.target.value})} className="w-full p-2 rounded border border-border bg-background focus:border-primary outline-none" />
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-1">Email</label>
@@ -617,12 +639,16 @@ export default function AdminBulkUpload() {
                 <div className="space-y-4">
                   <h4 className="text-lg font-semibold border-b border-border pb-2 text-primary">Contact</h4>
                   <div>
-                    <span className="block text-sm text-muted-foreground">Phone</span>
+                    <span className="block text-sm text-muted-foreground">Mobile Phone</span>
                     <span className="font-medium">{viewingRow.phone || 'N/A'}</span>
                   </div>
                   <div>
                     <span className="block text-sm text-muted-foreground">WhatsApp</span>
                     <span className="font-medium">{viewingRow.whatsappNumber || 'N/A'}</span>
+                  </div>
+                  <div>
+                    <span className="block text-sm text-muted-foreground">Tel Number</span>
+                    <span className="font-medium">{viewingRow.telNumber || 'N/A'}</span>
                   </div>
                   <div>
                     <span className="block text-sm text-muted-foreground">Email</span>

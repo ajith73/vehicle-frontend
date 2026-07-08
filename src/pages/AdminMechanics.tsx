@@ -61,7 +61,7 @@ export default function AdminMechanics() {
       onConfirm: async () => {
         const loadingToast = toast.loading(`Updating ${selectedIds.length} mechanics...`);
         try {
-          await Promise.all(selectedIds.map(id => api.updateMechanic(id, { status: newStatus })));
+          await api.bulkUpdateMechanicsStatus(selectedIds, newStatus);
           toast.success(`Successfully updated ${selectedIds.length} mechanic(s) to ${newStatus}`, { id: loadingToast });
           setSelectedIds([]);
           refetch();
@@ -100,12 +100,12 @@ export default function AdminMechanics() {
   if (loading) return <div className="p-8 text-center text-foreground">Loading mechanics...</div>;
 
   return (
-    <div className="p-8 max-w-7xl mx-auto w-full">
-      <div className="flex justify-between items-center mb-8">
+    <div className="p-4 sm:p-8 max-w-7xl mx-auto w-full">
+      <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-4 mb-8">
         <h2 className="text-3xl font-bold text-foreground flex items-center gap-2">
           Mechanic Management
         </h2>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {selectedIds.length > 0 && role === 'Super Admin' && (
             <div className="flex gap-2 mr-4 border-r border-border pr-4">
               <button 
@@ -180,8 +180,8 @@ export default function AdminMechanics() {
         </div>
       </div>
 
-      <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
-        <table className="w-full text-left border-collapse">
+      <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm overflow-x-auto">
+        <table className="w-full text-left border-collapse min-w-[800px]">
           <thead>
             <tr className="bg-muted text-muted-foreground border-b border-border">
               {role === 'Super Admin' && (
@@ -292,9 +292,9 @@ export default function AdminMechanics() {
 
       {/* View Details Modal */}
       {viewMechanicData && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-card w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl animate-in zoom-in-95 duration-200 hide-scrollbar">
-            <div className="sticky top-0 bg-card/80 backdrop-blur border-b border-border p-6 flex justify-between items-center z-10">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center sm:p-4">
+          <div className="bg-card w-full h-full sm:h-auto sm:max-h-[90vh] max-w-2xl overflow-y-auto sm:rounded-2xl shadow-2xl animate-in zoom-in-95 duration-200 hide-scrollbar flex flex-col">
+            <div className="sticky top-0 bg-card/80 backdrop-blur border-b border-border p-4 sm:p-6 flex justify-between items-center z-10">
               <h2 className="text-2xl font-bold flex items-center gap-2">
                 <Eye className="text-primary" /> Mechanic Details
               </h2>
@@ -305,7 +305,7 @@ export default function AdminMechanics() {
                 <X size={20} />
               </button>
             </div>
-            <div className="p-6 space-y-6">
+            <div className="p-4 sm:p-6 space-y-6 flex-1">
               <div>
                 <h3 className="text-xl font-bold text-foreground">{viewMechanicData.name}</h3>
                 <p className="text-muted-foreground">{viewMechanicData.description || 'No description provided.'}</p>

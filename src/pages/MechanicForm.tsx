@@ -69,12 +69,24 @@ export default function MechanicForm() {
   const [latitude, setLatitude] = useState('');
   const [longitude, setLongitude] = useState('');
   
-  const [vehicleTypes, setVehicleTypes] = useState<{value: string, label: string}[]>([]);
-  const [serviceTypes, setServiceTypes] = useState<{value: string, label: string}[]>([]);
+  const [vehicleTypes, setVehicleTypes] = useState<{value: string, label: string}[]>([
+    {value: 'Bike', label: 'Bike'},
+    {value: 'Car', label: 'Car'},
+    {value: 'Scooter', label: 'Scooter'}
+  ]);
+  const [serviceTypes, setServiceTypes] = useState<{value: string, label: string}[]>([
+    {value: 'Puncture Repair', label: 'Puncture Repair'},
+    {value: 'Battery Jumpstart', label: 'Battery Jumpstart'},
+    {value: 'Jump Start', label: 'Jump Start'},
+    {value: 'Emergency Breakdown', label: 'Emergency Breakdown'},
+    {value: 'Tyre Replacement', label: 'Tyre Replacement'},
+    {value: 'General Service', label: 'General Service'},
+  ]);
   
-  const [operatingDays, setOperatingDays] = useState<string[]>([]);
+  const [operatingDays, setOperatingDays] = useState<string[]>(DAYS_OF_WEEK);
   const [startTime, setStartTime] = useState('09:00');
-  const [endTime, setEndTime] = useState('18:00');
+  const [endTime, setEndTime] = useState('21:00');
+  const [telephone, setTelephone] = useState('');
   const [availability, setAvailability] = useState(true);
 
   useEffect(() => {
@@ -100,7 +112,11 @@ export default function MechanicForm() {
             setDescription(data.description || '');
             setImageUrl(data.image || '');
             setWebsiteUrl(data.websiteUrl || '');
-            setPhones(data.phone || [{ number: '', isWhatsapp: false }]);
+            const phonesData = data.phone || [];
+            const mobilePhones = phonesData.filter((p: any) => !p.isTelephone);
+            const telPhone = phonesData.find((p: any) => p.isTelephone);
+            setPhones(mobilePhones.length ? mobilePhones : [{ number: '', isWhatsapp: false }]);
+            if (telPhone) setTelephone(telPhone.number);
             setEmails(data.emails?.length ? data.emails : ['']);
             setAddress(data.address || '');
             setArea(data.area || '');
@@ -137,7 +153,9 @@ export default function MechanicForm() {
 
   const validate = () => {
     if (!businessName) return 'Business Name is required';
-    if (phones.some(p => !p.number)) return 'All phone fields must be filled or removed';
+    const hasValidPhone = phones.some(p => p.number && p.number.length >= 5);
+    const hasValidTel = telephone && telephone.length >= 5;
+    if (!hasValidPhone && !hasValidTel) return 'Either Phone Number or Tel Number is required';
     if (!address || !area || !stateOption || !cityOption) return 'Complete address is required';
     if (!latitude || !longitude) return 'Coordinates are required';
     if (vehicleTypes.length === 0) return 'At least one supported vehicle is required';
@@ -176,6 +194,11 @@ export default function MechanicForm() {
         ? `${API_URL}/admin/mechanics/${id}`
         : `${API_URL}/admin/mechanics`;
       
+      const finalPhones = phones.filter(p => p.number && p.number.trim() !== '');
+      if (telephone.trim() !== '') {
+        finalPhones.push({ number: telephone.trim(), isWhatsapp: false, isTelephone: true } as any);
+      }
+      
       const payload = {
         mechanicType,
         name: businessName, // Legacy fallback
@@ -184,7 +207,7 @@ export default function MechanicForm() {
         description,
         image: imageUrl,
         websiteUrl,
-        phone: phones,
+        phone: finalPhones,
         emails: emails.filter(e => e.trim() !== ''),
         address,
         landmark,
@@ -353,6 +376,18 @@ export default function MechanicForm() {
               </button>
             </div>
 
+            {/* Tel Number */}
+            <div className="pt-2">
+              <label className="block text-sm font-medium mb-1">Tel Number</label>
+              <input 
+                type="text" 
+                value={telephone} 
+                onChange={e => setTelephone(e.target.value)} 
+                placeholder="e.g. 044 2222 3333" 
+                className="w-full p-2 rounded border border-border bg-background focus:border-primary outline-none" 
+              />
+            </div>
+
             {/* Emails */}
             <div className="pt-2">
               <label className="block text-sm font-medium mb-1">Email Addresses</label>
@@ -471,7 +506,7 @@ export default function MechanicForm() {
                     isMulti
                     name="vehicleTypes"
                     options={vehicleOptions}
-                    className="basic-multi-select text-sm"
+                    className="basic-multi-select text-sm text-black"
                     value={vehicleTypes}
                     onChange={(newValue) => setVehicleTypes(newValue as any)}
                     placeholder="Select or type to create new..."
@@ -484,7 +519,7 @@ export default function MechanicForm() {
                     isMulti
                     name="serviceTypes"
                     options={serviceOptions}
-                    className="basic-multi-select text-sm"
+                    className="basic-multi-select text-sm text-black"
                     value={serviceTypes}
                     onChange={(newValue) => setServiceTypes(newValue as any)}
                     placeholder="Select or type to create new..."

@@ -91,6 +91,7 @@ export default function LandingPage() {
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [services, setServices] = useState<any[]>([]);
   const [nearbyMechanics, setNearbyMechanics] = useState<any[]>([]);
+  const [isLoadingOptions, setIsLoadingOptions] = useState(true);
   
   const [showAllVehicles, setShowAllVehicles] = useState(false);
   const [showAllServices, setShowAllServices] = useState(false);
@@ -116,6 +117,8 @@ export default function LandingPage() {
         setServices(sData);
       } catch (err) {
         console.error('Failed to load settings options', err);
+      } finally {
+        setIsLoadingOptions(false);
       }
     };
     fetchOptions();
@@ -294,15 +297,21 @@ export default function LandingPage() {
         </h3>
         {/* Mobile: Horizontal Scroll, Desktop: Grid */}
         <div className="flex sm:grid sm:grid-cols-5 md:grid-cols-6 gap-2 sm:gap-3 pb-2 overflow-x-auto snap-x hide-scrollbar">
-          <button
-            onClick={() => setSelectedVehicle('')}
-            className={`flex-none w-24 sm:w-full flex flex-col items-center justify-center h-20 md:h-24 rounded-2xl border-2 transition-all hover:scale-[1.02] active:scale-95 snap-start ${
-              selectedVehicle === '' ? 'border-primary bg-primary/10 text-primary shadow-md' : 'border-border bg-card text-muted-foreground hover:border-primary/50 hover:bg-secondary/50'
-            }`}
-          >
-            <Zap className="w-6 h-6 mb-1" />
-            <span className="text-xs font-bold">All</span>
-          </button>
+          {isLoadingOptions ? (
+            Array(6).fill(0).map((_, i) => (
+              <div key={i} className="flex-none w-24 sm:w-full h-20 md:h-24 rounded-2xl bg-secondary/50 animate-pulse border-2 border-border/50 shrink-0"></div>
+            ))
+          ) : (
+            <>
+              <button
+                onClick={() => setSelectedVehicle('')}
+                className={`flex-none w-24 sm:w-full flex flex-col items-center justify-center h-20 md:h-24 rounded-2xl border-2 transition-all hover:scale-[1.02] active:scale-95 snap-start ${
+                  selectedVehicle === '' ? 'border-primary bg-primary/10 text-primary shadow-md' : 'border-border bg-card text-muted-foreground hover:border-primary/50 hover:bg-secondary/50'
+                }`}
+              >
+                <Zap className="w-6 h-6 mb-1" />
+                <span className="text-xs font-bold">All</span>
+              </button>
           {vehicles
             .filter(v => showAllVehicles || v.isFeatured || (!showAllVehicles && vehicles.every(vi => !vi.isFeatured)))
             .map(v => {
@@ -329,6 +338,8 @@ export default function LandingPage() {
               <span className="text-[11px] sm:text-xs font-bold text-center leading-tight px-1">{showAllVehicles ? 'Show Less' : 'Show More'}</span>
             </button>
           )}
+            </>
+          )}
         </div>
       </div>
 
@@ -339,15 +350,21 @@ export default function LandingPage() {
         </h3>
         {/* Mobile: Horizontal Scroll, Desktop: Grid */}
         <div className="flex sm:grid sm:grid-cols-5 md:grid-cols-7 gap-2 sm:gap-3 pb-2 overflow-x-auto snap-x hide-scrollbar">
-          <button
-            onClick={() => setSelectedService('')}
-            className={`flex-none w-24 sm:w-full flex flex-col items-center justify-center h-20 md:h-24 rounded-2xl border-2 transition-all hover:scale-[1.02] active:scale-95 snap-start ${
-              selectedService === '' ? 'border-primary bg-primary/10 text-primary shadow-md' : 'border-border bg-card text-muted-foreground hover:border-primary/50 hover:bg-secondary/50'
-            }`}
-          >
-            <Zap className="w-6 h-6 mb-1" />
-            <span className="text-xs font-bold">All</span>
-          </button>
+          {isLoadingOptions ? (
+            Array(7).fill(0).map((_, i) => (
+              <div key={i} className="flex-none w-24 sm:w-full h-20 md:h-24 rounded-2xl bg-secondary/50 animate-pulse border-2 border-border/50 shrink-0"></div>
+            ))
+          ) : (
+            <>
+              <button
+                onClick={() => setSelectedService('')}
+                className={`flex-none w-24 sm:w-full flex flex-col items-center justify-center h-20 md:h-24 rounded-2xl border-2 transition-all hover:scale-[1.02] active:scale-95 snap-start ${
+                  selectedService === '' ? 'border-primary bg-primary/10 text-primary shadow-md' : 'border-border bg-card text-muted-foreground hover:border-primary/50 hover:bg-secondary/50'
+                }`}
+              >
+                <Zap className="w-6 h-6 mb-1" />
+                <span className="text-xs font-bold">All</span>
+              </button>
           {services
             .filter(s => showAllServices || s.isFeatured || (!showAllServices && services.every(si => !si.isFeatured)))
             .map(s => {
@@ -373,6 +390,8 @@ export default function LandingPage() {
               {showAllServices ? <ChevronUp className="w-6 h-6 mb-1" /> : <ChevronDown className="w-6 h-6 mb-1" />}
               <span className="text-[11px] sm:text-xs font-bold text-center leading-tight px-1">{showAllServices ? 'Show Less' : 'Show More'}</span>
             </button>
+          )}
+            </>
           )}
         </div>
       </div>
@@ -419,7 +438,7 @@ export default function LandingPage() {
           <button onClick={() => navigate('/list?useLocation=true')} className="text-sm font-bold text-primary hover:underline">View Map</button>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-           {nearbyMechanics.length > 0 ? nearbyMechanics.slice(0, 6).map((mechanic) => {
+           {nearbyMechanics.length > 0 ? nearbyMechanics.slice(0, 5).map((mechanic) => {
              const distance = userLocation ? getDistanceFromLatLonInKm(userLocation[0], userLocation[1], parseFloat(mechanic.latitude), parseFloat(mechanic.longitude)).toFixed(1) : '?';
              return (
                <div key={mechanic.id} className="bg-card border border-border rounded-2xl p-4 flex items-center gap-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate(`/list?search=${encodeURIComponent(mechanic.businessName || mechanic.name)}`)}>
@@ -440,9 +459,47 @@ export default function LandingPage() {
         </div>
       </div>
 
+      {/* 6. Essential Stations (Quick Find) */}
+      <div className="pt-2 pb-16 px-4 sm:px-8 max-w-7xl mx-auto w-full">
+        <h3 className="font-bold text-xl text-foreground flex items-center gap-2 mb-4">
+          <Activity className="text-blue-500 w-6 h-6" /> Essential Stations
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <button 
+            onClick={() => window.open('https://www.google.com/maps/search/fuel+station+near+me', '_blank')}
+            className="bg-card border border-border rounded-2xl p-5 flex flex-col items-center justify-center gap-3 hover:shadow-md hover:border-primary/50 transition-all cursor-pointer group"
+          >
+            <div className="w-14 h-14 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-500 group-hover:scale-110 transition-transform">
+              <Fuel className="w-7 h-7" />
+            </div>
+            <span className="font-bold text-foreground">Fuel Station ⛽</span>
+          </button>
+          
+          <button 
+            onClick={() => window.open('https://www.google.com/maps/search/ev+charging+station+near+me', '_blank')}
+            className="bg-card border border-border rounded-2xl p-5 flex flex-col items-center justify-center gap-3 hover:shadow-md hover:border-primary/50 transition-all cursor-pointer group"
+          >
+            <div className="w-14 h-14 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 group-hover:scale-110 transition-transform">
+              <Zap className="w-7 h-7" />
+            </div>
+            <span className="font-bold text-foreground">EV Charging Station ⚡</span>
+          </button>
+          
+          <button 
+            onClick={() => window.open('https://www.google.com/maps/search/puc+center+near+me', '_blank')}
+            className="bg-card border border-border rounded-2xl p-5 flex flex-col items-center justify-center gap-3 hover:shadow-md hover:border-primary/50 transition-all cursor-pointer group"
+          >
+            <div className="w-14 h-14 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500 group-hover:scale-110 transition-transform">
+              <ShieldAlert className="w-7 h-7" />
+            </div>
+            <span className="font-bold text-foreground">PUC Station 🛡️</span>
+          </button>
+        </div>
+      </div>
+
       {showLocationPopup && (
-        <div className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-card border border-border shadow-xl rounded-2xl p-6 w-full max-w-md relative">
+        <div className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-sm flex items-center justify-center sm:p-4">
+          <div className="bg-card sm:border sm:border-border shadow-xl sm:rounded-2xl p-6 w-full h-full sm:h-auto sm:max-w-md relative flex flex-col justify-center">
             <h3 className="text-xl font-black mb-2 text-primary">Where are you located?</h3>
             <p className="text-sm text-muted-foreground mb-6">We couldn't detect your location automatically. Please enter your city to find mechanics near you.</p>
             <div className="relative">

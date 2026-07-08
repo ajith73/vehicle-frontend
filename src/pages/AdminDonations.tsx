@@ -33,15 +33,15 @@ export default function AdminDonations() {
   if (loading) return <div className="p-8 text-center text-muted-foreground">Loading...</div>;
 
   return (
-    <div className="p-8 max-w-7xl mx-auto w-full">
-      <div className="flex justify-between items-center mb-8">
+    <div className="p-4 sm:p-8 max-w-7xl mx-auto w-full">
+      <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-4 mb-8">
         <h2 className="text-3xl font-bold text-foreground flex items-center gap-2">
           <Heart className="text-pink-500" /> Support & Donations
         </h2>
       </div>
 
-      <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
+      <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm overflow-x-auto">
+        <div className="overflow-x-auto min-w-[600px]">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-muted border-b border-border">

@@ -62,6 +62,8 @@ export default function ListPage() {
   
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [selectedMechanicForDetails, setSelectedMechanicForDetails] = useState<any | null>(null);
+  
+  const [visibleCount, setVisibleCount] = useState(10);
 
   const { userLocation, isLoading: locationLoading } = useLocationContext();
   
@@ -114,7 +116,7 @@ export default function ListPage() {
           });
         }
         
-        setMechanics(processedData.slice(0, 50));
+        setMechanics(processedData);
       } catch (err) {
         console.error('Failed to fetch mechanics', err);
       } finally {
@@ -132,6 +134,25 @@ export default function ListPage() {
     (m.businessName || m.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
     m.area.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const displayedMechanics = filteredMechanics.slice(0, visibleCount);
+
+  // Reset visible count on filter/search change
+  useEffect(() => {
+    setVisibleCount(10);
+  }, [searchQuery, vehicleParam, serviceParam, radius, sortBy]);
+
+  // Infinite scroll listener
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.innerHeight + document.documentElement.scrollTop >= document.documentElement.offsetHeight - 500) {
+        setVisibleCount(prev => prev + 10);
+      }
+    };
+    
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   return (
     <div className="flex flex-col min-h-screen bg-background relative pb-20 sm:pb-0">
@@ -210,7 +231,7 @@ export default function ListPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredMechanics.map(mechanic => {
+            {displayedMechanics.map(mechanic => {
               const dist = userLocation ? getDistanceFromLatLonInKm(userLocation[0], userLocation[1], mechanic.latitude, mechanic.longitude).toFixed(1) : null;
               return (
                   <div key={mechanic.id} className="bg-card border border-border/60 rounded-[24px] p-4 sm:p-5 flex flex-col gap-4 shadow-sm hover:shadow-xl hover:shadow-primary/5 hover:border-primary/40 transition-all duration-300 cursor-pointer group">
@@ -281,12 +302,18 @@ export default function ListPage() {
             })}
           </div>
         )}
+        
+        {!loading && displayedMechanics.length < filteredMechanics.length && (
+          <div className="flex justify-center items-center py-8">
+            <div className="w-6 h-6 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        )}
       </div>
 
       {/* Filter Modal */}
       {isFilterOpen && (
-        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4 sm:p-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-card w-full sm:max-w-md rounded-[24px] shadow-2xl border border-border overflow-hidden flex flex-col mb-16 sm:mb-0 animate-in slide-in-from-bottom-10 sm:slide-in-from-bottom-0 sm:zoom-in-95">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-card w-full h-full sm:h-auto sm:max-w-md sm:rounded-[24px] shadow-2xl sm:border border-border flex flex-col animate-in slide-in-from-bottom-10 sm:slide-in-from-bottom-0 sm:zoom-in-95">
             <div className="p-5 border-b border-border/50 flex justify-between items-center bg-muted/30">
               <h3 className="font-bold text-lg text-foreground">Filter & Sort</h3>
               <button 
@@ -297,7 +324,7 @@ export default function ListPage() {
               </button>
             </div>
             
-            <div className="p-5 space-y-6 overflow-y-auto max-h-[60vh]">
+            <div className="p-5 space-y-6 flex-1 overflow-y-auto sm:max-h-[60vh]">
               {/* Sort By */}
               <div>
                 <label className="block text-sm font-bold text-foreground mb-3">Sort By</label>
@@ -383,13 +410,13 @@ export default function ListPage() {
 
       {/* Mechanic Details Modal */}
       {isDetailsOpen && selectedMechanicForDetails && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setIsDetailsOpen(false)}>
+        <div className="fixed inset-0 z-[200] flex items-center justify-center sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setIsDetailsOpen(false)}>
           <div 
-            className="bg-card w-full max-w-lg rounded-[24px] shadow-2xl border border-border overflow-hidden flex flex-col animate-in zoom-in-95 duration-200"
+            className="bg-card w-full h-full sm:h-auto sm:max-h-[90vh] max-w-lg sm:rounded-[24px] shadow-2xl sm:border border-border flex flex-col animate-in zoom-in-95 duration-200"
             onClick={e => e.stopPropagation()}
           >
             {/* Header / Cover */}
-            <div className="relative h-48 sm:h-56 bg-secondary/50">
+            <div className="relative shrink-0 h-48 sm:h-56 bg-secondary/50">
               {selectedMechanicForDetails.image ? (
                 <img src={selectedMechanicForDetails.image} alt="Mechanic" className="w-full h-full object-cover" />
               ) : (
@@ -419,7 +446,7 @@ export default function ListPage() {
               </div>
             </div>
             
-            <div className="p-6 space-y-6 overflow-y-auto max-h-[60vh]">
+            <div className="p-6 space-y-6 overflow-y-auto flex-1">
               {/* Info Grid */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-secondary/30 p-4 rounded-2xl border border-border/50">
@@ -470,7 +497,7 @@ export default function ListPage() {
               )}
             </div>
             
-            <div className="p-4 border-t border-border/50 bg-muted/10 flex gap-2">
+            <div className="p-4 border-t border-border/50 bg-muted/10 flex gap-2 shrink-0">
                {selectedMechanicForDetails.phone?.[0] && (
                  <a href={`tel:${selectedMechanicForDetails.phone[0].number}`} className="flex-1 bg-secondary/80 hover:bg-primary hover:text-primary-foreground text-foreground h-12 rounded-xl flex justify-center items-center active:scale-95 transition-all font-bold text-sm gap-2 border border-border/50">
                    <Phone size={18} /> Call

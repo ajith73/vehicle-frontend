@@ -98,13 +98,13 @@ export default function AdminFeedback() {
   if (loading) return <div className="p-8 text-center text-muted-foreground">Loading...</div>;
 
   return (
-    <div className="p-8 max-w-7xl mx-auto w-full">
-      <div className="flex justify-between items-center mb-6">
+    <div className="p-4 sm:p-8 max-w-7xl mx-auto w-full">
+      <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-4 mb-6">
         <h2 className="text-3xl font-bold text-foreground flex items-center gap-2">
           <MessageSquare className="text-primary" /> User Feedback
         </h2>
         {selectedIds.length > 0 && role === 'Super Admin' && (
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2 mt-2 sm:mt-0">
             <button 
               onClick={() => handleBulkAction('resolve')}
               className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 font-medium transition-colors shadow-sm"
@@ -161,8 +161,8 @@ export default function AdminFeedback() {
         </div>
       </div>
 
-      <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
+      <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm overflow-x-auto">
+        <div className="overflow-x-auto min-w-[800px]">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-muted border-b border-border">

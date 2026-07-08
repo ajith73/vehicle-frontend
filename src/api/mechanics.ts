@@ -5,6 +5,7 @@ export const getMechanics = () => apiClient<Mechanic[]>('/admin/mechanics');
 export const getMechanicById = (id: number) => apiClient<Mechanic>(`/admin/mechanics/${id}`);
 export const createMechanic = (data: any) => apiClient<Mechanic>('/admin/mechanics', { method: 'POST', data });
 export const updateMechanic = (id: number, data: any) => apiClient<{ message: string }>((`/admin/mechanics/${id}`), { method: 'PUT', data });
+export const bulkUpdateMechanicsStatus = (ids: number[], status: string) => apiClient<{ message: string }>('/admin/mechanics/bulk/status', { method: 'PUT', data: { ids, status } });
 export const deleteMechanic = (id: number) => apiClient<{ message: string }>((`/admin/mechanics/${id}`), { method: 'DELETE' });
 export const approveMechanic = (id: number) => apiClient<{ message: string }>((`/admin/mechanics/${id}/approve`), { method: 'POST' });
 
