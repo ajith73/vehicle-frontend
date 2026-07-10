@@ -145,6 +145,7 @@ export default function LandingPage() {
   const [showLocationPopup, setShowLocationPopup] = useState(false);
   const [showMapPicker, setShowMapPicker] = useState(false);
   const [showMechanicSubmissionModal, setShowMechanicSubmissionModal] = useState(false);
+  const [isLocationMessageExpanded, setIsLocationMessageExpanded] = useState(true);
   const [locationInput, setLocationInput] = useState('');
   const [locationSuggestions, setLocationSuggestions] = useState<PlaceSuggestion[]>([]);
   const [centerSearchSuggestions, setCenterSearchSuggestions] = useState<PlaceSuggestion[]>([]);
@@ -183,6 +184,18 @@ export default function LandingPage() {
 
     fetchOptions();
   }, []);
+
+  useEffect(() => {
+    if (locationMessage) {
+      setIsLocationMessageExpanded(true);
+      const timer = setTimeout(() => {
+        setIsLocationMessageExpanded(false);
+      }, 15000);
+      return () => clearTimeout(timer);
+    }
+  }, [locationMessage]);
+
+
 
   useEffect(() => {
     if (locationInput.length <= 2) {
@@ -289,19 +302,36 @@ export default function LandingPage() {
             <span>{locationBadge.label}</span>
           </div>
           {locationMessage && (
-            <div className="mx-auto flex max-w-2xl items-start gap-3 rounded-2xl border border-amber-500/30 bg-card/90 px-4 py-3 text-left shadow-sm backdrop-blur">
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-              <div className="min-w-0">
-                <p className="text-sm text-muted-foreground">{locationMessage}</p>
-                {locationSource !== 'geolocation' && (
-                  <button
-                    onClick={() => requestLocation()}
-                    className="mt-2 text-sm font-bold text-primary hover:underline"
-                  >
-                    Try device location
-                  </button>
-                )}
-              </div>
+            <div 
+              onClick={() => !isLocationMessageExpanded && setIsLocationMessageExpanded(true)}
+              className={`mx-auto flex max-w-2xl gap-3 rounded-2xl border border-amber-500/30 bg-card/90 px-4 py-3 text-left shadow-sm backdrop-blur transition-all duration-300 ${isLocationMessageExpanded ? 'items-start cursor-default' : 'items-center cursor-pointer hover:bg-card w-fit'}`}
+            >
+              <AlertTriangle className={`${isLocationMessageExpanded ? 'mt-0.5' : ''} h-4 w-4 shrink-0 text-amber-600`} />
+              
+              {isLocationMessageExpanded ? (
+                <div className="min-w-0 flex-1 animate-in fade-in duration-300">
+                  <p className="text-sm text-muted-foreground">{locationMessage}</p>
+                  {locationSource !== 'geolocation' && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); requestLocation(); }}
+                      className="mt-2 text-sm font-bold text-primary hover:underline"
+                    >
+                      Try device location
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center gap-3 flex-1 min-w-0 animate-in fade-in duration-300">
+                  {locationSource !== 'geolocation' && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); requestLocation(); }}
+                      className="shrink-0 text-sm font-bold text-primary hover:underline"
+                    >
+                      Enable device location
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>

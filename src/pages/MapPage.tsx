@@ -119,57 +119,58 @@ const FEEDBACK_OPTIONS = [
 ];
 
 const selectStyles: StylesConfig<{ value: string; label: string }, true> = {
-  control: (base, state) => ({
+  control: (base: any, state: any) => ({
     ...base,
-    backgroundColor: 'rgb(248 250 252 / 0.15)',
-    borderColor: state.isFocused ? 'rgb(59 130 246 / 0.7)' : 'rgb(148 163 184 / 0.35)',
-    boxShadow: state.isFocused ? '0 0 0 2px rgb(59 130 246 / 0.18)' : 'none',
-    minHeight: 44
+    minHeight: 44,
+    backgroundColor: 'hsl(var(--background))',
+    borderColor: state.isFocused ? 'hsl(var(--primary))' : 'hsl(var(--border))',
+    boxShadow: state.isFocused ? '0 0 0 2px color-mix(in srgb, hsl(var(--primary)) 18%, transparent)' : 'none'
   }),
-  menu: (base) => ({
+  menu: (base: any) => ({
     ...base,
-    backgroundColor: 'rgb(15 23 42)',
-    border: '1px solid rgb(71 85 105)',
-    overflow: 'hidden'
+    backgroundColor: 'hsl(var(--card))',
+    color: 'hsl(var(--foreground))',
+    border: '1px solid hsl(var(--border))',
+    zIndex: 9999
   }),
-  menuPortal: (base) => ({
+  menuPortal: (base: any) => ({
     ...base,
     zIndex: 9999
   }),
-  option: (base, state) => ({
+  option: (base: any, state: any) => ({
     ...base,
-    backgroundColor: state.isFocused ? 'rgb(30 41 59)' : 'rgb(15 23 42)',
-    color: 'rgb(241 245 249)',
+    backgroundColor: state.isFocused ? 'color-mix(in srgb, hsl(var(--primary)) 12%, hsl(var(--card)))' : 'hsl(var(--card))',
+    color: 'hsl(var(--foreground))',
     cursor: 'pointer'
   }),
-  input: (base) => ({
+  multiValue: (base: any) => ({
     ...base,
-    color: 'rgb(15 23 42)'
+    backgroundColor: 'color-mix(in srgb, hsl(var(--primary)) 12%, hsl(var(--secondary)))'
   }),
-  placeholder: (base) => ({
+  multiValueLabel: (base: any) => ({
     ...base,
-    color: 'rgb(100 116 139)'
-  }),
-  singleValue: (base) => ({
-    ...base,
-    color: 'rgb(15 23 42)'
-  }),
-  multiValue: (base) => ({
-    ...base,
-    backgroundColor: 'rgb(59 130 246 / 0.15)'
-  }),
-  multiValueLabel: (base) => ({
-    ...base,
-    color: 'rgb(30 64 175)',
+    color: 'hsl(var(--foreground))',
     fontWeight: 700
   }),
-  multiValueRemove: (base) => ({
+  multiValueRemove: (base: any) => ({
     ...base,
-    color: 'rgb(30 64 175)',
+    color: 'hsl(var(--foreground))',
     ':hover': {
-      backgroundColor: 'rgb(59 130 246 / 0.22)',
-      color: 'rgb(30 64 175)'
+      backgroundColor: 'color-mix(in srgb, hsl(var(--destructive)) 20%, transparent)',
+      color: 'hsl(var(--destructive))'
     }
+  }),
+  singleValue: (base: any) => ({
+    ...base,
+    color: 'hsl(var(--foreground))'
+  }),
+  input: (base: any) => ({
+    ...base,
+    color: 'hsl(var(--foreground))'
+  }),
+  placeholder: (base: any) => ({
+    ...base,
+    color: 'hsl(var(--muted-foreground))'
   })
 };
 
@@ -188,6 +189,7 @@ export default function MapPage() {
   
   const [mechanics, setMechanics] = useState<any[]>([]);
   const { userLocation, isLoading: locationLoading, locationSource, locationMessage, requestLocation } = useLocationContext();
+  const [isLocationMessageExpanded, setIsLocationMessageExpanded] = useState(true);
   const [mapBounds, setMapBounds] = useState<L.LatLngBounds | null>(null);
   
   const [mechanicsLoading, setMechanicsLoading] = useState(true);
@@ -250,6 +252,16 @@ export default function MapPage() {
       toast.error('Failed to submit feedback. Please try again.');
     }
   };
+
+  useEffect(() => {
+    if (locationMessage) {
+      setIsLocationMessageExpanded(true);
+      const timer = setTimeout(() => {
+        setIsLocationMessageExpanded(false);
+      }, 15000);
+      return () => clearTimeout(timer);
+    }
+  }, [locationMessage]);
 
   // Route Fetching
   useEffect(() => {
@@ -528,24 +540,45 @@ export default function MapPage() {
     <div className="flex-1 w-full relative bg-background flex flex-col min-h-0">
       {locationMessage && (
         <div className="absolute left-4 right-4 top-4 z-[1200] sm:left-1/2 sm:right-auto sm:w-[520px] sm:-translate-x-1/2">
-          <div className="rounded-2xl border border-amber-500/30 bg-card/95 p-4 shadow-xl backdrop-blur">
-            {/* <div className="flex items-start gap-3">
-              <div className="rounded-xl bg-amber-500/15 p-2 text-amber-600">
-                <AlertTriangle className="h-5 w-5" />
+          <div 
+            onClick={() => !isLocationMessageExpanded && setIsLocationMessageExpanded(true)}
+            className={`rounded-2xl border border-amber-500/30 bg-card/95 p-4 shadow-xl backdrop-blur transition-all duration-300 ${isLocationMessageExpanded ? 'cursor-default' : 'cursor-pointer hover:bg-card w-fit sm:mx-auto'}`}
+          >
+            {isLocationMessageExpanded ? (
+              <div className="flex items-start gap-3 animate-in fade-in duration-300">
+                <div className="rounded-xl bg-amber-500/15 p-2 text-amber-600">
+                  <AlertTriangle className="h-5 w-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-foreground">
+                    {locationSource === 'ip' ? 'Approximate location in use' : 'Location unavailable'}
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">{locationMessage}</p>
+                </div>
+                {locationSource !== 'geolocation' && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); requestLocation(); }}
+                    className="shrink-0 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+                  >
+                    Retry
+                  </button>
+                )}
               </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-foreground">
-                  {locationSource === 'ip' ? 'Approximate location in use' : 'Location unavailable'}
-                </p>
-                <p className="mt-1 text-sm text-muted-foreground">{locationMessage}</p>
+            ) : (
+              <div className="flex items-center gap-3 animate-in fade-in duration-300">
+                <div className="rounded-xl bg-amber-500/15 p-2 text-amber-600 shrink-0">
+                  <AlertTriangle className="h-5 w-5" />
+                </div>
+                {locationSource !== 'geolocation' && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); requestLocation(); }}
+                    className="shrink-0 text-sm font-bold text-primary hover:underline"
+                  >
+                    Enable device location
+                  </button>
+                )}
               </div>
-              <button
-                onClick={() => requestLocation()}
-                className="shrink-0 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
-              >
-                Retry
-              </button>
-            </div> */}
+            )}
           </div>
         </div>
       )}
@@ -706,7 +739,7 @@ export default function MapPage() {
               setPendingServices([]);
               navigate(`/map?${buildMechanicSearchParams({ radius: 5, sort: 'Nearest' }).toString()}`, { replace: true });
             }}
-            className="w-full rounded-xl border border-border bg-secondary/60 px-3 py-2 text-xs font-bold text-foreground hover:bg-secondary"
+            className="w-full mt-4 rounded-xl border border-border bg-secondary/60 px-3 py-2 text-xs font-bold text-foreground hover:bg-secondary"
           >
             Reset Controls
           </button>

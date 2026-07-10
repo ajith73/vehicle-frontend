@@ -36,36 +36,36 @@ const multiSelectStyles = {
   control: (base: any, state: any) => ({
     ...base,
     minHeight: 48,
-    backgroundColor: 'var(--background)',
-    borderColor: state.isFocused ? 'var(--primary)' : 'var(--border)',
-    boxShadow: state.isFocused ? '0 0 0 2px color-mix(in srgb, var(--primary) 18%, transparent)' : 'none'
+    backgroundColor: 'hsl(var(--background))',
+    borderColor: state.isFocused ? 'hsl(var(--primary))' : 'hsl(var(--border))',
+    boxShadow: state.isFocused ? '0 0 0 2px color-mix(in srgb, hsl(var(--primary)) 18%, transparent)' : 'none'
   }),
   menu: (base: any) => ({
     ...base,
-    backgroundColor: 'var(--card)',
-    color: 'var(--foreground)',
+    backgroundColor: 'hsl(var(--card))',
+    color: 'hsl(var(--foreground))',
     zIndex: 130
   }),
   option: (base: any, state: any) => ({
     ...base,
-    backgroundColor: state.isFocused ? 'color-mix(in srgb, var(--primary) 12%, var(--card))' : 'var(--card)',
-    color: 'var(--foreground)'
+    backgroundColor: state.isFocused ? 'color-mix(in srgb, hsl(var(--primary)) 12%, hsl(var(--card)))' : 'hsl(var(--card))',
+    color: 'hsl(var(--foreground))'
   }),
   multiValue: (base: any) => ({
     ...base,
-    backgroundColor: 'color-mix(in srgb, var(--primary) 12%, var(--secondary))'
+    backgroundColor: 'color-mix(in srgb, hsl(var(--primary)) 12%, hsl(var(--secondary)))'
   }),
   multiValueLabel: (base: any) => ({
     ...base,
-    color: 'var(--foreground)'
+    color: 'hsl(var(--foreground))'
   }),
   singleValue: (base: any) => ({
     ...base,
-    color: 'var(--foreground)'
+    color: 'hsl(var(--foreground))'
   }),
   input: (base: any) => ({
     ...base,
-    color: 'var(--foreground)'
+    color: 'hsl(var(--foreground))'
   })
 };
 
@@ -91,6 +91,7 @@ export default function ListPage() {
   const [serviceOptions, setServiceOptions] = useState<string[]>([]);
   const [pendingVehicles, setPendingVehicles] = useState<string[]>(vehicleParams);
   const [pendingServices, setPendingServices] = useState<string[]>(serviceParams);
+  const [isLocationMessageExpanded, setIsLocationMessageExpanded] = useState(true);
 
   const {
     userLocation,
@@ -124,6 +125,16 @@ export default function ListPage() {
 
     fetchOptions();
   }, []);
+
+  useEffect(() => {
+    if (locationMessage) {
+      setIsLocationMessageExpanded(true);
+      const timer = setTimeout(() => {
+        setIsLocationMessageExpanded(false);
+      }, 15000);
+      return () => clearTimeout(timer);
+    }
+  }, [locationMessage]);
 
   const updateQuery = (updates: {
     search?: string;
@@ -295,20 +306,35 @@ export default function ListPage() {
 
       <div className="mx-auto flex-1 w-full max-w-7xl px-4 py-6 sm:px-8">
         {locationMessage && (
-          <div className="mb-5 flex items-start gap-3 rounded-2xl border border-amber-500/30 bg-card p-4 shadow-sm">
-            <div className="rounded-xl bg-amber-500/15 p-2 text-amber-600">
+          <div 
+            onClick={() => !isLocationMessageExpanded && setIsLocationMessageExpanded(true)}
+            className={`mb-5 flex gap-3 rounded-2xl border border-amber-500/30 bg-card p-4 shadow-sm transition-all duration-300 ${isLocationMessageExpanded ? 'items-start cursor-default' : 'items-center cursor-pointer hover:bg-card/80 w-fit'}`}
+          >
+            <div className={`rounded-xl bg-amber-500/15 p-2 text-amber-600 ${!isLocationMessageExpanded && 'shrink-0'}`}>
               <AlertTriangle className="h-5 w-5" />
             </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-foreground">{locationLabel}</p>
-              <p className="mt-1 text-sm text-muted-foreground">{locationMessage}</p>
-            </div>
-            <button
-              onClick={() => requestLocation()}
-              className="shrink-0 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
-            >
-              Retry
-            </button>
+            
+            {isLocationMessageExpanded ? (
+              <div className="min-w-0 flex-1 animate-in fade-in duration-300">
+                <p className="text-sm font-semibold text-foreground">{locationLabel}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{locationMessage}</p>
+                <button
+                  onClick={(e) => { e.stopPropagation(); requestLocation(); }}
+                  className="mt-3 shrink-0 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+                >
+                  Retry
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3 flex-1 min-w-0 animate-in fade-in duration-300">
+                <button
+                  onClick={(e) => { e.stopPropagation(); requestLocation(); }}
+                  className="shrink-0 text-sm font-bold text-primary hover:underline"
+                >
+                  Enable device location
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -334,7 +360,7 @@ export default function ListPage() {
         ) : mechanics.length === 0 ? (
           <div className="rounded-2xl border border-border bg-card py-10 text-center text-muted-foreground">
             <Wrench className="mx-auto mb-3 h-12 w-12 opacity-20" />
-            <p className="font-semibold text-foreground">No mechanics found for the current filters.</p>
+            <p className="font-semibold text-foreground">No mechanics found for these filters.</p>
             <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">
               {emptyStateReason
                 ? `Nothing matched ${emptyStateReason}. Try broadening one of those filters or changing your location.`

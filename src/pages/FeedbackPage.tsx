@@ -73,42 +73,33 @@ export default function FeedbackPage() {
     setLoading(true);
     const loadingToast = toast.loading('Submitting feedback...');
     try {
+      let finalDescription = description;
+      if (showMechanicSelect && mechanicId) {
+        const selectedMechanic = mechanics.find(m => m.id.toString() === mechanicId);
+        const mechanicName = selectedMechanic ? (selectedMechanic.businessName || selectedMechanic.name) : mechanicId;
+        finalDescription = `[Mechanic: ${mechanicName} (ID: ${mechanicId})]\n${description}`;
+      }
+      
       await apiClient('/public/feedback', {
         method: 'POST',
         data: { 
           type, 
-          description,
-          mechanicId: showMechanicSelect && mechanicId ? parseInt(mechanicId) : undefined 
+          description: finalDescription
         }
       });
       toast.success('Feedback submitted successfully!', { id: loadingToast });
       setSuccess(true);
+      // Reset form but don't close modal until they click ok
+      setDescription('');
+      setMechanicId('');
+      setMechanicSearch('');
     } catch (err) {
       toast.error('Network error submitting feedback.', { id: loadingToast });
     }
     setLoading(false);
   };
 
-  if (success) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-73px)] p-4 sm:p-8 pb-[80px] sm:pb-8 relative">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-green-500/10 via-background to-background -z-10" />
-        <div className="max-w-md w-full bg-card/60 backdrop-blur-xl shadow-2xl rounded-3xl p-8 sm:p-12 border border-white/10 dark:border-white/5 text-center transform animate-in zoom-in duration-500">
-          <div className="mx-auto w-24 h-24 bg-green-500/20 text-green-500 rounded-full flex items-center justify-center mb-6">
-            <CheckCircle2 className="w-12 h-12" />
-          </div>
-          <h2 className="text-3xl font-black text-foreground mb-4">Thank You!</h2>
-          <p className="text-muted-foreground text-lg mb-8">Your feedback is incredibly valuable to us and has been recorded successfully.</p>
-          <button 
-            onClick={() => navigate('/')} 
-            className="w-full px-8 py-4 bg-primary text-primary-foreground font-bold rounded-xl hover:bg-primary/90 hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-primary/20"
-          >
-            Back to Home
-          </button>
-        </div>
-      </div>
-    );
-  }
+
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[calc(100vh-73px)] p-4 sm:p-8 pb-[80px] sm:pb-8 relative">
@@ -128,7 +119,12 @@ export default function FeedbackPage() {
                 <button
                   key={t.name}
                   type="button"
-                  onClick={() => setType(t.name)}
+                  onClick={() => {
+                    setType(t.name);
+                    setDescription('');
+                    setMechanicId('');
+                    setMechanicSearch('');
+                  }}
                   className={`flex items-center gap-3 p-4 rounded-xl border-2 text-left transition-all duration-300 ${
                     type === t.name
                       ? 'border-primary bg-primary/10 text-primary shadow-md'
@@ -201,21 +197,46 @@ export default function FeedbackPage() {
             />
           </div>
 
-          <button
-            type="submit"
-            disabled={loading || !description}
-            className="w-full py-4 mt-4 bg-primary text-primary-foreground font-bold rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 hover:bg-primary/90 hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-primary/20 disabled:shadow-none"
+          <button 
+            type="submit" 
+            disabled={loading || !description.trim() || (showMechanicSelect && !mechanicId)}
+            className="mt-4 flex items-center justify-center gap-2 w-full px-8 py-4 bg-primary text-primary-foreground font-bold rounded-xl hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-xl shadow-primary/20"
           >
-            {loading ? (
-              <span className="animate-pulse">Submitting...</span>
-            ) : (
+            {loading ? 'Submitting...' : (
               <>
-                Submit Feedback <Send className="w-5 h-5 ml-1" />
+                <Send size={20} /> Submit Feedback
               </>
             )}
           </button>
         </form>
       </div>
+
+      {/* Success Modal Overlay */}
+      {success && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="max-w-md w-full bg-card shadow-2xl rounded-3xl p-8 sm:p-12 border border-border text-center transform animate-in zoom-in-95 duration-500">
+            <div className="mx-auto w-24 h-24 bg-green-500/20 text-green-500 rounded-full flex items-center justify-center mb-6">
+              <CheckCircle2 className="w-12 h-12" />
+            </div>
+            <h2 className="text-3xl font-black text-foreground mb-4">Thank You!</h2>
+            <p className="text-muted-foreground text-lg mb-8">Your feedback is incredibly valuable to us and has been recorded successfully.</p>
+            <div className="flex gap-4">
+              <button 
+                onClick={() => setSuccess(false)} 
+                className="flex-1 px-6 py-3 bg-secondary text-secondary-foreground font-bold rounded-xl hover:bg-secondary/80 transition-all"
+              >
+                Submit More
+              </button>
+              <button 
+                onClick={() => navigate('/')} 
+                className="flex-1 px-6 py-3 bg-primary text-primary-foreground font-bold rounded-xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
+              >
+                Back to Home
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
-import { API_URL, apiClient } from '../api/apiClient';
+import { apiClient } from '../api/apiClient';
 
 export default function AdminLogin() {
   const navigate = useNavigate();
@@ -24,6 +24,8 @@ export default function AdminLogin() {
       
       localStorage.setItem('token', data.token);
       localStorage.setItem('role', data.role);
+      localStorage.setItem('adminEmail', data.username || username);
+      localStorage.setItem('adminName', data.username || username);
       navigate('/admin/dashboard');
     } catch (err: any) {
       setError(err.message || 'An error occurred during login');
@@ -40,13 +42,14 @@ export default function AdminLogin() {
 
         <form onSubmit={handleLogin} className="flex flex-col gap-4">
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1">Username</label>
+            <label className="block text-sm font-medium text-foreground mb-1">Email</label>
             <input
-              type="text"
+              type="email"
               required
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               className="w-full p-2 rounded border border-border bg-background text-foreground focus:outline-none focus:border-primary"
+              placeholder="admin@example.com"
             />
           </div>
           <div>

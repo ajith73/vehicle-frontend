@@ -10,6 +10,7 @@ export const deleteMechanic = (id: number) => apiClient<{ message: string }>((`/
 export const approveMechanic = (id: number) => apiClient<{ message: string }>((`/admin/mechanics/${id}/approve`), { method: 'POST' });
 
 export const getUpdateRequests = () => apiClient<UpdateRequest[]>('/admin/update-requests');
+export const deleteUpdateRequest = (id: number) => apiClient<{ message: string }>((`/admin/update-requests/${id}`), { method: 'DELETE' });
 export const approveUpdateRequest = (id: number) => apiClient<{ message: string }>((`/admin/update-requests/${id}/approve`), { method: 'POST' });
 export const rejectUpdateRequest = (id: number) => apiClient<{ message: string }>((`/admin/update-requests/${id}/reject`), { method: 'POST' });
 

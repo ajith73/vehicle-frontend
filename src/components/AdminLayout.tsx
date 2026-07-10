@@ -12,12 +12,15 @@ export default function AdminLayout() {
 
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [profile, setProfile] = useState<any>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
   const [showEditProfile, setShowEditProfile] = useState(false);
   
   const [editUsername, setEditUsername] = useState('');
   const [editEmail, setEditEmail] = useState('');
   const [editPassword, setEditPassword] = useState('');
   const [saveLoading, setSaveLoading] = useState(false);
+  const storedAdminEmail = localStorage.getItem('adminEmail') || '';
+  const storedAdminName = localStorage.getItem('adminName') || '';
 
   useEffect(() => {
     // Theme setup
@@ -28,11 +31,20 @@ export default function AdminLayout() {
     const fetchProfile = async () => {
       try {
         const data = await apiClient<any>('/admin/profile');
-        setProfile(data);
-        setEditUsername(data.username || '');
-        setEditEmail(data.email || '');
+        const normalizedProfile = {
+          ...data,
+          name: data.name || data.username || '',
+          email: data.email || data.username || '',
+        };
+        setProfile(normalizedProfile);
+        setEditUsername(normalizedProfile.username || '');
+        setEditEmail(normalizedProfile.email || '');
+        localStorage.setItem('adminEmail', normalizedProfile.email || '');
+        localStorage.setItem('adminName', normalizedProfile.name || normalizedProfile.username || '');
       } catch (err) {
         console.error(err);
+      } finally {
+        setProfileLoading(false);
       }
     };
     fetchProfile();
@@ -62,7 +74,10 @@ export default function AdminLayout() {
         data: payload
       });
       toast('Profile updated successfully');
-      setProfile({ ...profile, username: editUsername, email: editEmail });
+      const updatedProfile = { ...profile, username: editUsername, name: editUsername, email: editEmail || editUsername };
+      setProfile(updatedProfile);
+      localStorage.setItem('adminEmail', updatedProfile.email || '');
+      localStorage.setItem('adminName', updatedProfile.name || updatedProfile.username || '');
       setShowEditProfile(false);
       setEditPassword('');
     } catch (err) {
@@ -108,6 +123,8 @@ export default function AdminLayout() {
     ? navItems.map((item) => item.name)
     : (profile?.allowedScreens || []);
   const permissionsResolved = currentUserRole === 'Super Admin' || profile !== null;
+  const sidebarName = profile?.name || profile?.username || storedAdminName || (profileLoading ? 'Loading account...' : 'Admin account');
+  const sidebarEmail = profile?.email || profile?.username || storedAdminEmail || (profileLoading ? 'Loading email...' : 'Email unavailable');
 
   return (
     <div className="flex h-screen bg-background text-foreground overflow-hidden">
@@ -182,8 +199,8 @@ export default function AdminLayout() {
             <div className={`flex items-center gap-3 overflow-hidden ${isExpanded ? '' : 'justify-center'}`}>
               <UserCircle size={isExpanded ? 40 : 32} className="text-primary shrink-0" />
               <div className={`overflow-hidden transition-all duration-300 ${isExpanded ? 'w-auto opacity-100' : 'w-0 opacity-0 h-0'}`}>
-                <p className="font-bold text-sm truncate">{profile?.username || 'Loading...'}</p>
-                <p className="text-xs text-muted-foreground truncate">{profile?.email || 'No email set'}</p>
+                <p className="font-bold text-sm truncate">{sidebarName}</p>
+                <p className="text-xs text-muted-foreground truncate">{sidebarEmail}</p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-bold ${currentUserRole === 'Super Admin' ? 'bg-primary/15 text-primary' : 'bg-blue-500/15 text-blue-600'}`}>
                     {currentUserRole === 'Super Admin' ? <ShieldCheck size={12} /> : <ShieldAlert size={12} />}
@@ -197,32 +214,34 @@ export default function AdminLayout() {
                 </div>
               </div>
             </div>
-            <button 
-              onClick={() => setShowEditProfile(true)}
-              className="p-2 text-muted-foreground hover:bg-secondary rounded-full transition-colors shrink-0"
-              title="Edit Profile"
-            >
-              <Edit3 size={18} />
-            </button>
+            {currentUserRole === 'Super Admin' && (
+              <button 
+                onClick={() => setShowEditProfile(true)}
+                className="p-2 text-muted-foreground hover:bg-secondary rounded-full transition-colors shrink-0"
+                title="Edit Profile"
+              >
+                <Edit3 size={18} />
+              </button>
+            )}
           </div>
 
           <div className={`flex gap-2 ${isExpanded ? '' : 'flex-col w-full'}`}>
             <button 
               onClick={toggleTheme}
               title={!isExpanded ? (theme === 'light' ? 'Dark Mode' : 'Light Mode') : undefined}
-              className={`flex items-center justify-center gap-2 py-2 text-sm text-foreground bg-secondary hover:bg-secondary/80 rounded-lg transition-colors ${isExpanded ? 'flex-1' : 'w-full'}`}
+              className={`flex items-center justify-center p-2 text-foreground bg-secondary hover:bg-secondary/80 rounded-lg transition-colors shrink-0`}
             >
-              {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
-              <span className={`whitespace-nowrap overflow-hidden transition-all duration-300 ${isExpanded ? 'opacity-100 max-w-full' : 'opacity-0 max-w-0 hidden'}`}>
-                {theme === 'light' ? 'Dark' : 'Light'} Mode
-              </span>
+              {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
             </button>
             <button 
               onClick={handleLogout}
-              className={`flex items-center justify-center p-2 text-red-500 bg-red-50 dark:bg-red-950 hover:bg-red-100 dark:hover:bg-red-900 rounded-lg transition-colors ${isExpanded ? '' : 'w-full'}`}
+              className={`flex items-center justify-center p-2 text-red-500 bg-red-50 dark:bg-red-950 hover:bg-red-100 dark:hover:bg-red-900 rounded-lg transition-colors flex-1`}
               title="Logout"
             >
               <LogOut size={18} />
+              <span className={`whitespace-nowrap overflow-hidden transition-all duration-300 ${isExpanded ? 'opacity-100 ml-2' : 'opacity-0 w-0 hidden'}`}>
+                Logout
+              </span>
             </button>
           </div>
         </div>

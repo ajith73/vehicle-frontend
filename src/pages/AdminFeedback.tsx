@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
-import { MessageSquare, Trash2, Filter } from 'lucide-react';
+import { MessageSquare, Trash2, Filter, Search, ArrowUpDown, RefreshCw, ChevronDown } from 'lucide-react';
 import { useFeedback } from '../hooks/useFeedback';
 import * as api from '../api/feedback';
 import { Pagination } from '../components/Pagination';
@@ -15,6 +15,9 @@ export default function AdminFeedback() {
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [confirmConfig, setConfirmConfig] = useState<{isOpen: boolean, title: string, message: string, type: 'danger'|'warning'|'info'|'success', onConfirm: () => void} | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
+  const [bulkStatusOpen, setBulkStatusOpen] = useState(false);
   const role = localStorage.getItem('role');
 
   const handleUpdateStatus = async (id: number, newStatus: string) => {
@@ -45,11 +48,26 @@ export default function AdminFeedback() {
     });
   };
 
-  const filteredFeedback = feedback.filter(item => {
+  let filteredFeedback = feedback.filter(item => {
     const matchesType = typeFilter === 'All' || item.type === typeFilter;
     const currentStatus = (item.status === 'New' || !item.status) ? 'Pending' : item.status;
     const matchesStatus = statusFilter === 'All' || currentStatus === statusFilter;
     return matchesType && matchesStatus;
+  });
+
+  if (searchQuery) {
+    const q = searchQuery.toLowerCase();
+    filteredFeedback = filteredFeedback.filter(item => 
+      item.description?.toLowerCase().includes(q) ||
+      item.type?.toLowerCase().includes(q) ||
+      item.id.toString().includes(q)
+    );
+  }
+
+  filteredFeedback.sort((a, b) => {
+    const dateA = new Date(a.createdAt || 0).getTime();
+    const dateB = new Date(b.createdAt || 0).getTime();
+    return sortOrder === 'newest' ? dateB - dateA : dateA - dateB;
   });
 
   const totalPages = Math.ceil(filteredFeedback.length / ITEMS_PER_PAGE);
@@ -58,29 +76,46 @@ export default function AdminFeedback() {
     currentPage * ITEMS_PER_PAGE
   );
 
-  const handleBulkAction = async (action: 'resolve' | 'delete') => {
+  const handleBulkAction = async (action: 'delete' | string) => {
     if (selectedIds.length === 0) return;
     
-    setConfirmConfig({
-      isOpen: true,
-      title: action === 'resolve' ? 'Resolve Feedback?' : 'Delete Feedback?',
-      message: `Are you sure you want to ${action} ${selectedIds.length} item(s)?`,
-      type: action === 'resolve' ? 'info' : 'danger',
-      onConfirm: async () => {
-        try {
-          if (action === 'resolve') {
-            await Promise.all(selectedIds.map(id => api.updateFeedbackStatus(id, 'Not Need Update')));
-          } else {
+    if (action === 'delete') {
+      setConfirmConfig({
+        isOpen: true,
+        title: 'Delete Feedback?',
+        message: `Are you sure you want to delete ${selectedIds.length} item(s)?`,
+        type: 'danger',
+        onConfirm: async () => {
+          try {
             await Promise.all(selectedIds.map(id => api.deleteFeedback(id)));
+            toast.success(`Successfully deleted ${selectedIds.length} item(s)`);
+            setSelectedIds([]);
+            refetch();
+          } catch (err) {
+            toast.error('Error during bulk delete');
           }
-          toast.success(`Successfully ${action}d ${selectedIds.length} item(s)`);
-          setSelectedIds([]);
-          refetch();
-        } catch (err) {
-          toast.error('Error during bulk action');
         }
-      }
-    });
+      });
+    } else {
+      // It's a status update
+      setConfirmConfig({
+        isOpen: true,
+        title: 'Update Status?',
+        message: `Are you sure you want to update ${selectedIds.length} item(s) to "${action}"?`,
+        type: 'info',
+        onConfirm: async () => {
+          try {
+            await Promise.all(selectedIds.map(id => api.updateFeedbackStatus(id, action)));
+            toast.success(`Successfully updated ${selectedIds.length} item(s)`);
+            setSelectedIds([]);
+            setBulkStatusOpen(false);
+            refetch();
+          } catch (err) {
+            toast.error('Error during bulk update');
+          }
+        }
+      });
+    }
   };
 
   const toggleSelectAll = () => {
@@ -95,7 +130,17 @@ export default function AdminFeedback() {
     setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
 
-  if (loading) return <div className="p-8 text-center text-muted-foreground">Loading...</div>;
+  if (loading) {
+    return (
+      <div className="p-4 sm:p-8 max-w-7xl mx-auto w-full space-y-6">
+        <div className="flex justify-between items-center mb-6">
+          <div className="h-10 bg-muted/50 rounded-lg w-1/3 animate-pulse"></div>
+        </div>
+        <div className="bg-card border border-border rounded-xl p-4 shadow-sm h-32 animate-pulse"></div>
+        <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm h-96 animate-pulse"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 sm:p-8 max-w-7xl mx-auto w-full">
@@ -104,13 +149,28 @@ export default function AdminFeedback() {
           <MessageSquare className="text-primary" /> User Feedback
         </h2>
         {selectedIds.length > 0 && role === 'Super Admin' && (
-          <div className="flex flex-wrap gap-2 mt-2 sm:mt-0">
-            <button 
-              onClick={() => handleBulkAction('resolve')}
-              className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 font-medium transition-colors shadow-sm"
-            >
-              Mark Selected Resolved ({selectedIds.length})
-            </button>
+          <div className="flex flex-wrap gap-2 mt-2 sm:mt-0 items-center">
+            <div className="relative">
+              <button 
+                onClick={() => setBulkStatusOpen(!bulkStatusOpen)}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-medium transition-colors shadow-sm"
+              >
+                Update Status ({selectedIds.length}) <ChevronDown size={16} />
+              </button>
+              {bulkStatusOpen && (
+                <div className="absolute top-full right-0 mt-1 w-48 bg-card border border-border rounded-xl shadow-lg z-50 overflow-hidden">
+                  {['Pending', 'In Progress', 'Updated', 'Not Need Update'].map(status => (
+                    <button
+                      key={status}
+                      onClick={() => handleBulkAction(status)}
+                      className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-muted transition-colors"
+                    >
+                      {status}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <button 
               onClick={() => handleBulkAction('delete')}
               className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 font-medium transition-colors shadow-sm"
@@ -122,6 +182,35 @@ export default function AdminFeedback() {
       </div>
 
       <div className="bg-card border border-border rounded-xl p-4 mb-6 shadow-sm space-y-4">
+        {/* Search, Sort, Refresh */}
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1 sm:max-w-xs">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+            <input
+              type="text"
+              placeholder="Search feedback..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
+          <button 
+            onClick={() => setSortOrder(prev => prev === 'newest' ? 'oldest' : 'newest')}
+            className="p-2 border border-border rounded-lg bg-background hover:bg-muted text-muted-foreground flex items-center gap-1 text-sm whitespace-nowrap"
+            title="Toggle Sort Order"
+          >
+            <ArrowUpDown size={16} />
+            <span className="hidden sm:inline">{sortOrder === 'newest' ? 'Newest' : 'Oldest'}</span>
+          </button>
+          <button 
+            onClick={() => refetch()}
+            className="p-2 border border-border rounded-lg bg-background hover:bg-muted text-muted-foreground"
+            title="Refresh Data"
+          >
+            <RefreshCw size={16} />
+          </button>
+        </div>
+
         {/* Type Filter Chips */}
         <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
           <Filter className="w-4 h-4 text-muted-foreground mt-1.5 shrink-0" />
@@ -129,7 +218,7 @@ export default function AdminFeedback() {
           {['All', 'Bug Report', 'Suggestion', 'Other'].map((type) => (
             <button
               key={type}
-              onClick={() => setTypeFilter(type)}
+              onClick={() => { setTypeFilter(type); setCurrentPage(1); }}
               className={`shrink-0 px-4 py-1.5 rounded-full text-xs font-bold border transition-colors ${
                 typeFilter === type 
                   ? 'bg-primary text-primary-foreground border-primary' 
@@ -148,7 +237,7 @@ export default function AdminFeedback() {
           {['All', 'Pending', 'In Progress', 'Updated', 'Not Need Update'].map((status) => (
             <button
               key={status}
-              onClick={() => setStatusFilter(status)}
+              onClick={() => { setStatusFilter(status); setCurrentPage(1); }}
               className={`shrink-0 px-4 py-1.5 rounded-full text-xs font-bold border transition-colors ${
                 statusFilter === status 
                   ? 'bg-primary text-primary-foreground border-primary' 

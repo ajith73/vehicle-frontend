@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
-import { Upload, Plus, Check, Edit3, Trash2, Search, Filter, Eye, X, MapPin, Phone, Settings, CheckCircle, XCircle, AlertCircle, Clock } from 'lucide-react';
+import { Upload, Plus, Check, Edit3, Trash2, Search, Filter, Eye, X, MapPin, Phone, Settings, CheckCircle, XCircle, AlertCircle, Clock, UserCircle } from 'lucide-react';
 import { useMechanics } from '../hooks/useMechanics';
 import * as api from '../api/mechanics';
 import type { Mechanic } from '../types';
@@ -15,6 +15,8 @@ export default function AdminMechanics() {
   const { mechanics, loading, refetch } = useMechanics();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
+  const [typeFilter, setTypeFilter] = useState('All Types');
+  const [sortBy, setSortBy] = useState('Newest First');
   const [deleteModalId, setDeleteModalId] = useState<number | null>(null);
   const [viewMechanicData, setViewMechanicData] = useState<Mechanic | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -72,6 +74,28 @@ export default function AdminMechanics() {
     });
   };
 
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Delete Mechanics?',
+      message: `This action cannot be undone. Are you sure you want to delete ${selectedIds.length} mechanic(s) permanently?`,
+      type: 'danger',
+      onConfirm: async () => {
+        const loadingToast = toast.loading(`Deleting ${selectedIds.length} mechanics...`);
+        try {
+          await Promise.all(selectedIds.map(id => api.deleteMechanic(id)));
+          toast.success(`Successfully deleted ${selectedIds.length} mechanic(s)`, { id: loadingToast });
+          setSelectedIds([]);
+          refetch();
+        } catch (err) {
+          toast.error('Error during bulk delete. Some mechanics may not have been deleted.', { id: loadingToast });
+        }
+      }
+    });
+  };
+
   const toggleSelectAll = () => {
     if (selectedIds.length === filteredMechanics.length && filteredMechanics.length > 0) {
       setSelectedIds([]);
@@ -84,12 +108,25 @@ export default function AdminMechanics() {
     setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
 
-  const filteredMechanics = mechanics.filter(m => {
-    const searchString = `${m.businessName || m.name} ${m.city} ${m.phone?.[0]?.number}`.toLowerCase();
+  let result = mechanics.filter(m => {
+    const searchString = `${m.businessName || m.name} ${m.mechanicName || ''} ${m.city} ${m.phone?.[0]?.number || ''} ${m.phone?.map((p: any) => p.number).join(' ') || ''}`.toLowerCase();
     const matchesSearch = searchString.includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'All' || m.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesType = typeFilter === 'All Types' || m.mechanicType === typeFilter;
+    return matchesSearch && matchesStatus && matchesType;
   });
+
+  if (sortBy === 'Newest First') {
+    result.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+  } else if (sortBy === 'Oldest First') {
+    result.sort((a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime());
+  } else if (sortBy === 'Name A-Z') {
+    result.sort((a, b) => (a.businessName || a.name || '').localeCompare(b.businessName || b.name || ''));
+  } else if (sortBy === 'Name Z-A') {
+    result.sort((a, b) => (b.businessName || b.name || '').localeCompare(a.businessName || a.name || ''));
+  }
+
+  const filteredMechanics = result;
 
   const totalPages = Math.ceil(filteredMechanics.length / ITEMS_PER_PAGE);
   const paginatedMechanics = filteredMechanics.slice(
@@ -97,17 +134,46 @@ export default function AdminMechanics() {
     currentPage * ITEMS_PER_PAGE
   );
 
-  if (loading) return <div className="p-8 text-center text-foreground">Loading mechanics...</div>;
+  if (loading) {
+    return (
+      <div className="w-full space-y-4 animate-pulse pb-12">
+        <div className="flex justify-between items-center mb-6">
+          <div className="h-8 bg-muted rounded w-1/4"></div>
+          <div className="flex gap-2">
+            <div className="h-10 bg-muted rounded w-24"></div>
+            <div className="h-10 bg-muted rounded w-32"></div>
+          </div>
+        </div>
+        <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
+          <div className="p-4 border-b border-border flex justify-between gap-4">
+            <div className="h-10 bg-muted rounded w-1/3"></div>
+            <div className="h-10 bg-muted rounded w-32"></div>
+          </div>
+          <div className="p-0">
+            {[1, 2, 3, 4, 5].map(i => (
+              <div key={i} className="flex gap-4 p-4 border-b border-border">
+                <div className="w-6 h-6 bg-muted rounded"></div>
+                <div className="w-1/4 h-6 bg-muted rounded"></div>
+                <div className="w-1/4 h-6 bg-muted rounded"></div>
+                <div className="w-1/6 h-6 bg-muted rounded"></div>
+                <div className="w-1/6 h-6 bg-muted rounded"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 sm:p-8 max-w-7xl mx-auto w-full">
-      <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-4 mb-8">
+      <div className="flex flex-col gap-4 mb-8 xl:flex-row xl:items-start xl:justify-between">
         <h2 className="text-3xl font-bold text-foreground flex items-center gap-2">
           Mechanic Management
         </h2>
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex w-full flex-col gap-3 xl:w-auto xl:items-end">
           {selectedIds.length > 0 && role === 'Super Admin' && (
-            <div className="flex gap-2 mr-4 border-r border-border pr-4">
+            <div className="flex flex-wrap gap-2 rounded-xl border border-border bg-card p-3 xl:justify-end">
               <button 
                 onClick={() => handleBulkStatusUpdate('Approved')}
                 className="flex items-center gap-2 px-3 py-1.5 bg-green-500/10 text-green-600 rounded-lg hover:bg-green-500 hover:text-white text-sm font-medium transition-colors"
@@ -132,20 +198,28 @@ export default function AdminMechanics() {
               >
                 <AlertCircle size={16} /> Inactive
               </button>
+              <button 
+                onClick={handleBulkDelete}
+                className="flex items-center gap-2 px-3 py-1.5 bg-red-500/10 text-red-600 rounded-lg hover:bg-red-500 hover:text-white text-sm font-medium transition-colors border border-red-500/20"
+              >
+                <Trash2 size={16} /> Delete
+              </button>
             </div>
           )}
-          <button 
-            onClick={() => navigate('/admin/mechanics/bulk-upload')} 
-            className="flex items-center gap-2 px-4 py-2 border border-border bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/80 font-medium transition-colors shadow-sm"
-          >
-            <Upload size={18} /> Bulk Upload
-          </button>
-          <button 
-            onClick={() => navigate('/admin/mechanics/new')} 
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 font-medium transition-colors shadow-sm"
-          >
-            <Plus size={18} /> Add Mechanic
-          </button>
+          <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 xl:w-auto">
+            <button 
+              onClick={() => navigate('/admin/mechanics/bulk-upload')} 
+              className="flex w-full items-center justify-center gap-2 px-4 py-2 border border-border bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/80 font-medium transition-colors shadow-sm"
+            >
+              <Upload size={18} /> Bulk Upload
+            </button>
+            <button 
+              onClick={() => navigate('/admin/mechanics/new')} 
+              className="flex w-full items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 font-medium transition-colors shadow-sm"
+            >
+              <Plus size={18} /> Add Mechanic
+            </button>
+          </div>
         </div>
       </div>
 
@@ -161,22 +235,62 @@ export default function AdminMechanics() {
           />
         </div>
         
-        {/* Filter Chips */}
-        <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
-          <Filter className="w-4 h-4 text-muted-foreground mt-1.5 shrink-0" />
-          {['All', 'Approved', 'Pending', 'Rejected', 'Inactive'].map((status) => (
-            <button
-              key={status}
-              onClick={() => setStatusFilter(status)}
-              className={`shrink-0 px-4 py-1.5 rounded-full text-xs font-bold border transition-colors ${
-                statusFilter === status 
-                  ? 'bg-primary text-primary-foreground border-primary' 
-                  : 'bg-background text-muted-foreground border-border hover:border-primary/50'
-              }`}
-            >
-              {status}
-            </button>
-          ))}
+        {/* Filters and Sorting */}
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-start">
+          <div className="flex flex-1 flex-col gap-3">
+            <div className="flex items-center gap-2">
+              <Filter className="w-4 h-4 text-muted-foreground shrink-0" />
+              <span className="text-sm font-semibold text-muted-foreground">Status:</span>
+            </div>
+            <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
+            {['All', 'Approved', 'Pending', 'Rejected', 'Inactive'].map((status) => (
+              <button
+                key={status}
+                onClick={() => setStatusFilter(status)}
+                className={`shrink-0 px-4 py-1.5 rounded-full text-xs font-bold border transition-colors ${
+                  statusFilter === status 
+                    ? 'bg-primary text-primary-foreground border-primary' 
+                    : 'bg-background text-muted-foreground border-border hover:border-primary/50'
+                }`}
+              >
+                {status}
+              </button>
+            ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:w-auto xl:min-w-[420px]">
+            <div className="flex flex-col gap-2">
+              <span className="text-sm font-semibold text-muted-foreground">Type:</span>
+              <select 
+                value={typeFilter} 
+                onChange={e => setTypeFilter(e.target.value)}
+                className="w-full bg-background border border-border text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
+              >
+                <option value="All Types">All Types</option>
+                <option value="Individual Mechanic">Individual Mechanic</option>
+                <option value="Workshop / Garage">Workshop / Garage</option>
+                <option value="Authorized Service Center">Authorized Service Center</option>
+                <option value="Mobile Mechanic">Mobile Mechanic</option>
+                <option value="Towing Company">Towing Company</option>
+                <option value="Fuel Delivery Partner">Fuel Delivery Partner</option>
+              </select>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <span className="text-sm font-semibold text-muted-foreground">Sort:</span>
+              <select 
+                value={sortBy} 
+                onChange={e => setSortBy(e.target.value)}
+                className="w-full bg-background border border-border text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
+              >
+                <option value="Newest First">Newest First</option>
+                <option value="Oldest First">Oldest First</option>
+                <option value="Name A-Z">Name A-Z</option>
+                <option value="Name Z-A">Name Z-A</option>
+              </select>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -290,11 +404,11 @@ export default function AdminMechanics() {
         onCancel={() => setConfirmConfig(null)}
       />
 
-      {/* View Details Modal */}
+    {/* View Details Modal */}
       {viewMechanicData && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center sm:p-4">
-          <div className="bg-card w-full h-full sm:h-auto sm:max-h-[90vh] max-w-2xl overflow-y-auto sm:rounded-2xl shadow-2xl animate-in zoom-in-95 duration-200 hide-scrollbar flex flex-col">
-            <div className="sticky top-0 bg-card/80 backdrop-blur border-b border-border p-4 sm:p-6 flex justify-between items-center z-10">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-card w-full h-full sm:h-auto sm:max-h-[90vh] max-w-4xl overflow-y-auto sm:rounded-2xl shadow-2xl animate-in zoom-in-95 duration-200 hide-scrollbar flex flex-col">
+            <div className="sticky top-0 bg-card/90 backdrop-blur border-b border-border p-4 sm:p-6 flex justify-between items-center z-10">
               <h2 className="text-2xl font-bold flex items-center gap-2">
                 <Eye className="text-primary" /> Mechanic Details
               </h2>
@@ -305,96 +419,123 @@ export default function AdminMechanics() {
                 <X size={20} />
               </button>
             </div>
-            <div className="p-4 sm:p-6 space-y-6 flex-1">
-              <div>
-                <h3 className="text-xl font-bold text-foreground">{viewMechanicData.name}</h3>
-                <p className="text-muted-foreground">{viewMechanicData.description || 'No description provided.'}</p>
+            
+            <div className="p-4 sm:p-6 space-y-8 flex-1">
+              
+              {/* Header Section */}
+              <div className="flex flex-col md:flex-row gap-6 items-start">
+                {viewMechanicData.image && (
+                  <img src={viewMechanicData.image} alt={viewMechanicData.businessName || viewMechanicData.name} className="w-full md:w-48 h-48 object-cover rounded-xl border border-border shadow-sm shrink-0" />
+                )}
+                <div className="flex-1 space-y-2">
+                  <div className="flex items-center gap-3">
+                    <h3 className="text-2xl font-bold text-foreground">{viewMechanicData.businessName || viewMechanicData.name}</h3>
+                    <span className={`px-2 py-1 rounded text-xs font-bold ${
+                      viewMechanicData.status === 'Approved' ? 'bg-green-100 text-green-700' :
+                      viewMechanicData.status === 'Pending' ? 'bg-yellow-100 text-yellow-700' :
+                      'bg-red-100 text-red-700'
+                    }`}>
+                      {viewMechanicData.status}
+                    </span>
+                  </div>
+                  {viewMechanicData.mechanicName && <p className="text-muted-foreground font-medium flex items-center gap-2"><UserCircle size={16}/> Owner: {viewMechanicData.mechanicName}</p>}
+                  <p className="inline-flex items-center gap-1 rounded bg-secondary px-2 py-1 text-xs font-bold text-secondary-foreground">{viewMechanicData.mechanicType}</p>
+                  <p className="text-muted-foreground mt-2">{viewMechanicData.description || 'No description provided.'}</p>
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div className="flex items-start gap-3">
-                    <MapPin className="text-primary mt-1 shrink-0" size={20} />
-                    <div>
-                      <p className="font-semibold text-sm">Location</p>
-                      <p className="text-sm text-muted-foreground">
-                        {viewMechanicData.address}, {viewMechanicData.area}<br />
-                        {viewMechanicData.city}, {viewMechanicData.state}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Contact & Location Section */}
+                <div className="bg-muted/10 border border-border rounded-xl p-5 space-y-6">
+                  <h4 className="font-bold text-lg border-b border-border pb-2 flex items-center gap-2"><Phone size={18} className="text-primary"/> Contact & Web</h4>
+                  <div className="space-y-3">
+                    {viewMechanicData.phone?.map((p: any, i: number) => (
+                      <p key={i} className="text-sm text-muted-foreground flex items-center gap-2">
+                        <span className="font-medium text-foreground">{p.isTelephone ? 'Tel:' : 'Phone:'}</span> {p.number} 
+                        {p.isWhatsapp && <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-bold">WhatsApp</span>}
                       </p>
-                      <p className="text-xs text-muted-foreground mt-1 font-mono">
+                    ))}
+                    {viewMechanicData.emails?.map((e: string, i: number) => (
+                      <p key={i} className="text-sm text-muted-foreground"><span className="font-medium text-foreground">Email:</span> {e}</p>
+                    ))}
+                    {viewMechanicData.websiteUrl && (
+                      <a href={viewMechanicData.websiteUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline flex items-center gap-1">
+                        Visit Website
+                      </a>
+                    )}
+                  </div>
+
+                  <h4 className="font-bold text-lg border-b border-border pb-2 flex items-center gap-2 mt-6"><MapPin size={18} className="text-primary"/> Location</h4>
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      {viewMechanicData.address}<br />
+                      {viewMechanicData.landmark && <>Landmark: {viewMechanicData.landmark}<br/></>}
+                      {viewMechanicData?.pincode ? `Pincode: ${viewMechanicData?.pincode}` : (viewMechanicData.area && `Area: ${viewMechanicData.area}`)}<br />
+                      {viewMechanicData.city}, {viewMechanicData.state}
+                    </p>
+                    <div className="pt-2">
+                      <p className="text-xs text-muted-foreground font-mono bg-secondary px-2 py-1 rounded inline-block">
                         Lat: {viewMechanicData.latitude} | Lng: {viewMechanicData.longitude}
                       </p>
+                      <br/>
+                      <a href={`https://www.google.com/maps?q=${viewMechanicData.latitude},${viewMechanicData.longitude}`} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline mt-1 inline-block">
+                        Open in Google Maps
+                      </a>
                     </div>
                   </div>
-                  <div className="flex items-start gap-3">
-                    <Phone className="text-primary mt-1 shrink-0" size={20} />
-                    <div>
-                      <p className="font-semibold text-sm">Contact</p>
-                      {viewMechanicData.phone?.map((p: any, i: number) => (
-                        <p key={i} className="text-sm text-muted-foreground">{p.number} {p.isWhatsapp ? '(WhatsApp)' : ''}</p>
-                      ))}
-                      {viewMechanicData.email?.map((e: string, i: number) => (
-                        <p key={i} className="text-sm text-muted-foreground">{e}</p>
-                      ))}
-                      {viewMechanicData.websiteUrl && (
-                        <a href={viewMechanicData.websiteUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline block mt-1">
-                          {viewMechanicData.websiteUrl}
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                  {viewMechanicData.imageUrl && (
-                    <div className="mt-4">
-                      <p className="font-semibold text-sm mb-2">Image</p>
-                      <img src={viewMechanicData.imageUrl} alt={viewMechanicData.name} className="w-full h-32 object-cover rounded-xl border border-border" />
-                    </div>
-                  )}
                 </div>
 
-                <div className="space-y-4">
-                  <div className="flex items-start gap-3">
-                    <Settings className="text-primary mt-1 shrink-0" size={20} />
+                {/* Services & Operating Info Section */}
+                <div className="bg-muted/10 border border-border rounded-xl p-5 space-y-6">
+                  <h4 className="font-bold text-lg border-b border-border pb-2 flex items-center gap-2"><Settings size={18} className="text-primary"/> Services & Features</h4>
+                  <div className="space-y-4">
                     <div>
-                      <p className="font-semibold text-sm mb-1">Services</p>
-                      <div className="flex flex-wrap gap-1">
-                        {viewMechanicData.services?.map((s: string) => (
-                          <span key={s} className="px-2 py-0.5 bg-secondary text-secondary-foreground text-xs rounded font-medium">{s}</span>
-                        )) || <span className="text-muted-foreground text-xs">N/A</span>}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <Settings className="text-primary mt-1 shrink-0" size={20} />
-                    <div>
-                      <p className="font-semibold text-sm mb-1">Vehicles</p>
-                      <div className="flex flex-wrap gap-1">
+                      <p className="font-semibold text-sm mb-2">Supported Vehicles</p>
+                      <div className="flex flex-wrap gap-1.5">
                         {viewMechanicData.vehicleTypes?.map((v: string) => (
-                          <span key={v} className="px-2 py-0.5 bg-secondary text-secondary-foreground text-xs rounded font-medium">{v}</span>
+                          <span key={v} className="px-2 py-1 bg-secondary text-secondary-foreground text-xs rounded font-medium">{v}</span>
                         )) || <span className="text-muted-foreground text-xs">N/A</span>}
                       </div>
                     </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <Settings className="text-primary mt-1 shrink-0" size={20} />
                     <div>
-                      <p className="font-semibold text-sm mb-1">Schedule & Status</p>
-                      <p className="text-sm text-muted-foreground mb-1">
-                        Days: {viewMechanicData.operatingDays?.join(', ') || 'N/A'}
-                      </p>
-                      <p className="text-sm text-muted-foreground mb-2">
-                        Hours: {viewMechanicData.startTime || 'N/A'} - {viewMechanicData.endTime || 'N/A'}
-                      </p>
-                      <span className={`px-2 py-1 rounded text-xs font-bold ${
-                        viewMechanicData.status === 'Approved' ? 'bg-green-100 text-green-700' :
-                        viewMechanicData.status === 'Pending' ? 'bg-yellow-100 text-yellow-700' :
-                        'bg-red-100 text-red-700'
-                      }`}>
-                        {viewMechanicData.status}
-                      </span>
+                      <p className="font-semibold text-sm mb-2">Services Provided</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {viewMechanicData.serviceTypes?.map((s: string) => (
+                          <span key={s} className="px-2 py-1 bg-secondary text-secondary-foreground text-xs rounded font-medium">{s}</span>
+                        )) || <span className="text-muted-foreground text-xs">N/A</span>}
+                      </div>
                     </div>
+                    <div>
+                      <p className="font-semibold text-sm mb-2">Special Features</p>
+                      <div className="flex flex-wrap gap-2">
+                        {viewMechanicData.evSupport && <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded border border-blue-200">EV Support</span>}
+                        {viewMechanicData.homeService && <span className="text-xs font-bold text-purple-600 bg-purple-50 px-2 py-1 rounded border border-purple-200">Home Service</span>}
+                        {viewMechanicData.roadsideAssistance && <span className="text-xs font-bold text-orange-600 bg-orange-50 px-2 py-1 rounded border border-orange-200">Roadside Assistance</span>}
+                      </div>
+                    </div>
+                  </div>
+
+                  <h4 className="font-bold text-lg border-b border-border pb-2 flex items-center gap-2 mt-6"><Clock size={18} className="text-primary"/> Operating Hours</h4>
+                  <div className="space-y-3">
+                    <p className="text-sm">
+                      <span className="font-semibold block mb-1">Working Days:</span>
+                      <span className="text-muted-foreground">{viewMechanicData.operatingDays?.join(', ') || 'N/A'}</span>
+                    </p>
+                    <p className="text-sm">
+                      <span className="font-semibold block mb-1">Timings:</span>
+                      <span className="text-muted-foreground">
+                        {viewMechanicData.is24Hours ? '24 Hours Open' : (viewMechanicData.operatingHours || 'N/A')}
+                      </span>
+                    </p>
+                    {viewMechanicData.holidayWorking && (
+                      <p className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded border border-green-200 inline-block mt-1">
+                        Open on Holidays
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
+              
             </div>
           </div>
         </div>

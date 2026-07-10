@@ -1,17 +1,15 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Heart, CreditCard, HeartHandshake, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Heart, CreditCard, HeartHandshake, ArrowRight, X } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { API_URL, apiClient } from '../api/apiClient';
+import { apiClient } from '../api/apiClient';
 
 const SUGGESTED_AMOUNTS = [100, 200, 500, 1000];
 
 export default function DonationPage() {
-  const navigate = useNavigate();
   const [amount, setAmount] = useState('');
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [isThankYouOpen, setIsThankYouOpen] = useState(false);
 
   const [isConsentOpen, setIsConsentOpen] = useState(false);
   const [hasConsented, setHasConsented] = useState(false);
@@ -35,33 +33,15 @@ export default function DonationPage() {
       });
       setIsConsentOpen(false);
       toast.success('Donation successful!', { id: loadingToast });
-      setSuccess(true);
+      setIsThankYouOpen(true);
+      setAmount('');
+      setName('');
+      setHasConsented(false);
     } catch (err) {
       toast.error('Network error processing donation.', { id: loadingToast });
     }
     setLoading(false);
   };
-
-  if (success) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-73px)] p-4 sm:p-8 pb-[80px] sm:pb-8 relative">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-pink-500/10 via-background to-background -z-10" />
-        <div className="max-w-md w-full bg-card/60 backdrop-blur-xl shadow-2xl rounded-3xl p-8 sm:p-12 border border-white/10 dark:border-white/5 text-center transform animate-in zoom-in duration-500">
-          <div className="mx-auto w-24 h-24 bg-pink-500/20 text-pink-500 rounded-full flex items-center justify-center mb-6">
-            <HeartHandshake className="w-12 h-12" />
-          </div>
-          <h2 className="text-3xl font-black text-foreground mb-4">Thank You!</h2>
-          <p className="text-muted-foreground text-lg mb-8">Your generous support helps us keep this platform running and free for everyone.</p>
-          <button 
-            onClick={() => navigate('/')} 
-            className="w-full px-8 py-4 bg-primary text-primary-foreground font-bold rounded-xl hover:bg-primary/90 hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-primary/20"
-          >
-            Back to Home
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <>
@@ -177,6 +157,33 @@ export default function DonationPage() {
                 {loading ? 'Processing...' : `Proceed to Pay ₹${amount}`}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {isThankYouOpen && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/65 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="relative w-full max-w-md overflow-hidden rounded-[28px] border border-white/10 bg-card/95 p-7 text-center shadow-2xl animate-in zoom-in-95 duration-200">
+            <button
+              onClick={() => setIsThankYouOpen(false)}
+              className="absolute right-4 top-4 rounded-full border border-border p-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+              aria-label="Close thank you popup"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <div className="mx-auto mb-5 flex h-24 w-24 items-center justify-center rounded-full bg-pink-500/15 text-pink-500 shadow-lg shadow-pink-500/10">
+              <HeartHandshake className="h-12 w-12" />
+            </div>
+            <h2 className="text-3xl font-black text-foreground">Thank You!</h2>
+            <p className="mt-3 text-base text-muted-foreground">
+              Your generous support helps us keep this platform running and free for everyone.
+            </p>
+            <button
+              onClick={() => setIsThankYouOpen(false)}
+              className="mt-7 w-full rounded-2xl bg-primary px-6 py-3.5 font-bold text-primary-foreground transition-all hover:bg-primary/90 hover:scale-[1.01] active:scale-[0.99] shadow-xl shadow-primary/20"
+            >
+              Close
+            </button>
           </div>
         </div>
       )}

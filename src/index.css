@@ -55,9 +55,62 @@
   * {
     @apply border-border;
   }
+
+  html {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, hsl(var(--primary)) 42%, hsl(var(--muted))) transparent;
+  }
+
   body {
     @apply bg-background text-foreground;
     font-family: 'Inter', sans-serif;
+  }
+
+  body::-webkit-scrollbar,
+  *::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+
+  body::-webkit-scrollbar-track,
+  *::-webkit-scrollbar-track {
+    background:
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, hsl(var(--background)) 92%, hsl(var(--primary)) 8%),
+        color-mix(in srgb, hsl(var(--muted)) 86%, hsl(var(--background)) 14%)
+      );
+    border-radius: 999px;
+  }
+
+  body::-webkit-scrollbar-thumb,
+  *::-webkit-scrollbar-thumb {
+    background:
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, hsl(var(--primary)) 70%, white 30%),
+        color-mix(in srgb, hsl(var(--primary)) 46%, hsl(var(--secondary)) 54%)
+      );
+    border: 3px solid transparent;
+    border-radius: 999px;
+    background-clip: padding-box;
+  }
+
+  body::-webkit-scrollbar-thumb:hover,
+  *::-webkit-scrollbar-thumb:hover {
+    background:
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, hsl(var(--primary)) 82%, white 18%),
+        color-mix(in srgb, hsl(var(--primary)) 58%, hsl(var(--secondary)) 42%)
+      );
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+
+  body::-webkit-scrollbar-corner,
+  *::-webkit-scrollbar-corner {
+    background: transparent;
   }
 }
 
@@ -76,24 +129,70 @@
   display: none;
 }
 
+/* Theme-matched custom scrollbar for panels, dropdowns, and modal content */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, hsl(var(--primary)) 46%, hsl(var(--secondary))) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: color-mix(in srgb, hsl(var(--muted)) 82%, transparent);
+  border-radius: 999px;
+  margin: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, hsl(var(--primary)) 78%, white 22%),
+      color-mix(in srgb, hsl(var(--primary)) 52%, hsl(var(--secondary)) 48%)
+    );
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, hsl(var(--primary)) 88%, white 12%),
+      color-mix(in srgb, hsl(var(--primary)) 62%, hsl(var(--secondary)) 38%)
+    );
+  background-clip: padding-box;
+}
+
 /* react-select styling to blend with Shadcn */
 .react-select__control {
   @apply bg-background border-border rounded-md shadow-sm;
+  background-color: hsl(var(--background)) !important;
+  border-color: hsl(var(--border)) !important;
 }
 .react-select__control--is-focused {
   @apply border-primary ring-1 ring-primary;
+  border-color: hsl(var(--primary)) !important;
 }
 .react-select__menu {
   @apply bg-card border border-border shadow-md rounded-md z-50;
+  background-color: hsl(var(--card)) !important;
 }
 .react-select__option {
-  @apply bg-transparent text-foreground cursor-pointer;
+  @apply text-foreground cursor-pointer;
+  background-color: transparent !important;
 }
 .react-select__option--is-focused {
   @apply bg-secondary;
+  background-color: hsl(var(--secondary)) !important;
 }
 .react-select__option--is-selected {
   @apply bg-primary text-primary-foreground;
+  background-color: hsl(var(--primary)) !important;
 }
 .react-select__multi-value {
   @apply bg-secondary text-secondary-foreground rounded-sm;

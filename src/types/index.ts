@@ -31,6 +31,7 @@ export interface Mechanic {
   address?: string;
   landmark?: string;
   area?: string;
+  pincode?: string;
   latitude?: number;
   longitude?: number;
   serviceRadius?: number;
@@ -70,12 +71,13 @@ export interface Donation {
 
 export interface UpdateRequest {
   id: number;
-  mechanicId: number;
+  mechanicId?: number | null;
   updatedData: Partial<Mechanic>;
   status: string;
   createdAt: string;
   Mechanic?: Mechanic;
   Requestor?: { username: string };
+  requesterDisplayName?: string;
 }
 
 export interface ActivityLog {
