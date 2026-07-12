@@ -268,14 +268,14 @@ export default function MapPage() {
     if (!selectedMechanic || !userLocation) {
       setRouteCoords([]);
       setDrivingDistance(null);
+      setDrivingTime(null);
       return;
     }
 
     const fetchRoute = async () => {
       try {
         const data = await apiClient<any>('/public/route', {
-          method: 'POST',
-          data: {
+          params: {
             startLat: userLocation[0],
             startLng: userLocation[1],
             endLat: selectedMechanic.latitude,
@@ -304,12 +304,6 @@ export default function MapPage() {
     
     fetchRoute();
   }, [selectedMechanic, userLocation?.[0], userLocation?.[1], routeOption]);
-
-  const locateUser = () => {
-    if (userLocation && mapInstance) {
-      mapInstance.flyTo(userLocation, 14);
-    }
-  };
 
   useEffect(() => {
     setRadius(Number.isFinite(radiusParam) ? radiusParam : 5);
@@ -411,6 +405,14 @@ export default function MapPage() {
       routeTo: updates.routeTo === null ? undefined : updates.routeTo ?? routeTo ?? undefined
     });
     navigate(`/map?${params.toString()}`, { replace: true });
+  };
+
+  const locateUser = () => {
+    if (userLocation && mapInstance) {
+      mapInstance.setView(userLocation, 14);
+    } else {
+      requestLocation();
+    }
   };
 
   const openExternalNavigation = (mechanic = selectedMechanic) => {
@@ -525,9 +527,9 @@ export default function MapPage() {
   };
 
   const getSheetHeightClass = () => {
-    if (sheetState === 0) return 'h-[35vh] sm:h-auto';
-    if (sheetState === 1) return 'h-[50vh] sm:h-auto';
-    return 'h-[90vh] sm:h-auto';
+    if (sheetState === 0) return 'h-[35vh] sm:h-auto sm:max-h-[calc(100vh-14rem)]';
+    if (sheetState === 1) return 'h-[50vh] sm:h-auto sm:max-h-[calc(100vh-14rem)]';
+    return 'h-[80vh] sm:h-[calc(100vh-14rem)]';
   };
 
 
@@ -627,16 +629,24 @@ export default function MapPage() {
 
       {showControls && (
         <>
-        <div className="fixed inset-0 z-[390] bg-black/35 backdrop-blur-[1px] sm:hidden" onClick={() => setShowControls(false)}></div>
+        <div className="fixed inset-0 z-[590] bg-black/35 backdrop-blur-[1px] sm:hidden" onClick={() => setShowControls(false)}></div>
         <div
-          className="fixed inset-x-0 bottom-0 z-[400] max-h-[78vh] overflow-y-auto rounded-t-[28px] border border-border bg-card p-4 shadow-2xl animate-in slide-in-from-bottom-8 sm:absolute sm:inset-auto sm:top-20 sm:right-4 sm:w-[340px] sm:max-h-[82vh] sm:rounded-2xl sm:slide-in-from-top-4"
+          className="fixed inset-x-0 bottom-0 z-[600] max-h-[78vh] overflow-y-auto rounded-t-[28px] border border-border bg-card p-4 shadow-2xl animate-in slide-in-from-bottom-8 sm:absolute sm:inset-auto sm:top-20 sm:right-4 sm:w-[340px] sm:max-h-[82vh] sm:rounded-2xl sm:slide-in-from-top-4"
           onTouchStart={handleFilterTouchStart}
           onTouchMove={handleFilterTouchMove}
           onTouchEnd={handleFilterTouchEnd}
           style={filterDragOffset !== 0 ? { transform: `translateY(${filterDragOffset}px)` } : undefined}
         >
           <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-muted sm:hidden"></div>
-          <div className="mb-4 rounded-xl border border-border bg-secondary/30 p-3">
+          
+          <button 
+            onClick={() => setShowControls(false)}
+            className="absolute top-4 right-4 p-2 rounded-full hover:bg-secondary text-muted-foreground transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+
+          <div className="mb-4 mt-2 sm:mt-0 pr-8 rounded-xl border border-border bg-secondary/30 p-3">
             <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Current Filters</p>
             <p className="mt-1 text-sm font-semibold text-foreground">{search ? `Search: ${search}` : 'No text search applied'}</p>
             <p className="mt-1 text-xs text-muted-foreground">{vehicleParams.length > 0 ? `${vehicleParams.length} vehicles` : 'Any vehicle'} • {serviceParams.length > 0 ? `${serviceParams.length} services` : 'Any service'} • {radius === 50000 ? 'Any distance' : `${radius} km`} • {sortBy}</p>
@@ -739,7 +749,7 @@ export default function MapPage() {
               setPendingServices([]);
               navigate(`/map?${buildMechanicSearchParams({ radius: 5, sort: 'Nearest' }).toString()}`, { replace: true });
             }}
-            className="w-full mt-4 rounded-xl border border-border bg-secondary/60 px-3 py-2 text-xs font-bold text-foreground hover:bg-secondary"
+            className="w-full mt-6 rounded-xl border border-border bg-secondary/60 px-3 py-2 text-xs font-bold text-foreground hover:bg-secondary"
           >
             Reset Controls
           </button>
@@ -776,6 +786,7 @@ export default function MapPage() {
               click: () => {
                 setSelectedMechanic(mechanic);
                 setSheetState(1);
+                setShowControls(false);
               }
             }}
           >
@@ -796,6 +807,7 @@ export default function MapPage() {
             eventHandlers={{
               click: () => {
                 setSheetState(1);
+                setShowControls(false);
               }
             }}
           >
@@ -818,20 +830,25 @@ export default function MapPage() {
         <>
 
           <div 
-            className={`fixed sm:absolute bottom-0 sm:bottom-[10%] sm:left-4 sm:top-1/2 sm:-translate-y-1/2 w-full sm:w-[400px] z-[500] flex flex-col pointer-events-none rounded-t-3xl sm:rounded-2xl overflow-hidden shadow-2xl pb-safe pb-[72px] sm:pb-0 ${getSheetHeightClass()} ${touchStart !== null ? 'transition-none' : 'transition-all duration-300'}`}
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
+            className={`fixed sm:absolute bottom-[72px] sm:bottom-auto sm:left-6 sm:top-32 w-full sm:w-[450px] lg:w-[500px] z-[500] flex flex-col pointer-events-none rounded-t-3xl sm:rounded-2xl overflow-hidden shadow-2xl pb-safe sm:pb-0 ${getSheetHeightClass()} ${touchStart !== null ? 'transition-none' : 'transition-all duration-300'}`}
             style={dragOffset !== 0 ? { transform: `translateY(${dragOffset}px)` } : undefined}
           >
-            <div className="bg-card border-t sm:border border-border flex flex-col pointer-events-auto h-full w-full">
-              {/* Mobile handle */}
-              <div className="w-full flex justify-center py-3 sm:hidden cursor-pointer shrink-0" onClick={() => setSheetState(prev => prev === 2 ? 1 : 2)}>
+            <div className="bg-card border-t sm:border border-border flex flex-col pointer-events-auto flex-1 min-h-0 w-full sm:pt-4">
+              {/* Mobile handle - The ONLY draggable part */}
+              <div 
+                className="w-full flex justify-center py-5 sm:hidden cursor-pointer touch-none shrink-0" 
+                onClick={() => setSheetState(prev => prev === 2 ? 1 : 2)}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+                onTouchCancel={handleTouchEnd}
+              >
                 <div className="w-12 h-1.5 bg-muted rounded-full"></div>
               </div>
               
+              {/* The Single Scrollable Container */}
               <div className="flex-1 overflow-y-auto hide-scrollbar pb-6">
-                <div className="p-4 sm:p-5 flex gap-4 relative">
+                <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-0 flex gap-4 relative">
                   {selectedMechanic.image ? (
                     <div 
                       className="relative shrink-0 overflow-hidden rounded-xl w-20 h-20 group/img cursor-pointer shadow-sm hover:shadow-md transition-shadow"

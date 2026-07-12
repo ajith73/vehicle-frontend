@@ -15,7 +15,7 @@ export default function AdminLayout() {
   const [profileLoading, setProfileLoading] = useState(true);
   const [showEditProfile, setShowEditProfile] = useState(false);
   
-  const [editUsername, setEditUsername] = useState('');
+  const [editName, setEditName] = useState('');
   const [editEmail, setEditEmail] = useState('');
   const [editPassword, setEditPassword] = useState('');
   const [saveLoading, setSaveLoading] = useState(false);
@@ -33,14 +33,17 @@ export default function AdminLayout() {
         const data = await apiClient<any>('/admin/profile');
         const normalizedProfile = {
           ...data,
-          name: data.name || data.username || '',
-          email: data.email || data.username || '',
+          name: data.name || '',
+          email: data.email || '',
         };
         setProfile(normalizedProfile);
-        setEditUsername(normalizedProfile.username || '');
+        setEditName(normalizedProfile.name || '');
         setEditEmail(normalizedProfile.email || '');
         localStorage.setItem('adminEmail', normalizedProfile.email || '');
-        localStorage.setItem('adminName', normalizedProfile.name || normalizedProfile.username || '');
+        localStorage.setItem('adminName', normalizedProfile.name || '');
+        if (normalizedProfile.role) {
+          localStorage.setItem('role', normalizedProfile.role);
+        }
       } catch (err) {
         console.error(err);
       } finally {
@@ -67,17 +70,17 @@ export default function AdminLayout() {
     e.preventDefault();
     setSaveLoading(true);
     try {
-      const payload: any = { username: editUsername, email: editEmail };
+      const payload: any = { name: editName, email: editEmail };
       if (editPassword) payload.password = editPassword;
       await apiClient('/admin/profile', {
         method: 'PUT',
         data: payload
       });
       toast('Profile updated successfully');
-      const updatedProfile = { ...profile, username: editUsername, name: editUsername, email: editEmail || editUsername };
+      const updatedProfile = { ...profile, name: editName, email: editEmail };
       setProfile(updatedProfile);
       localStorage.setItem('adminEmail', updatedProfile.email || '');
-      localStorage.setItem('adminName', updatedProfile.name || updatedProfile.username || '');
+      localStorage.setItem('adminName', updatedProfile.name || '');
       setShowEditProfile(false);
       setEditPassword('');
     } catch (err) {
@@ -96,7 +99,8 @@ export default function AdminLayout() {
     { name: 'Settings', path: '/admin/settings', icon: Settings },
   ];
 
-  const currentUserRole = localStorage.getItem('role');
+  const currentUserRole = profile ? profile.role : localStorage.getItem('role');
+  
   const routeAccessMap: Record<string, string> = {
     '/admin/dashboard': 'Dashboard',
     '/admin/mechanics': 'Mechanics',
@@ -108,9 +112,14 @@ export default function AdminLayout() {
   };
 
   const canAccessScreen = (screen: string) => {
+    // Rely strictly on server profile if it has loaded
+    if (profile) {
+      if (profile.role === 'Super Admin') return true;
+      return profile.allowedScreens?.includes(screen) || false;
+    }
+    // Fallback to local storage only for initial optimistic UI rendering (not for actual access grant)
     if (currentUserRole === 'Super Admin') return true;
-    if (!profile?.allowedScreens) return false;
-    return profile.allowedScreens.includes(screen);
+    return false;
   };
   
   const filteredNavItems = navItems.filter(item => {
@@ -119,12 +128,12 @@ export default function AdminLayout() {
 
   const activeScreen = Object.entries(routeAccessMap).find(([path]) => location.pathname.startsWith(path))?.[1];
   const hasRouteAccess = !activeScreen || canAccessScreen(activeScreen);
-  const visibleScreens = currentUserRole === 'Super Admin'
+  const visibleScreens = profile?.role === 'Super Admin'
     ? navItems.map((item) => item.name)
     : (profile?.allowedScreens || []);
-  const permissionsResolved = currentUserRole === 'Super Admin' || profile !== null;
-  const sidebarName = profile?.name || profile?.username || storedAdminName || (profileLoading ? 'Loading account...' : 'Admin account');
-  const sidebarEmail = profile?.email || profile?.username || storedAdminEmail || (profileLoading ? 'Loading email...' : 'Email unavailable');
+  const permissionsResolved = !profileLoading; // Strictly wait for profile to load before granting access
+  const sidebarName = profile?.name || storedAdminName || (profileLoading ? 'Loading account...' : 'Admin account');
+  const sidebarEmail = profile?.email || storedAdminEmail || (profileLoading ? 'Loading email...' : 'Email unavailable');
 
   return (
     <div className="flex h-screen bg-background text-foreground overflow-hidden">
@@ -306,11 +315,11 @@ export default function AdminLayout() {
             </div>
             <form onSubmit={handleSaveProfile} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Username / Name</label>
+                <label className="block text-sm font-medium mb-1">Name</label>
                 <input 
                   type="text" 
-                  value={editUsername} 
-                  onChange={e => setEditUsername(e.target.value)}
+                  value={editName} 
+                  onChange={e => setEditName(e.target.value)}
                   className="w-full p-2 rounded border border-border bg-background outline-none focus:border-primary" 
                   required
                 />

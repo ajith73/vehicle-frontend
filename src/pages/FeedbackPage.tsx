@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bug, Lightbulb, MessageCircle, Star, AlertTriangle, Send, CheckCircle2 } from 'lucide-react';
+import { Bug, Lightbulb, MessageCircle, Star, AlertTriangle, Send, CheckCircle2, MapPin } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Select from 'react-select';
 import { apiClient } from '../api/apiClient';
@@ -8,6 +8,7 @@ import { apiClient } from '../api/apiClient';
 const FEEDBACK_TYPES = [
   { name: 'Bug Report', icon: Bug, prompt: 'Tell us what broke, where it happened, and how we can reproduce it.' },
   { name: 'Wrong Mechanic Information', icon: AlertTriangle, prompt: 'Report incorrect phone numbers, addresses, timing, services, or closed shops.' },
+  { name: 'Request Location Coverage', icon: MapPin, prompt: 'Let us know your area and the details of any missing mechanic shops we should add to our platform.' },
   { name: 'Suggestion', icon: Lightbulb, prompt: 'Share an idea that would make the platform more useful in real roadside situations.' },
   { name: 'UI Improvement', icon: Star, prompt: 'Point out screens that feel confusing, crowded, slow, or hard to use.' },
   { name: 'Other', icon: MessageCircle, prompt: 'Anything else you want the team to know.' }

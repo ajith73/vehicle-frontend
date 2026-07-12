@@ -13,6 +13,7 @@ export default function AdminUpdateRequests() {
   const [requests, setRequests] = useState<UpdateRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewUpdateData, setViewUpdateData] = useState<UpdateRequest | null>(null);
+  const [isComparing, setIsComparing] = useState(false);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [statusFilter, setStatusFilter] = useState('All');
   const [currentPage, setCurrentPage] = useState(1);
@@ -31,7 +32,7 @@ export default function AdminUpdateRequests() {
       getRequestTitle(req).toLowerCase().includes(q) ||
       (req.mechanicId ? req.mechanicId.toString().includes(q) : false) ||
       req.requesterDisplayName?.toLowerCase().includes(q) ||
-      req.Requestor?.username?.toLowerCase().includes(q) ||
+      req.Requestor?.email?.toLowerCase().includes(q) ||
       req.id.toString().includes(q)
     );
   }
@@ -173,6 +174,30 @@ export default function AdminUpdateRequests() {
     if (value === null || value === undefined || value === '') return '—';
     return String(value);
   };
+  
+  const renderDiff = (key: string, label: string, oldData: any, newData: any) => {
+    let oldVal = formatValue(oldData[key]);
+    let newVal = formatValue(newData[key]);
+    
+    // Check if both are empty or missing
+    if ((oldVal === '—' && newVal === '—') || oldVal === newVal) return null;
+
+    return (
+      <div key={key} className="p-3 border border-border rounded-lg bg-card">
+        <p className="text-sm font-bold text-foreground mb-2">{label}</p>
+        <div className="flex flex-col md:flex-row gap-2">
+          <div className="flex-1 p-2 bg-red-50 dark:bg-red-950/30 text-red-800 dark:text-red-200 border border-red-200 dark:border-red-900 rounded">
+            <span className="text-xs font-semibold uppercase tracking-wider block mb-1 opacity-70">Current</span>
+            <span className="break-words text-sm">{oldVal}</span>
+          </div>
+          <div className="flex-1 p-2 bg-green-50 dark:bg-green-950/30 text-green-800 dark:text-green-200 border border-green-200 dark:border-green-900 rounded">
+            <span className="text-xs font-semibold uppercase tracking-wider block mb-1 opacity-70">Proposed</span>
+            <span className="break-words text-sm">{newVal}</span>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const formatPhoneEntry = (phone: any) => {
     if (!phone) return '—';
@@ -304,7 +329,7 @@ export default function AdminUpdateRequests() {
                         {req.mechanicId ? `Mechanic ID: ${req.mechanicId}` : 'New mechanic listing request'}
                       </p>
                     </td>
-                    <td className="p-4 text-foreground">{req.requesterDisplayName || req.Requestor?.username || 'Public User'}</td>
+                    <td className="p-4 text-foreground">{req.requesterDisplayName || req.Requestor?.email || 'Public User'}</td>
                     <td className="p-4">
                       <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium
                         ${req.status === 'Approved' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 
@@ -318,7 +343,7 @@ export default function AdminUpdateRequests() {
                     <td className="p-4 text-right">
                       <div className="flex justify-end gap-2">
                         <button 
-                          onClick={() => setViewUpdateData(req)}
+                          onClick={() => { setViewUpdateData(req); setIsComparing(false); }}
                           className="p-2 bg-blue-500/10 text-blue-600 rounded-lg hover:bg-blue-500 hover:text-white transition-colors"
                           title="View Proposed Changes"
                         >
@@ -386,12 +411,22 @@ export default function AdminUpdateRequests() {
               <h2 className="text-2xl font-bold flex items-center gap-2">
                 <Eye className="text-primary" /> Proposed Changes
               </h2>
-              <button 
-                onClick={() => setViewUpdateData(null)}
-                className="p-2 bg-secondary text-secondary-foreground rounded-full hover:bg-secondary/80 transition-colors"
-              >
-                <X size={20} />
-              </button>
+              <div className="flex items-center gap-2">
+                {viewUpdateData.mechanicId && viewUpdateData.Mechanic && (
+                  <button
+                    onClick={() => setIsComparing(!isComparing)}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border ${isComparing ? 'bg-primary text-primary-foreground border-primary' : 'bg-secondary text-secondary-foreground border-border hover:bg-secondary/80'}`}
+                  >
+                    {isComparing ? 'View Details' : 'Compare Changes'}
+                  </button>
+                )}
+                <button 
+                  onClick={() => { setViewUpdateData(null); setIsComparing(false); }}
+                  className="p-2 bg-secondary text-secondary-foreground rounded-full hover:bg-secondary/80 transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
             </div>
             <div className="p-4 sm:p-6 space-y-8 flex-1">
               {(() => {
@@ -412,6 +447,56 @@ export default function AdminUpdateRequests() {
                     Location: ['address', 'landmark', 'pincode', 'area', 'city', 'state', 'latitude', 'longitude'],
                     'Services & Operations': ['serviceRadius', 'evSupport', 'homeService', 'roadsideAssistance', 'is24Hours', 'holidayWorking', 'vehicleTypes', 'serviceTypes', 'operatingDays', 'operatingHours']
                   };
+
+                  if (isComparing && viewUpdateData.Mechanic) {
+                    const oldData = viewUpdateData.Mechanic;
+                    const allKeys = [
+                      { key: 'mechanicType', label: 'Mechanic Type' },
+                      { key: 'businessName', label: 'Business Name' },
+                      { key: 'mechanicName', label: 'Owner Name' },
+                      { key: 'description', label: 'Description' },
+                      { key: 'image', label: 'Image URL' },
+                      { key: 'websiteUrl', label: 'Website URL' },
+                      { key: 'phone', label: 'Phones' },
+                      { key: 'emails', label: 'Emails' },
+                      { key: 'address', label: 'Address' },
+                      { key: 'landmark', label: 'Landmark' },
+                      { key: 'city', label: 'City' },
+                      { key: 'state', label: 'State' },
+                      { key: 'pincode', label: 'Pincode' },
+                      { key: 'latitude', label: 'Latitude' },
+                      { key: 'longitude', label: 'Longitude' },
+                      { key: 'serviceRadius', label: 'Service Radius' },
+                      { key: 'vehicleTypes', label: 'Vehicle Types' },
+                      { key: 'serviceTypes', label: 'Service Types' },
+                      { key: 'operatingDays', label: 'Operating Days' },
+                      { key: 'operatingHours', label: 'Operating Hours' },
+                      { key: 'is24Hours', label: '24x7 Open' },
+                      { key: 'evSupport', label: 'EV Support' },
+                      { key: 'homeService', label: 'Home Service' },
+                      { key: 'roadsideAssistance', label: 'Roadside Assistance' },
+                    ];
+
+                    const diffs = allKeys.map(k => renderDiff(k.key, k.label, oldData, data)).filter(Boolean);
+
+                    return (
+                      <div className="space-y-4">
+                        <div className="bg-muted/30 p-4 rounded-xl border border-border">
+                          <h3 className="text-lg font-bold mb-1">Comparison View</h3>
+                          <p className="text-sm text-muted-foreground">Showing only fields that have been modified.</p>
+                        </div>
+                        {diffs.length > 0 ? (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {diffs}
+                          </div>
+                        ) : (
+                          <div className="text-center p-8 bg-muted/20 border border-border rounded-xl">
+                            <p className="text-muted-foreground">No fields were changed.</p>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }
 
                   return (
                     <>
@@ -454,7 +539,7 @@ export default function AdminUpdateRequests() {
                             </span>
                             {viewUpdateData.mechanicId ? ` (ID: ${viewUpdateData.mechanicId})` : ''}
                           </p>
-                          <p className="text-sm text-muted-foreground">Requested By: <span className="font-semibold text-foreground">{viewUpdateData.requesterDisplayName || viewUpdateData.Requestor?.username || 'Public User'}</span></p>
+                          <p className="text-sm text-muted-foreground">Requested By: <span className="font-semibold text-foreground">{viewUpdateData.requesterDisplayName || viewUpdateData.Requestor?.email || 'Public User'}</span></p>
                           <p className="text-muted-foreground mt-2">{data.description || 'No description provided.'}</p>
                         </div>
                       </div>

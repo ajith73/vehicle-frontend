@@ -37,6 +37,7 @@ interface FetchOptions {
   method?: string;
   data?: any;
   headers?: any;
+  params?: any;
 }
 
 export async function apiClient<T>(endpoint: string, options: FetchOptions = {}): Promise<T> {
@@ -45,6 +46,7 @@ export async function apiClient<T>(endpoint: string, options: FetchOptions = {})
     method: options.method || 'GET',
     data: options.data,
     headers: options.headers,
+    params: options.params,
   };
   
   const response = await axiosInstance(config);

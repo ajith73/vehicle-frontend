@@ -11,8 +11,8 @@ import { apiClient } from '../api/apiClient';
 
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-const normalizeLocationText = (value: string) =>
-  value
+const normalizeLocationText = (value: any) =>
+  String(value || '')
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9]/g, '');
@@ -246,12 +246,16 @@ export default function MechanicFormComponent({ id, isEdit, initialData, onSubmi
     setDescription(data.description || '');
     setImageUrl(data.image || '');
     setWebsiteUrl(data.websiteUrl || '');
-    const phonesData = data.phone || [];
-    const mobilePhones = phonesData.filter((p: any) => !p.isTelephone);
-    const telPhones = phonesData.filter((p: any) => p.isTelephone);
+    let phonesData = data.phone || [];
+    if (typeof phonesData === 'string') try { phonesData = JSON.parse(phonesData); } catch(e) { phonesData = []; }
+    const mobilePhones = Array.isArray(phonesData) ? phonesData.filter((p: any) => !p.isTelephone) : [];
+    const telPhones = Array.isArray(phonesData) ? phonesData.filter((p: any) => p.isTelephone) : [];
     setPhones(mobilePhones.length ? mobilePhones : [{ number: '', isWhatsapp: false }]);
     setTelephones(telPhones.length ? telPhones.map((t: any) => t.number) : ['']);
-    setEmails(data.emails?.length ? data.emails : ['']);
+    
+    let emailsData = data.emails || [];
+    if (typeof emailsData === 'string') try { emailsData = JSON.parse(emailsData); } catch(e) { emailsData = []; }
+    setEmails(Array.isArray(emailsData) && emailsData.length ? emailsData : ['']);
     setAddress(data.address || '');
     setPincode(data.pincode || '');
     
@@ -264,34 +268,79 @@ export default function MechanicFormComponent({ id, isEdit, initialData, onSubmi
     }
     
     // Reconstruct vehicle/service types
-    setVehicleTypes(data.vehicleTypes?.map((v: string) => ({ value: v, label: v })) || []);
-    setServiceTypes(data.serviceTypes?.map((s: string) => ({ value: s, label: s })) || []);
-    setOperatingDays(data.operatingDays || []);
+    let vTypes = data.vehicleTypes || [];
+    if (typeof vTypes === 'string') try { vTypes = JSON.parse(vTypes); } catch(e) { vTypes = []; }
+    setVehicleTypes(Array.isArray(vTypes) ? vTypes.map((v: any) => ({ value: String(v), label: String(v) })) : []);
     
-    if (data.operatingHours) {
-      const [sTime, eTime] = data.operatingHours.split(' - ');
-      if (sTime) setStartTime(sTime);
-      if (eTime) setEndTime(eTime);
+    let sTypes = data.serviceTypes || [];
+    if (typeof sTypes === 'string') try { sTypes = JSON.parse(sTypes); } catch(e) { sTypes = []; }
+    setServiceTypes(Array.isArray(sTypes) ? sTypes.map((s: any) => ({ value: String(s), label: String(s) })) : []);
+    
+    let opDays = data.operatingDays || [];
+    if (typeof opDays === 'string') {
+      try { 
+        opDays = JSON.parse(opDays); 
+      } catch(e) { 
+        opDays = opDays.split(',').map((s: string) => s.trim()); 
+      }
+    }
+    setOperatingDays(Array.isArray(opDays) ? opDays.map((d: string) => {
+      // Normalize day name to match DAYS_OF_WEEK exactly
+      const normalized = String(d).trim();
+      return normalized.charAt(0).toUpperCase() + normalized.slice(1).toLowerCase();
+    }) : []);
+    
+    if (data.operatingHours && typeof data.operatingHours === 'string') {
+      const [sTime, eTime] = data.operatingHours.split(/\s*-\s*/);
+      if (sTime) setStartTime(sTime.trim());
+      if (eTime) setEndTime(eTime.trim());
     }
     
     setAvailability(data.availability !== undefined ? data.availability : true);
-    setStateOption(null);
-    setCityOption(null);
+    
+    // Explicitly set state option immediately to ensure it displays even before options load
+    if (data.state) {
+      if (stateOptions.length > 0) {
+        const normalizedPendingState = normalizeLocationText(data.state);
+        const matchedState = stateOptions.find((state) =>
+          normalizeLocationText(state.label) === normalizedPendingState ||
+          normalizeLocationText(state.value) === normalizedPendingState
+        );
+        setStateOption(matchedState || { value: data.state, label: data.state });
+      } else {
+        setStateOption({ value: data.state, label: data.state });
+      }
+    } else {
+      setStateOption(null);
+    }
+    
+    if (data.city) {
+      setCityOption({ value: data.city, label: data.city });
+    } else {
+      setCityOption(null);
+    }
+    
     setPendingStateName(data.state || '');
     setPendingCityName(data.city || '');
   };
 
   useEffect(() => {
     if (initialData) {
-      populateForm(initialData);
+      try {
+        populateForm(initialData);
+      } catch (e) {
+        console.error('Error populating form with initialData:', e);
+      }
       setIsFetching(false);
     } else if (isEdit && id) {
       const fetchMechanic = async () => {
         try {
           const data = await apiClient<any>(`/admin/mechanics/${id}`);
+          console.log('Fetched mechanic data:', data);
           populateForm(data);
+          console.log('Successfully populated form');
         } catch (err) {
-          console.error(err);
+          console.error('Error in fetchMechanic or populateForm:', err);
           toast.error('Failed to load mechanic data');
         } finally {
           setIsFetching(false);
@@ -779,7 +828,7 @@ export default function MechanicFormComponent({ id, isEdit, initialData, onSubmi
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium mb-2">Operating Days <span className="text-red-500">*</span></label>
-              <div className="flex flex-wrap gap-2">
+              <div className={`flex flex-wrap gap-2 p-2 rounded-xl transition-colors ${errors.operatingDays ? 'border border-red-500 bg-red-50 dark:bg-red-950/30 ring-1 ring-red-500' : ''}`}>
                 {DAYS_OF_WEEK.map(day => (
                   <label key={day} className={`px-4 py-2 rounded-full border cursor-pointer transition-colors ${
                     operatingDays.includes(day) ? 'bg-primary text-primary-foreground border-primary' : 'bg-background border-border hover:bg-secondary'
@@ -810,7 +859,7 @@ export default function MechanicFormComponent({ id, isEdit, initialData, onSubmi
                       required={!is24Hours}
                       value={startTime}
                       onChange={e => setStartTime(e.target.value)}
-                      className={`w-full p-2 rounded border bg-background focus:border-primary outline-none ${errors.operatingHours ? 'border-red-500 ring-1 ring-red-500' : 'border-border'}`}
+                      className={`w-full p-2 rounded border bg-background focus:border-primary outline-none dark:[&::-webkit-calendar-picker-indicator]:invert ${errors.operatingHours ? 'border-red-500 ring-1 ring-red-500 bg-red-50/50 dark:bg-red-950/30' : 'border-border'}`}
                     />
                   </div>
                   <span className="text-muted-foreground mt-5">to</span>
@@ -821,7 +870,7 @@ export default function MechanicFormComponent({ id, isEdit, initialData, onSubmi
                       required={!is24Hours}
                       value={endTime}
                       onChange={e => setEndTime(e.target.value)}
-                      className={`w-full p-2 rounded border bg-background focus:border-primary outline-none ${errors.operatingHours ? 'border-red-500 ring-1 ring-red-500' : 'border-border'}`}
+                      className={`w-full p-2 rounded border bg-background focus:border-primary outline-none dark:[&::-webkit-calendar-picker-indicator]:invert ${errors.operatingHours ? 'border-red-500 ring-1 ring-red-500 bg-red-50/50 dark:bg-red-950/30' : 'border-border'}`}
                     />
                   </div>
                 </div>

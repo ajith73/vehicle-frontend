@@ -5,7 +5,7 @@ import { apiClient } from '../api/apiClient';
 
 export default function AdminLogin() {
   const navigate = useNavigate();
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
@@ -19,13 +19,13 @@ export default function AdminLogin() {
     try {
       const data = await apiClient<any>('/auth/login', {
         method: 'POST',
-        data: { username, password }
+        data: { email, password }
       });
       
       localStorage.setItem('token', data.token);
       localStorage.setItem('role', data.role);
-      localStorage.setItem('adminEmail', data.username || username);
-      localStorage.setItem('adminName', data.username || username);
+      localStorage.setItem('adminEmail', data.email || email);
+      localStorage.setItem('adminName', data.email || email);
       navigate('/admin/dashboard');
     } catch (err: any) {
       setError(err.message || 'An error occurred during login');
@@ -46,8 +46,8 @@ export default function AdminLogin() {
             <input
               type="email"
               required
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className="w-full p-2 rounded border border-border bg-background text-foreground focus:outline-none focus:border-primary"
               placeholder="admin@example.com"
             />

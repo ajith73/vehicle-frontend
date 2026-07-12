@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Heart, CreditCard, HeartHandshake, ArrowRight, X } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Heart, CreditCard, HeartHandshake, ArrowRight, X, Eye, EyeOff, Copy, QrCode } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { apiClient } from '../api/apiClient';
 
@@ -13,6 +13,21 @@ export default function DonationPage() {
 
   const [isConsentOpen, setIsConsentOpen] = useState(false);
   const [hasConsented, setHasConsented] = useState(false);
+  const [isUpiVisible, setIsUpiVisible] = useState(true);
+  const [isQrVisible, setIsQrVisible] = useState(true);
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+    if (hasConsented) {
+      setIsUpiVisible(true);
+      setIsQrVisible(true);
+      timer = setTimeout(() => {
+        setIsUpiVisible(false);
+        setIsQrVisible(false);
+      }, 30000);
+    }
+    return () => clearTimeout(timer);
+  }, [hasConsented]);
 
   const handleInitiateDonation = (e: React.FormEvent) => {
     e.preventDefault();
@@ -123,28 +138,98 @@ export default function DonationPage() {
       </div>
     </div>
       
-      {/* Consent Modal */}
+      {/* Consent Modal & Payment Details */}
       {isConsentOpen && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-card w-full max-w-md rounded-[24px] shadow-2xl border border-border overflow-hidden flex flex-col p-6 sm:p-8">
+          <div className="bg-card w-full max-w-md max-h-[90vh] overflow-y-auto hide-scrollbar rounded-[24px] shadow-2xl border border-border flex flex-col p-6 sm:p-8">
             <h3 className="text-2xl font-black text-foreground mb-4">Confirm Donation</h3>
             <p className="text-muted-foreground text-sm mb-6 leading-relaxed">
-              By proceeding, you agree that this donation is voluntary and non-refundable. Your support helps us maintain the platform and keep it free for stranded drivers. No goods or services are provided in exchange for this contribution.
+              Your generous donation directly funds our server hosting, domain maintenance, and ongoing development to keep this platform free for everyone. We do not charge stranded drivers or mechanics for using this service. By proceeding, you agree that this contribution is voluntary and non-refundable. No goods or services are provided in exchange.
             </p>
             
-            <label className="flex items-start gap-3 cursor-pointer mb-8">
+            <label className="flex items-start gap-3 cursor-pointer mb-6">
               <input 
                 type="checkbox" 
-                className="mt-1 min-w-[20px] w-5 h-5 rounded-md border-2 border-border/50 text-primary focus:ring-primary/50 accent-primary" 
+                className="mt-1 min-w-[20px] w-5 h-5 rounded-md border-2 border-border/50 text-primary focus:ring-primary/50 accent-primary cursor-pointer" 
                 checked={hasConsented}
                 onChange={(e) => setHasConsented(e.target.checked)}
               />
-              <span className="text-sm font-medium text-foreground">I understand and consent to make this voluntary donation.</span>
+              <span className="text-sm font-medium text-foreground">I understand and want to proceed with my ₹{amount} donation.</span>
             </label>
+
+            {hasConsented && (
+              <div className="animate-in slide-in-from-top-4 fade-in duration-300 flex flex-col items-center border-t border-border/50 pt-6">
+                
+                {/* UPI ID Section */}
+                <div className="w-full flex items-center justify-between bg-secondary/30 border border-border rounded-xl p-4 mb-6">
+                  <div>
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Our UPI ID</p>
+                    <p className="font-mono text-lg font-bold text-foreground">
+                      {isUpiVisible ? 'ajith737353@okaxis' : '•••••••••••••••••'}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => setIsUpiVisible(!isUpiVisible)}
+                      className="p-2 bg-background hover:bg-secondary border border-border rounded-lg text-muted-foreground transition-colors"
+                      title={isUpiVisible ? "Hide UPI ID" : "Show UPI ID"}
+                    >
+                      {isUpiVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                    <button 
+                      onClick={() => {
+                        navigator.clipboard.writeText('ajith737353@okaxis');
+                        toast.success('UPI ID copied to clipboard');
+                      }}
+                      className="p-2 bg-background hover:bg-secondary border border-border rounded-lg text-muted-foreground transition-colors"
+                      title="Copy UPI ID"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* QR Code Section */}
+                <div 
+                  className={`relative w-48 h-48 mb-6 rounded-2xl overflow-hidden border-2 border-border/50 shadow-inner transition-all ${!isQrVisible ? 'bg-secondary/50 flex items-center justify-center cursor-pointer' : 'bg-white'}`}
+                  onClick={() => !isQrVisible && setIsQrVisible(true)}
+                >
+                  {isQrVisible ? (
+                    <img 
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=ajith737353@okaxis&pn=Vehicle%20Repair&am=${amount}&cu=INR`} 
+                      alt="UPI QR Code" 
+                      className="w-full h-full object-cover p-2"
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                      <QrCode className="w-8 h-8 opacity-50" />
+                      <span className="text-xs font-bold">Tap to show QR</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Payment Apps */}
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">Pay using installed apps</p>
+                <div className="flex gap-3 w-full mb-8">
+                  <a href={`upi://pay?pa=ajith737353@okaxis&pn=Vehicle%20Repair&am=${amount}&cu=INR`} className="flex-1 py-3 bg-blue-500/10 text-blue-600 border border-blue-500/20 hover:bg-blue-500/20 rounded-xl flex items-center justify-center font-bold text-sm transition-colors text-center">
+                    GPay
+                  </a>
+                  <a href={`upi://pay?pa=ajith737353@okaxis&pn=Vehicle%20Repair&am=${amount}&cu=INR`} className="flex-1 py-3 bg-purple-500/10 text-purple-600 border border-purple-500/20 hover:bg-purple-500/20 rounded-xl flex items-center justify-center font-bold text-sm transition-colors text-center">
+                    PhonePe
+                  </a>
+                  <a href={`upi://pay?pa=ajith737353@okaxis&pn=Vehicle%20Repair&am=${amount}&cu=INR`} className="flex-1 py-3 bg-sky-500/10 text-sky-600 border border-sky-500/20 hover:bg-sky-500/20 rounded-xl flex items-center justify-center font-bold text-sm transition-colors text-center">
+                    Paytm
+                  </a>
+                </div>
+              </div>
+            )}
             
             <div className="flex gap-3 mt-auto">
               <button 
-                onClick={() => setIsConsentOpen(false)}
+                onClick={() => {
+                  setIsConsentOpen(false);
+                  setHasConsented(false);
+                }}
                 className="flex-1 py-3.5 rounded-xl border-2 border-border/50 bg-transparent text-foreground font-bold hover:bg-secondary/50 transition-colors"
               >
                 Cancel
@@ -154,7 +239,7 @@ export default function DonationPage() {
                 disabled={!hasConsented || loading}
                 className="flex-[2] py-3.5 rounded-xl bg-primary text-primary-foreground font-bold hover:bg-primary/90 disabled:opacity-50 disabled:hover:bg-primary transition-all flex justify-center items-center gap-2 shadow-lg shadow-primary/20 disabled:shadow-none"
               >
-                {loading ? 'Processing...' : `Proceed to Pay ₹${amount}`}
+                {loading ? 'Processing...' : (hasConsented ? 'I have paid, Confirm' : `Proceed to Pay ₹${amount}`)}
               </button>
             </div>
           </div>

@@ -3,7 +3,7 @@ import { useState, useEffect, lazy, Suspense } from 'react';
 
 import AdminLayout from './components/AdminLayout';
 
-import { Wrench, MessageSquare, Heart, Sun, Moon, Home, Map as MapIcon, List } from 'lucide-react';
+import { Wrench, MessageSquare, Heart, Sun, Moon, Home, Map as MapIcon, List, ShieldCheck } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
 import { LocationProvider } from './contexts/LocationContext';
 
@@ -12,6 +12,9 @@ const ListPage = lazy(() => import('./pages/ListPage'));
 const MapPage = lazy(() => import('./pages/MapPage'));
 const FeedbackPage = lazy(() => import('./pages/FeedbackPage'));
 const DonationPage = lazy(() => import('./pages/DonationPage'));
+const AboutPage = lazy(() => import('./pages/AboutPage'));
+const TermsPage = lazy(() => import('./pages/TermsPage'));
+const PrivacyPage = lazy(() => import('./pages/PrivacyPage'));
 const AdminLogin = lazy(() => import('./pages/AdminLogin'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const AdminMechanics = lazy(() => import('./pages/AdminMechanics'));
@@ -79,6 +82,9 @@ function App() {
             <div className="flex gap-2 sm:gap-6 items-center">
               <Link to="/" className="hidden sm:flex items-center gap-1 text-sm font-medium hover:text-primary transition-colors">
                 <Home className="w-4 h-4" /> Home
+              </Link>
+              <Link to="/about" className="hidden sm:flex items-center gap-1 text-sm font-medium hover:text-primary transition-colors">
+                <ShieldCheck className="w-4 h-4" /> About
               </Link>
               <Link to="/map" className="hidden sm:flex items-center gap-1 text-sm font-medium hover:text-primary transition-colors">
                 <MapIcon className="w-4 h-4" /> Map
@@ -152,6 +158,9 @@ function App() {
             <Route path="/map" element={<MapPage />} />
             <Route path="/feedback" element={<FeedbackPage />} />
             <Route path="/donate" element={<DonationPage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/terms" element={<TermsPage />} />
+            <Route path="/privacy" element={<PrivacyPage />} />
           </Route>
           
           {/* Admin Login (No Layout) */}

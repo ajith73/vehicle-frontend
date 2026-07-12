@@ -11,7 +11,6 @@ const ITEMS_PER_PAGE = 10;
 
 interface User {
   id: number;
-  username: string;
   name?: string;
   email?: string;
   role: string;
@@ -36,7 +35,7 @@ export default function AdminUsers() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingUserId, setEditingUserId] = useState<number | null>(null);
   
-  const [newUsername, setNewUsername] = useState('');
+  const [newEmail, setNewEmail] = useState('');
   const [newName, setNewName] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -68,7 +67,7 @@ export default function AdminUsers() {
   const validateForm = () => {
     const nextErrors: { name?: string; email?: string; password?: string } = {};
     const normalizedName = newName.trim();
-    const normalizedEmail = newUsername.trim();
+    const normalizedEmail = newEmail.trim();
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if (!normalizedName) {
@@ -99,7 +98,7 @@ export default function AdminUsers() {
       const allowedScreens = selectedScreens.map(s => s.value);
       await apiClient('/admin/users', {
         method: 'POST',
-        data: { username: newUsername.trim(), name: newName.trim(), password: newPassword, allowedScreens }
+        data: { email: newEmail.trim(), name: newName.trim(), password: newPassword, allowedScreens }
       });
       
       closePopup();
@@ -118,7 +117,7 @@ export default function AdminUsers() {
     try {
       const allowedScreens = selectedScreens.map(s => s.value);
       const payload: Record<string, unknown> = {
-        username: newUsername.trim(),
+        email: newEmail.trim(),
         name: newName.trim(),
         allowedScreens
       };
@@ -163,7 +162,7 @@ export default function AdminUsers() {
   const closePopup = () => {
     setShowAddForm(false);
     setEditingUserId(null);
-    setNewUsername('');
+    setNewEmail('');
     setNewName('');
     setNewPassword('');
     setShowPassword(false);
@@ -185,7 +184,7 @@ export default function AdminUsers() {
   if (searchQuery) {
     const q = searchQuery.toLowerCase();
     filteredUsers = filteredUsers.filter(u => 
-      u.username?.toLowerCase().includes(q) ||
+      u.email?.toLowerCase().includes(q) ||
       u.name?.toLowerCase().includes(q) ||
       u.role?.toLowerCase().includes(q)
     );
@@ -226,7 +225,7 @@ export default function AdminUsers() {
           onClick={() => {
             setShowAddForm(true);
             setEditingUserId(null);
-            setNewUsername('');
+            setNewEmail('');
             setNewName('');
             setNewPassword('');
             setSelectedScreens([]);
@@ -301,7 +300,7 @@ export default function AdminUsers() {
                     </td>
                     <td className="p-4 align-top">
                       <div className="min-w-0">
-                        <p className="text-foreground break-all">{user.email || user.username}</p>
+                        <p className="text-foreground break-all">{user.email}</p>
                       </div>
                     </td>
                     <td className="p-4 align-top">
@@ -322,12 +321,12 @@ export default function AdminUsers() {
                       {new Date(user.createdAt).toLocaleDateString()}
                     </td>
                     <td className="p-4 align-top">
-                      {user.username !== 'ajithoffice1999@gmail.com' && (
+                      {user.email !== 'ajithoffice1999@gmail.com' && (
                         <div className="flex justify-end gap-2 whitespace-nowrap">
                           <button 
                             onClick={() => {
                               setEditingUserId(user.id);
-                              setNewUsername(user.email || user.username);
+                              setNewEmail(user.email || '');
                               setNewName(user.name || '');
                               setNewPassword('');
                               setSelectedScreens(
@@ -352,7 +351,7 @@ export default function AdminUsers() {
                           </button>
                         </div>
                       )}
-                      {user.username === 'ajithoffice1999@gmail.com' && (
+                      {user.email === 'ajithoffice1999@gmail.com' && (
                         <div className="flex justify-end">
                           <span className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-muted-foreground">
                             Protected
@@ -417,9 +416,9 @@ export default function AdminUsers() {
                   <input
                     type="email"
                     required
-                    value={newUsername}
+                    value={newEmail}
                     onChange={(e) => {
-                      setNewUsername(e.target.value);
+                      setNewEmail(e.target.value);
                       setFieldErrors((prev) => ({ ...prev, email: undefined }));
                     }}
                     className={`w-full p-3 bg-background border rounded-xl focus:ring-2 transition-all outline-none ${

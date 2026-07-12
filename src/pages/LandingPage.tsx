@@ -4,6 +4,7 @@ import {
   Activity,
   AlertTriangle,
   AlignJustify,
+  ArrowRight,
   Battery,
   BatteryWarning,
   Bike,
@@ -624,6 +625,33 @@ export default function LandingPage() {
           )}
         </div>
       </div>
+      
+      {/* Support Us Section */}
+      <div className="mx-auto w-full max-w-7xl px-4 pt-2 pb-10 sm:px-8">
+        <div className="overflow-hidden rounded-3xl border border-rose-500/20 bg-gradient-to-br from-rose-500/10 via-card to-rose-500/5 shadow-sm">
+          <div className="grid gap-6 px-5 py-6 sm:px-8 sm:py-8 lg:grid-cols-[1.3fr_0.7fr] lg:items-center">
+            <div>
+              <p className="text-sm font-black uppercase tracking-[0.2em] text-rose-600 dark:text-rose-400">Support Us</p>
+              <h3 className="mt-2 text-2xl font-black text-foreground sm:text-3xl">Help keep our platform running</h3>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
+                Your donations directly fund our server and domain maintenance costs. By contributing, you help us keep this vital emergency roadside assistance network completely free and available 24/7 for everyone who needs it.
+              </p>
+            </div>
+            <div className="flex flex-col gap-3 rounded-2xl border border-border bg-background/70 p-4 sm:p-5">
+              <p className="text-sm font-semibold text-foreground">Make a contribution</p>
+              <p className="text-sm text-muted-foreground">
+                Any amount you provide goes a long way toward keeping our services online without interruptions.
+              </p>
+              <button
+                onClick={() => navigate('/donate')}
+                className="mt-2 inline-flex items-center justify-center rounded-2xl bg-rose-600 px-5 py-3 text-sm font-black text-white transition-colors hover:bg-rose-700"
+              >
+                Donate Now
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div className="mx-auto w-full max-w-7xl px-4 pt-2 pb-16 sm:px-8">
         <h3 className="mb-4 flex items-center gap-2 text-xl font-bold text-foreground">
@@ -662,7 +690,7 @@ export default function LandingPage() {
         </div>
       </div>
 
-      <div className="mx-auto w-full max-w-7xl px-4 pb-20 sm:px-8">
+      <div className="mx-auto w-full max-w-7xl px-4 pb-12 sm:px-8">
         <div className="overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/8 via-card to-secondary/30 shadow-sm">
           <div className="grid gap-6 px-5 py-6 sm:px-8 sm:py-8 lg:grid-cols-[1.3fr_0.7fr] lg:items-center">
             <div>
@@ -683,6 +711,29 @@ export default function LandingPage() {
                 className="mt-2 inline-flex items-center justify-center rounded-2xl bg-primary px-5 py-3 text-sm font-black text-primary-foreground transition-colors hover:bg-primary/90"
               >
                 Create or Update Record
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* About Us Section */}
+      <div className="mx-auto w-full max-w-7xl px-4 pb-20 sm:px-8">
+        <div className="overflow-hidden rounded-3xl border border-purple-500/20 bg-gradient-to-br from-purple-500/10 via-card to-purple-500/5 shadow-sm">
+          <div className="grid gap-6 px-5 py-6 sm:px-8 sm:py-8 lg:grid-cols-[1.3fr_0.7fr] lg:items-center">
+            <div>
+              <p className="text-sm font-black uppercase tracking-[0.2em] text-purple-600 dark:text-purple-400">About Us</p>
+              <h3 className="mt-2 text-2xl font-black text-foreground sm:text-3xl">Bridging the gap in emergency assistance</h3>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
+                Discover why we built this platform, how we solve problems for stranded drivers in minutes, and our core mission to empower local mechanics and increase their revenue.
+              </p>
+            </div>
+            <div className="flex flex-col justify-center">
+              <button
+                onClick={() => navigate('/about')}
+                className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-2xl bg-purple-600 px-6 py-4 text-sm font-black text-white transition-colors hover:bg-purple-700 shadow-[0_8px_30px_rgba(147,51,234,0.3)] hover:-translate-y-1 active:translate-y-0"
+              >
+                Read Our Story <ArrowRight className="h-4 w-4" />
               </button>
             </div>
           </div>

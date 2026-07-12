@@ -1,6 +1,7 @@
 export interface User {
   id: number;
-  username: string;
+  name?: string;
+  email: string;
   role: string;
   allowedScreens: string[];
   createdAt: string;
@@ -76,7 +77,7 @@ export interface UpdateRequest {
   status: string;
   createdAt: string;
   Mechanic?: Mechanic;
-  Requestor?: { username: string };
+  Requestor?: { email: string };
   requesterDisplayName?: string;
 }
 
@@ -86,5 +87,5 @@ export interface ActivityLog {
   action: string;
   details: string;
   createdAt: string;
-  User?: { username: string };
+  User?: { email: string };
 }
