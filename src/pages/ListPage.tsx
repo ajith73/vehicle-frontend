@@ -358,7 +358,7 @@ export default function ListPage() {
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
           </div>
         ) : mechanics.length === 0 ? (
-          <div className="rounded-2xl border border-border bg-card py-10 text-center text-muted-foreground">
+          <div className="rounded-2xl border border-border bg-card py-10 px-6 sm:px-8 text-center text-muted-foreground">
             <Wrench className="mx-auto mb-3 h-12 w-12 opacity-20" />
             <p className="font-semibold text-foreground">No mechanics found for these filters.</p>
             <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">

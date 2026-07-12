@@ -275,7 +275,8 @@ export default function MapPage() {
     const fetchRoute = async () => {
       try {
         const data = await apiClient<any>('/public/route', {
-          params: {
+          method: 'POST',
+          data: {
             startLat: userLocation[0],
             startLng: userLocation[1],
             endLat: selectedMechanic.latitude,
