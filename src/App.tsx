@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, Outlet, useLocation } from 'react-router-dom';
 import { useState, useEffect, lazy, Suspense } from 'react';
+import { trackPage } from './utils/analytics';
 
 import AdminLayout from './components/AdminLayout';
 
@@ -26,6 +27,16 @@ const AdminUpdateRequests = lazy(() => import('./pages/AdminUpdateRequests'));
 const AdminFeedback = lazy(() => import('./pages/AdminFeedback'));
 const AdminDonations = lazy(() => import('./pages/AdminDonations'));
 const AdminSettings = lazy(() => import('./pages/AdminSettings'));
+
+function AnalyticsTracker() {
+  const location = useLocation();
+
+  useEffect(() => {
+    trackPage();
+  }, [location]);
+
+  return null;
+}
 
 function RouteLoader() {
   return (
@@ -149,6 +160,7 @@ function App() {
 
   return (
     <Router>
+      <AnalyticsTracker />
       <Toaster position="top-right" containerStyle={{ zIndex: 99999 }} toastOptions={{ className: 'dark:bg-card dark:text-foreground dark:border dark:border-border' }} />
       <Suspense fallback={<RouteLoader />}>
         <Routes>
