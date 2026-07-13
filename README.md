@@ -1,6 +1,6 @@
-# Vehicle Assist Frontend
+# RoadResQ Frontend
 
-React + Vite client for the Vehicle Assist platform. It provides public mechanic discovery flows and an admin dashboard for managing mechanics, users, feedback, donations, and home page settings.
+React + Vite client for the RoadResQ platform. It provides public mechanic discovery flows and an admin dashboard for managing mechanics, users, feedback, donations, and home page settings.
 
 ## Stack
 

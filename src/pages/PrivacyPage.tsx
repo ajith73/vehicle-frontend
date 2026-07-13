@@ -8,7 +8,7 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-2xl font-bold text-foreground mb-4">1. Data Collection</h2>
             <p>
-              When you use Vehicle Assist, we may collect the following types of information:
+              When you use RoadResQ, we may collect the following types of information:
             </p>
             <ul className="list-disc pl-6 mt-4 space-y-2">
               <li><strong>Location Data:</strong> To match you with nearby mechanics (only with your explicit permission).</li>

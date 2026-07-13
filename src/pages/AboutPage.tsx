@@ -92,7 +92,7 @@ export default function AboutPage() {
             <Zap className="h-8 w-8 text-indigo-500 mb-4" />
             <h3 className="text-xl font-bold text-foreground mb-3">Our Vision</h3>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              To become the global standard for emergency vehicle repair, ensuring no driver ever feels unsafe or helpless during a breakdown, while empowering local mechanics to thrive.
+              To become the global standard for emergency roadside assistance, ensuring no driver ever feels unsafe or helpless during a breakdown, while empowering local mechanics to thrive.
             </p>
           </div>
           <div className="rounded-3xl border border-rose-500/20 bg-gradient-to-br from-rose-500/10 via-card to-card p-8 shadow-sm transition-transform hover:-translate-y-1">

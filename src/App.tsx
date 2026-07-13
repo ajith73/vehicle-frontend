@@ -10,6 +10,7 @@ import { LocationProvider } from './contexts/LocationContext';
 const LandingPage = lazy(() => import('./pages/LandingPage'));
 const ListPage = lazy(() => import('./pages/ListPage'));
 const MapPage = lazy(() => import('./pages/MapPage'));
+const MapCNPage = lazy(() => import('./pages/MapCNPage'));
 const FeedbackPage = lazy(() => import('./pages/FeedbackPage'));
 const DonationPage = lazy(() => import('./pages/DonationPage'));
 const AboutPage = lazy(() => import('./pages/AboutPage'));
@@ -77,7 +78,7 @@ function App() {
         <header className="hidden sm:block sticky top-0 z-50 p-4 border-b border-border bg-background/80 backdrop-blur-md shadow-sm">
           <div className="max-w-7xl mx-auto flex justify-between items-center w-full">
             <Link to="/" className="flex items-center gap-2 text-xl font-black text-primary hover:scale-105 transition-transform">
-              <Wrench className="w-6 h-6" /> Vehicle Assist
+              <Wrench className="w-6 h-6" /> RoadResQ
             </Link>
             <div className="flex gap-2 sm:gap-6 items-center">
               <Link to="/" className="hidden sm:flex items-center gap-1 text-sm font-medium hover:text-primary transition-colors">
@@ -156,6 +157,7 @@ function App() {
             <Route path="/" element={<LandingPage />} />
             <Route path="/list" element={<ListPage />} />
             <Route path="/map" element={<MapPage />} />
+            <Route path="/mapcn" element={<MapCNPage />} />
             <Route path="/feedback" element={<FeedbackPage />} />
             <Route path="/donate" element={<DonationPage />} />
             <Route path="/about" element={<AboutPage />} />

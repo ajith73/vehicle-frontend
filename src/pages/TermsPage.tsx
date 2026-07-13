@@ -8,7 +8,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-2xl font-bold text-foreground mb-4">1. Introduction</h2>
             <p>
-              Welcome to Vehicle Assist. By using our platform, you agree to these Terms and Conditions. Please read them carefully. If you do not agree with any part of these terms, you must not use our application.
+              Welcome to RoadResQ. By using our platform, you agree to these Terms and Conditions. Please read them carefully. If you do not agree with any part of these terms, you must not use our application.
             </p>
           </section>
 
@@ -34,7 +34,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-2xl font-bold text-foreground mb-4">4. Liability Limitation</h2>
             <p>
-              To the fullest extent permitted by law, Vehicle Assist shall not be liable for any indirect, incidental, special, consequential, or punitive damages resulting from the use of our platform or any services booked through it.
+              To the fullest extent permitted by law, RoadResQ shall not be liable for any indirect, incidental, special, consequential, or punitive damages resulting from the use of our platform or any services booked through it.
             </p>
           </section>
 
