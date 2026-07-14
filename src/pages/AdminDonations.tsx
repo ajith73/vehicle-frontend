@@ -159,21 +159,23 @@ export default function AdminDonations() {
             <thead>
               <tr className="bg-muted border-b border-border">
                 <th className="p-4 font-medium">Donor Name</th>
+                <th className="p-4 font-medium">Email</th>
                 <th className="p-4 font-medium">Amount (INR)</th>
                 <th className="p-4 font-medium">Reference</th>
-                <th className="p-4 font-medium">Date</th>
+                <th className="p-4 font-medium">Date & Time</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {paginatedDonations.length === 0 ? (
-                <tr><td colSpan={4} className="p-8 text-center text-muted-foreground">No donations found</td></tr>
+                <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">No donations found</td></tr>
               ) : (
                 paginatedDonations.map((item) => (
                   <tr key={item.id} className="hover:bg-muted/50 transition-colors">
                     <td className="p-4 font-medium text-foreground">{item.name || 'Anonymous'}</td>
+                    <td className="p-4 text-muted-foreground">{item.email || '-'}</td>
                     <td className="p-4 text-green-600 font-bold font-mono">₹{item.amount.toFixed(2)}</td>
                     <td className="p-4 text-muted-foreground text-sm font-mono">{item.paymentReference}</td>
-                    <td className="p-4 text-muted-foreground">{new Date(item.createdAt).toLocaleDateString()}</td>
+                    <td className="p-4 text-muted-foreground">{new Date(item.createdAt).toLocaleString()}</td>
                   </tr>
                 ))
               )}

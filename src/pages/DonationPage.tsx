@@ -8,6 +8,7 @@ const SUGGESTED_AMOUNTS = [100, 200, 500, 1000];
 export default function DonationPage() {
   const [amount, setAmount] = useState('');
   const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [isThankYouOpen, setIsThankYouOpen] = useState(false);
 
@@ -43,6 +44,8 @@ export default function DonationPage() {
         data: { 
           amount: parseFloat(amount), 
           name,
+          email,
+          consentGiven: hasConsented,
           paymentReference: 'DUMMY_REF_' + Date.now() // Mock reference
         }
       });
@@ -51,6 +54,7 @@ export default function DonationPage() {
       setIsThankYouOpen(true);
       setAmount('');
       setName('');
+      setEmail('');
       setHasConsented(false);
     } catch (err) {
       toast.error('Network error processing donation.', { id: loadingToast });
@@ -114,6 +118,17 @@ export default function DonationPage() {
               onChange={(e) => setName(e.target.value)}
               className="w-full p-4 rounded-2xl border-2 border-border/50 bg-background/50 text-foreground focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none"
               placeholder="How should we thank you?"
+            />
+          </div>
+
+          <div className="space-y-3">
+            <label className="block text-sm font-bold text-foreground ml-1">Your Email (Optional)</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full p-4 rounded-2xl border-2 border-border/50 bg-background/50 text-foreground focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none"
+              placeholder="For receipt & updates"
             />
           </div>
 

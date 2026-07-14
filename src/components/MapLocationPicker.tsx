@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import { MapPin, X, Navigation, Check, Search } from 'lucide-react';
@@ -48,6 +48,17 @@ export function MapLocationPicker({ initialLocation, onSelect, onClose }: MapLoc
   
   const [searchInput, setSearchInput] = useState('');
   const [searchSuggestions, setSearchSuggestions] = useState<any[]>([]);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setSearchSuggestions([]);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     if (searchInput.length > 2) {
@@ -113,7 +124,7 @@ export function MapLocationPicker({ initialLocation, onSelect, onClose }: MapLoc
         <div className="flex-1 relative bg-secondary/20">
           
           {/* Map Search Overlay */}
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 w-11/12 max-w-md z-[500]">
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 w-11/12 max-w-md z-[500]" ref={dropdownRef}>
             <div className="relative bg-background rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-border flex items-center px-4 py-3">
               <Search className="w-5 h-5 text-primary mr-3 shrink-0" />
               <input 

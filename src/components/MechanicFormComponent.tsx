@@ -56,11 +56,20 @@ export default function MechanicFormComponent({ id, isEdit, initialData, onSubmi
     }),
     multiValue: (base: any) => ({
       ...base,
-      backgroundColor: 'color-mix(in srgb, var(--primary) 12%, var(--secondary))'
+      backgroundColor: 'hsl(var(--primary))',
+      borderRadius: '4px'
     }),
     multiValueLabel: (base: any) => ({
       ...base,
-      color: 'var(--foreground)'
+      color: 'hsl(var(--primary-foreground))'
+    }),
+    multiValueRemove: (base: any) => ({
+      ...base,
+      color: 'hsl(var(--primary-foreground))',
+      ':hover': {
+        backgroundColor: 'hsl(var(--destructive))',
+        color: 'hsl(var(--destructive-foreground))'
+      }
     }),
     singleValue: (base: any) => ({
       ...base,
@@ -703,6 +712,7 @@ export default function MechanicFormComponent({ id, isEdit, initialData, onSubmi
                   setPendingCityName('');
                   setCityOption(null); // Reset city when state changes
                 }}
+                isClearable={true}
                 className="react-select-container"
                 classNamePrefix="react-select"
                 placeholder="Search and select state..."
@@ -717,6 +727,7 @@ export default function MechanicFormComponent({ id, isEdit, initialData, onSubmi
                 value={cityOption}
                 onChange={(option) => setCityOption(option as any)}
                 isDisabled={!stateOption}
+                isClearable={true}
                 className="react-select-container"
                 classNamePrefix="react-select"
                 placeholder="Search and select city..."

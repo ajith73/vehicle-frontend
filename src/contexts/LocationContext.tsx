@@ -31,11 +31,7 @@ export const LocationProvider = ({ children }: { children: ReactNode }) => {
     setLocationName(name);
     setSearchQuery(name);
     setLocationSource(source);
-    setLocationMessage(
-      source === 'manual'
-        ? 'Using the location you selected manually. You can switch back to device location anytime.'
-        : null
-    );
+    setLocationMessage(null);
   };
 
   const fetchIpLocation = async () => {
@@ -44,15 +40,15 @@ export const LocationProvider = ({ children }: { children: ReactNode }) => {
       const data = res.data;
       if (data && data.city) {
         setLocation([parseFloat(data.latitude), parseFloat(data.longitude)], data.city, 'ip');
-        setLocationMessage('Using an approximate network-based location. Enable device location for more accurate nearby results and routing.');
+        setLocationMessage('Using approximate location.');
       } else {
         setLocationSource('none');
-        setLocationMessage('Location access is unavailable. You can still browse mechanics, but nearby distances and routing may be less accurate.');
+        setLocationMessage('Location access unavailable.');
       }
     } catch (err) {
       console.warn('IP location fetch failed', err);
       setLocationSource('none');
-      setLocationMessage('We could not determine your location automatically. You can still browse mechanics, but nearby distances and routing may be unavailable.');
+      setLocationMessage('Could not determine location.');
     } finally {
       setIsLoading(false);
     }
@@ -77,7 +73,7 @@ export const LocationProvider = ({ children }: { children: ReactNode }) => {
         },
         async () => {
           console.warn('Could not get geolocation, falling back to IP');
-          setLocationMessage('Location permission was denied or unavailable. Falling back to an approximate network-based location.');
+          setLocationMessage('Location denied. Using approximate location.');
           await fetchIpLocation();
         },
         { timeout: 10000 }

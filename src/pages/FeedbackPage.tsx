@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bug, Lightbulb, MessageCircle, Star, AlertTriangle, Send, CheckCircle2, MapPin } from 'lucide-react';
+import { Bug, Lightbulb, MessageCircle, Star, AlertTriangle, Send, CheckCircle2, MapPin, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Select from 'react-select';
 import { apiClient } from '../api/apiClient';
@@ -215,7 +215,14 @@ export default function FeedbackPage() {
       {/* Success Modal Overlay */}
       {success && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="max-w-md w-full bg-card shadow-2xl rounded-3xl p-8 sm:p-12 border border-border text-center transform animate-in zoom-in-95 duration-500">
+          <div className="relative max-w-md w-full bg-card shadow-2xl rounded-3xl p-8 sm:p-12 border border-border text-center transform animate-in zoom-in-95 duration-500">
+            <button 
+              onClick={() => setSuccess(false)}
+              className="absolute top-4 right-4 p-2 text-muted-foreground hover:bg-muted hover:text-foreground rounded-full transition-colors"
+              aria-label="Close"
+            >
+              <X size={20} />
+            </button>
             <div className="mx-auto w-24 h-24 bg-green-500/20 text-green-500 rounded-full flex items-center justify-center mb-6">
               <CheckCircle2 className="w-12 h-12" />
             </div>
