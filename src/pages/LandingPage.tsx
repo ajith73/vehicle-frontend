@@ -1,5 +1,6 @@
 import { Suspense, lazy, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import ShareButtons from '../components/ShareButtons';
 import {
   Activity,
   AlertTriangle,
@@ -718,7 +719,7 @@ export default function LandingPage() {
       </div>
 
       {/* About Us Section */}
-      <div className="mx-auto w-full max-w-7xl px-4 pb-20 sm:px-8">
+      <div className="mx-auto w-full max-w-7xl px-4 pb-12 sm:px-8">
         <div className="overflow-hidden rounded-3xl border border-purple-500/20 bg-gradient-to-br from-purple-500/10 via-card to-purple-500/5 shadow-sm">
           <div className="grid gap-6 px-5 py-6 sm:px-8 sm:py-8 lg:grid-cols-[1.3fr_0.7fr] lg:items-center">
             <div>
@@ -736,6 +737,42 @@ export default function LandingPage() {
                 Read Our Story <ArrowRight className="h-4 w-4" />
               </button>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Contact Us Section */}
+      <div className="mx-auto w-full max-w-7xl px-4 pb-12 sm:px-8">
+        <div className="overflow-hidden rounded-3xl border border-blue-500/20 bg-gradient-to-br from-blue-500/10 via-card to-blue-500/5 shadow-sm">
+          <div className="grid gap-6 px-5 py-6 sm:px-8 sm:py-8 lg:grid-cols-[1.3fr_0.7fr] lg:items-center">
+            <div>
+              <p className="text-sm font-black uppercase tracking-[0.2em] text-blue-600 dark:text-blue-400">Contact Us</p>
+              <h3 className="mt-2 text-2xl font-black text-foreground sm:text-3xl">Connect with the creator</h3>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
+                Reach out to discuss future plans, real-time connectivity, or investment opportunities.
+              </p>
+            </div>
+            <div className="flex flex-col justify-center">
+              <button
+                onClick={() => navigate('/contact')}
+                className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 py-4 text-sm font-black text-white transition-colors hover:bg-blue-700 shadow-[0_8px_30px_rgba(37,99,235,0.3)] hover:-translate-y-1 active:translate-y-0"
+              >
+                Contact Me <ArrowRight className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Share Section */}
+      <div className="mx-auto w-full max-w-7xl px-4 pb-20 sm:px-8 flex flex-col items-center">
+        <div className="w-full overflow-hidden rounded-3xl border border-green-500/20 bg-gradient-to-br from-green-500/10 via-card to-green-500/5 shadow-sm p-8 sm:p-10">
+          <div className="flex flex-col items-center justify-center text-center">
+            <h3 className="mb-4 text-2xl font-black text-foreground sm:text-3xl">Spread the Word</h3>
+            <p className="mb-8 text-muted-foreground max-w-2xl text-sm sm:text-base">
+              Help us grow! Share RoadResQ with your network so they're never stranded on the road.
+            </p>
+            <ShareButtons url="https://roadresq.in" title="RoadResQ - 24/7 Roadside Assistance in India" />
           </div>
         </div>
       </div>

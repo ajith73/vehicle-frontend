@@ -4,7 +4,7 @@ import { trackPage } from './utils/analytics';
 
 import AdminLayout from './components/AdminLayout';
 
-import { Wrench, MessageSquare, Heart, Sun, Moon, Home, Map as MapIcon, List, ShieldCheck } from 'lucide-react';
+import { Wrench, MessageSquare, Heart, Sun, Moon, Home, Map as MapIcon, List, ShieldCheck, Mail } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
 import { LocationProvider } from './contexts/LocationContext';
 
@@ -14,6 +14,7 @@ const MapPage = lazy(() => import('./pages/MapPage'));
 const MapCNPage = lazy(() => import('./pages/MapCNPage'));
 const FeedbackPage = lazy(() => import('./pages/FeedbackPage'));
 const DonationPage = lazy(() => import('./pages/DonationPage'));
+const ContactPage = lazy(() => import('./pages/ContactPage'));
 const AboutPage = lazy(() => import('./pages/AboutPage'));
 const TermsPage = lazy(() => import('./pages/TermsPage'));
 const PrivacyPage = lazy(() => import('./pages/PrivacyPage'));
@@ -95,9 +96,6 @@ function App() {
               <Link to="/" className="hidden sm:flex items-center gap-1 text-sm font-medium hover:text-primary transition-colors">
                 <Home className="w-4 h-4" /> Home
               </Link>
-              <Link to="/about" className="hidden sm:flex items-center gap-1 text-sm font-medium hover:text-primary transition-colors">
-                <ShieldCheck className="w-4 h-4" /> About
-              </Link>
               <Link to="/map" className="hidden sm:flex items-center gap-1 text-sm font-medium hover:text-primary transition-colors">
                 <MapIcon className="w-4 h-4" /> Map
               </Link>
@@ -106,6 +104,12 @@ function App() {
               </Link>
               <Link to="/feedback" className="hidden sm:flex items-center gap-1 text-sm font-medium hover:text-primary transition-colors">
                 <MessageSquare className="w-4 h-4" /> Feedback
+              </Link>
+              <Link to="/about" className="hidden sm:flex items-center gap-1 text-sm font-medium hover:text-primary transition-colors">
+                <ShieldCheck className="w-4 h-4" /> About
+              </Link>
+              <Link to="/contact" className="hidden sm:flex items-center gap-1 text-sm font-medium hover:text-primary transition-colors">
+                <Mail className="w-4 h-4" /> Contact
               </Link>
               <Link to="/donate" className="hidden sm:flex items-center gap-1 text-sm font-bold text-pink-500 hover:text-pink-400 transition-colors">
                 <Heart className="w-4 h-4 text-pink-500 fill-pink-500/50 animate-pulse drop-shadow-[0_0_8px_rgba(236,72,153,0.8)]" /> Donate
@@ -172,6 +176,7 @@ function App() {
             <Route path="/mapcn" element={<MapCNPage />} />
             <Route path="/feedback" element={<FeedbackPage />} />
             <Route path="/donate" element={<DonationPage />} />
+            <Route path="/contact" element={<ContactPage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/terms" element={<TermsPage />} />
             <Route path="/privacy" element={<PrivacyPage />} />

@@ -6,12 +6,22 @@
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://roadresq.in/about</loc>
-    <changefreq>monthly</changefreq>
+    <loc>https://roadresq.in/map</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://roadresq.in/list</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://roadresq.in/mapcn</loc>
+    <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://roadresq.in/services</loc>
+    <loc>https://roadresq.in/about</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -21,14 +31,14 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://roadresq.in/mechanics</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.9</priority>
+    <loc>https://roadresq.in/feedback</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://roadresq.in/privacy-policy</loc>
-    <changefreq>yearly</changefreq>
-    <priority>0.5</priority>
+    <loc>https://roadresq.in/donate</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://roadresq.in/terms</loc>
@@ -36,8 +46,8 @@
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://roadresq.in/faq</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <loc>https://roadresq.in/privacy</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
   </url>
 </urlset>
