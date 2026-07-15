@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
-import { Upload, Plus, Check, Edit3, Trash2, Search, Filter, Eye, X, MapPin, Phone, Settings, CheckCircle, XCircle, AlertCircle, Clock, UserCircle } from 'lucide-react';
+import { Upload, Plus, Check, Edit3, Trash2, Search, Filter, Eye, X, MapPin, Phone, Settings, CheckCircle, XCircle, AlertCircle, Clock, UserCircle, Download, RefreshCw } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { useMechanics } from '../hooks/useMechanics';
 import * as api from '../api/mechanics';
 import type { Mechanic } from '../types';
 import { Pagination } from '../components/Pagination';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { getMechanicStatus } from '../utils/mechanicUtils';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -21,7 +23,7 @@ export default function AdminMechanics() {
   const [viewMechanicData, setViewMechanicData] = useState<Mechanic | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
-  const [confirmConfig, setConfirmConfig] = useState<{isOpen: boolean, title: string, message: string, type: 'danger'|'warning'|'info'|'success', onConfirm: () => void} | null>(null);
+  const [confirmConfig, setConfirmConfig] = useState<{isOpen: boolean, title: string, message: string, type: 'danger'|'warning'|'info'|'success', requireInput?: boolean, inputPlaceholder?: string, onConfirm: (val?: string) => void} | null>(null);
   const role = localStorage.getItem('role');
 
   const handleApprove = async (id: number) => {
@@ -41,12 +43,13 @@ export default function AdminMechanics() {
       message: 'This action cannot be undone. Are you sure you want to delete this mechanic permanently?',
       type: 'danger',
       onConfirm: async () => {
+        const loadingToast = toast.loading('Deleting mechanic...');
         try {
           await api.deleteMechanic(id);
-          toast.success('Mechanic deleted successfully');
+          toast.success('Mechanic deleted successfully', { id: loadingToast });
           refetch();
         } catch (err) {
-          toast.error('Error deleting mechanic');
+          toast.error('Error deleting mechanic', { id: loadingToast });
         }
       }
     });
@@ -55,15 +58,19 @@ export default function AdminMechanics() {
   const handleBulkStatusUpdate = async (newStatus: string) => {
     if (selectedIds.length === 0) return;
     
+    const needsRemark = newStatus === 'Rejected' || newStatus === 'Inactive';
+    
     setConfirmConfig({
       isOpen: true,
       title: 'Update Status?',
       message: `Are you sure you want to mark ${selectedIds.length} mechanic(s) as ${newStatus}?`,
       type: 'info',
-      onConfirm: async () => {
+      requireInput: needsRemark,
+      inputPlaceholder: `Enter reason for marking as ${newStatus}...`,
+      onConfirm: async (remarks?: string) => {
         const loadingToast = toast.loading(`Updating ${selectedIds.length} mechanics...`);
         try {
-          await api.bulkUpdateMechanicsStatus(selectedIds, newStatus);
+          await api.bulkUpdateMechanicsStatus(selectedIds, newStatus, remarks);
           toast.success(`Successfully updated ${selectedIds.length} mechanic(s) to ${newStatus}`, { id: loadingToast });
           setSelectedIds([]);
           refetch();
@@ -133,6 +140,104 @@ export default function AdminMechanics() {
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
+
+  const exportToXLSX = () => {
+    try {
+      const dataToExport = filteredMechanics.map(m => ({
+        ID: m.id,
+        'Business Name': m.businessName || m.name,
+        'Mechanic Name': m.mechanicName || '',
+        Type: m.mechanicType,
+        Status: m.status,
+        Availability: getMechanicStatus(m),
+        'Vehicle Types': m.vehicleTypes?.join(', ') || m.specializedVehicle || '',
+        'Services': m.services?.join(', ') || m.serviceTypes?.join(', ') || m.servicesAvailable || '',
+        Phone: Array.isArray(m.phone) ? m.phone.map((p: any) => p.number).join(', ') : (m.phone || m.alternatePhone || ''),
+        Email: Array.isArray(m.emails) ? m.emails.join(', ') : (m.email || ''),
+        Address: m.address || '',
+        Landmark: m.landmark || '',
+        Area: m.area || '',
+        City: m.city || '',
+        District: m.district || '',
+        State: m.state || '',
+        Country: m.country || '',
+        Pincode: m.pincode || '',
+        'Operating Days': m.operatingDays?.join(', ') || '',
+        'Operating Hours': m.operatingHours || (m.startTime ? `${m.startTime} - ${m.endTime}` : ''),
+        'Is 24x7': (m.is24Hours || m.is24x7) ? 'Yes' : 'No',
+        'Holiday Working': m.holidayWorking ? 'Yes' : 'No',
+        'EV Support': m.evSupport ? 'Yes' : 'No',
+        'Home Service': m.homeService ? 'Yes' : 'No',
+        'Roadside Assistance': m.roadsideAssistance ? 'Yes' : 'No',
+        'Service Radius (km)': m.serviceRadius || '',
+        Experience: m.experience || '',
+        Description: m.description || '',
+        'Website URL': m.websiteUrl || '',
+        'Map Link': m.mapLink || '',
+        Latitude: m.latitude || '',
+        Longitude: m.longitude || '',
+        'Created At': m.createdAt ? new Date(m.createdAt).toLocaleDateString() : ''
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(dataToExport);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Mechanics");
+      XLSX.writeFile(wb, "mechanics_export.xlsx");
+      toast.success('Export successful');
+    } catch (error) {
+      console.error('Export failed:', error);
+      toast.error('Failed to export data');
+    }
+  };
+
+  const exportSingleToXLSX = (mechanic: any) => {
+    try {
+      const dataToExport = [{
+        ID: mechanic.id,
+        'Business Name': mechanic.businessName || mechanic.name,
+        'Mechanic Name': mechanic.mechanicName || '',
+        Type: mechanic.mechanicType,
+        Status: mechanic.status,
+        Availability: getMechanicStatus(mechanic),
+        'Vehicle Types': mechanic.vehicleTypes?.join(', ') || mechanic.specializedVehicle || '',
+        'Services': mechanic.services?.join(', ') || mechanic.serviceTypes?.join(', ') || mechanic.servicesAvailable || '',
+        Phone: Array.isArray(mechanic.phone) ? mechanic.phone.map((p: any) => p.number).join(', ') : (mechanic.phone || mechanic.alternatePhone || ''),
+        Email: Array.isArray(mechanic.emails) ? mechanic.emails.join(', ') : (mechanic.email || ''),
+        Address: mechanic.address || '',
+        Landmark: mechanic.landmark || '',
+        Area: mechanic.area || '',
+        City: mechanic.city || '',
+        District: mechanic.district || '',
+        State: mechanic.state || '',
+        Country: mechanic.country || '',
+        Pincode: mechanic.pincode || '',
+        'Operating Days': mechanic.operatingDays?.join(', ') || '',
+        'Operating Hours': mechanic.operatingHours || (mechanic.startTime ? `${mechanic.startTime} - ${mechanic.endTime}` : ''),
+        'Is 24x7': (mechanic.is24Hours || mechanic.is24x7) ? 'Yes' : 'No',
+        'Holiday Working': mechanic.holidayWorking ? 'Yes' : 'No',
+        'EV Support': mechanic.evSupport ? 'Yes' : 'No',
+        'Home Service': mechanic.homeService ? 'Yes' : 'No',
+        'Roadside Assistance': mechanic.roadsideAssistance ? 'Yes' : 'No',
+        'Service Radius (km)': mechanic.serviceRadius || '',
+        Experience: mechanic.experience || '',
+        Description: mechanic.description || '',
+        'Website URL': mechanic.websiteUrl || '',
+        'Map Link': mechanic.mapLink || '',
+        Latitude: mechanic.latitude || '',
+        Longitude: mechanic.longitude || '',
+        'Created At': mechanic.createdAt ? new Date(mechanic.createdAt).toLocaleDateString() : ''
+      }];
+
+      const ws = XLSX.utils.json_to_sheet(dataToExport);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Mechanic Details");
+      XLSX.writeFile(wb, `mechanic_${mechanic.id}_export.xlsx`);
+      toast.success('Export successful');
+    } catch (error) {
+      console.error('Export failed:', error);
+      toast.error('Failed to export data');
+    }
+  };
 
   if (loading) {
     return (
@@ -294,9 +399,30 @@ export default function AdminMechanics() {
         </div>
       </div>
 
-      <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm overflow-x-auto">
-        <table className="w-full text-left border-collapse min-w-[800px]">
-          <thead>
+      <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
+        <div className="flex justify-between items-center p-4 border-b border-border bg-muted/30">
+           <span className="font-semibold text-foreground text-sm">{filteredMechanics.length} Mechanics Found</span>
+           <div className="flex gap-2">
+             <button 
+               onClick={() => refetch()} 
+               className="flex items-center justify-center p-1.5 bg-secondary text-foreground rounded-lg hover:bg-secondary/80 transition-colors"
+               title="Refresh Data"
+             >
+               <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
+             </button>
+             {role === 'Super Admin' && (
+               <button 
+                 onClick={exportToXLSX} 
+                 className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary rounded-lg text-sm font-bold hover:bg-primary hover:text-primary-foreground transition-colors"
+               >
+                 <Download size={16} /> Export XLSX
+               </button>
+             )}
+           </div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[800px]">
+            <thead>
             <tr className="bg-muted text-muted-foreground border-b border-border">
               {role === 'Super Admin' && (
                 <th className="p-4 w-12 text-center">
@@ -384,6 +510,7 @@ export default function AdminMechanics() {
             )}
           </tbody>
         </table>
+        </div>
         <Pagination
           currentPage={currentPage}
           totalPages={totalPages}
@@ -398,8 +525,10 @@ export default function AdminMechanics() {
         title={confirmConfig?.title || ''}
         message={confirmConfig?.message || ''}
         type={confirmConfig?.type || 'warning'}
-        onConfirm={() => {
-          if (confirmConfig?.onConfirm) confirmConfig.onConfirm();
+        requireInput={confirmConfig?.requireInput}
+        inputPlaceholder={confirmConfig?.inputPlaceholder}
+        onConfirm={(val) => {
+          if (confirmConfig?.onConfirm) confirmConfig.onConfirm(val);
         }}
         onCancel={() => setConfirmConfig(null)}
       />
@@ -412,12 +541,23 @@ export default function AdminMechanics() {
               <h2 className="text-2xl font-bold flex items-center gap-2">
                 <Eye className="text-primary" /> Mechanic Details
               </h2>
-              <button 
-                onClick={() => setViewMechanicData(null)}
-                className="p-2 bg-secondary text-secondary-foreground rounded-full hover:bg-secondary/80 transition-colors"
-              >
-                <X size={20} />
-              </button>
+              <div className="flex items-center gap-2">
+                {role === 'Super Admin' && (
+                  <button 
+                    onClick={() => exportSingleToXLSX(viewMechanicData)}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary rounded-lg text-sm font-bold hover:bg-primary hover:text-primary-foreground transition-colors"
+                    title="Export to XLSX"
+                  >
+                    <Download size={16} /> Export
+                  </button>
+                )}
+                <button 
+                  onClick={() => setViewMechanicData(null)}
+                  className="p-2 bg-secondary text-secondary-foreground rounded-full hover:bg-secondary/80 transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
             </div>
             
             <div className="p-4 sm:p-6 space-y-8 flex-1">
@@ -437,10 +577,27 @@ export default function AdminMechanics() {
                     }`}>
                       {viewMechanicData.status}
                     </span>
+                    {(() => {
+                      const availStatus = getMechanicStatus(viewMechanicData);
+                      const isAvail = availStatus === 'Available' || availStatus === 'Open';
+                      return (
+                        <span className={`px-2 py-1 rounded text-xs font-bold ${
+                          isAvail ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
+                        }`}>
+                          {availStatus}
+                        </span>
+                      );
+                    })()}
                   </div>
                   {viewMechanicData.mechanicName && <p className="text-muted-foreground font-medium flex items-center gap-2"><UserCircle size={16}/> Owner: {viewMechanicData.mechanicName}</p>}
                   <p className="inline-flex items-center gap-1 rounded bg-secondary px-2 py-1 text-xs font-bold text-secondary-foreground">{viewMechanicData.mechanicType}</p>
                   <p className="text-muted-foreground mt-2">{viewMechanicData.description || 'No description provided.'}</p>
+                  {viewMechanicData.remarks && (viewMechanicData.status === 'Rejected' || viewMechanicData.status === 'Inactive') && (
+                    <div className="mt-4 bg-red-500/10 border border-red-500/20 p-3 rounded-lg">
+                      <p className="text-xs font-bold text-red-600 mb-1">Remarks ({viewMechanicData.status})</p>
+                      <p className="text-sm text-red-700">{viewMechanicData.remarks}</p>
+                    </div>
+                  )}
                 </div>
               </div>
 

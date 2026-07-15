@@ -26,7 +26,11 @@ export default function AdminLogin() {
       localStorage.setItem('role', data.role);
       localStorage.setItem('adminEmail', data.email || email);
       localStorage.setItem('adminName', data.email || email);
-      navigate('/admin/dashboard');
+      if (data.role === 'Super Admin') {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/admin/mechanics');
+      }
     } catch (err: any) {
       setError(err.message || 'An error occurred during login');
     }

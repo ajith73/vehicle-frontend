@@ -176,8 +176,8 @@ export default function AdminLayout() {
                 key={item.path}
                 to={item.path}
                 title={!isExpanded ? item.name : undefined}
-                className={`flex items-center gap-3 py-3 rounded-lg transition-colors group relative ${
-                  isExpanded ? 'px-4' : 'px-0 justify-center'
+                className={`flex items-center py-3 rounded-lg transition-colors group relative ${
+                  isExpanded ? 'px-4 gap-3' : 'px-0 justify-center gap-0'
                 } ${
                   isActive 
                     ? 'bg-primary text-primary-foreground font-medium' 

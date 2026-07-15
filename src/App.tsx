@@ -26,6 +26,7 @@ const AdminUsers = lazy(() => import('./pages/AdminUsers'));
 const MechanicForm = lazy(() => import('./pages/MechanicForm'));
 const AdminBulkUpload = lazy(() => import('./pages/AdminBulkUpload'));
 const AdminUpdateRequests = lazy(() => import('./pages/AdminUpdateRequests'));
+const UpdateRequestForm = lazy(() => import('./pages/UpdateRequestForm'));
 const AdminFeedback = lazy(() => import('./pages/AdminFeedback'));
 const AdminDonations = lazy(() => import('./pages/AdminDonations'));
 const AdminSettings = lazy(() => import('./pages/AdminSettings'));
@@ -197,6 +198,7 @@ function App() {
             <Route path="mechanics/:id/edit" element={<MechanicForm />} />
             <Route path="mechanics/bulk-upload" element={<AdminBulkUpload />} />
             <Route path="update-requests" element={<AdminUpdateRequests />} />
+            <Route path="update-requests/:id/edit" element={<UpdateRequestForm />} />
             <Route path="feedback" element={<AdminFeedback />} />
             <Route path="donations" element={<AdminDonations />} />
             <Route path="settings" element={<AdminSettings />} />

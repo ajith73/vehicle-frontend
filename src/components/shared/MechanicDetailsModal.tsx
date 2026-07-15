@@ -100,6 +100,17 @@ export function MechanicDetailsModal({
             </div>
           )}
 
+          {selectedMechanicForDetails.remarks && (selectedMechanicForDetails.status === 'Rejected' || selectedMechanicForDetails.status === 'Inactive') && (
+            <div>
+              <h4 className="mb-3 flex items-center gap-2 text-sm font-bold text-destructive">
+                <Info size={16} /> Remarks ({selectedMechanicForDetails.status})
+              </h4>
+              <p className="rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm leading-relaxed text-destructive-foreground">
+                {selectedMechanicForDetails.remarks}
+              </p>
+            </div>
+          )}
+
           <div>
             <h4 className="mb-3 flex items-center gap-2 text-sm font-bold text-foreground">
               <MapPin size={16} className="text-primary" /> Location Details

@@ -17,8 +17,9 @@ export default function AdminUpdateRequests() {
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [statusFilter, setStatusFilter] = useState('All');
   const [currentPage, setCurrentPage] = useState(1);
-  const [confirmConfig, setConfirmConfig] = useState<{isOpen: boolean, title: string, message: string, type: 'danger'|'warning'|'info'|'success', onConfirm: () => void} | null>(null);
+  const [confirmConfig, setConfirmConfig] = useState<{isOpen: boolean, title: string, message: string, type: 'danger'|'warning'|'info'|'success', requireInput?: boolean, inputPlaceholder?: string, onConfirm: (val?: string) => void} | null>(null);
   const navigate = useNavigate();
+  const role = localStorage.getItem('role');
 
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
@@ -65,17 +66,20 @@ export default function AdminUpdateRequests() {
   }, [fetchRequests]);
 
   const handleAction = async (id: number, action: 'approve' | 'reject') => {
+    const isReject = action === 'reject';
     setConfirmConfig({
       isOpen: true,
-      title: action === 'approve' ? 'Approve Update?' : 'Reject Update?',
+      title: isReject ? 'Reject Update?' : 'Approve Update?',
       message: `Are you sure you want to ${action} this request?`,
-      type: action === 'approve' ? 'success' : 'danger',
-      onConfirm: async () => {
+      type: isReject ? 'danger' : 'success',
+      requireInput: isReject,
+      inputPlaceholder: isReject ? 'Enter reason for rejection...' : undefined,
+      onConfirm: async (remarks?: string) => {
         try {
           if (action === 'approve') {
             await api.approveUpdateRequest(id);
           } else {
-            await api.rejectUpdateRequest(id);
+            await api.rejectUpdateRequest(id, remarks);
           }
           toast.success(`Successfully ${action}d request`);
           fetchRequests();
@@ -89,17 +93,20 @@ export default function AdminUpdateRequests() {
   const handleBulkAction = async (action: 'approve' | 'reject') => {
     if (selectedIds.length === 0) return;
     
+    const isReject = action === 'reject';
     setConfirmConfig({
       isOpen: true,
-      title: action === 'approve' ? 'Approve Updates?' : 'Reject Updates?',
+      title: isReject ? 'Reject Updates?' : 'Approve Updates?',
       message: `Are you sure you want to ${action} ${selectedIds.length} request(s)?`,
-      type: action === 'approve' ? 'success' : 'danger',
-      onConfirm: async () => {
+      type: isReject ? 'danger' : 'success',
+      requireInput: isReject,
+      inputPlaceholder: isReject ? 'Enter reason for rejection...' : undefined,
+      onConfirm: async (remarks?: string) => {
         try {
           if (action === 'approve') {
             await Promise.all(selectedIds.map(id => api.approveUpdateRequest(id)));
           } else {
-            await Promise.all(selectedIds.map(id => api.rejectUpdateRequest(id)));
+            await Promise.all(selectedIds.map(id => api.rejectUpdateRequest(id, remarks)));
           }
           toast.success(`Successfully ${action}d ${selectedIds.length} request(s)`);
           setSelectedIds([]);
@@ -225,7 +232,7 @@ export default function AdminUpdateRequests() {
     <div className="p-4 sm:p-8 max-w-7xl mx-auto w-full">
       <div className="flex flex-col gap-4 mb-6 xl:flex-row xl:items-start xl:justify-between">
         <h2 className="text-3xl font-bold text-foreground">Mechanic Update Requests</h2>
-        {selectedIds.length > 0 && (
+        {role === 'Super Admin' && selectedIds.length > 0 && (
           <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2 xl:w-auto">
             <button 
               onClick={() => handleBulkAction('approve')}
@@ -295,14 +302,16 @@ export default function AdminUpdateRequests() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-muted border-b border-border">
-                <th className="p-4 w-12 text-center">
-                  <input 
-                    type="checkbox" 
-                    checked={selectedIds.length === filteredRequests.length && filteredRequests.length > 0}
-                    onChange={toggleSelectAll}
-                    className="w-4 h-4 rounded border-border text-primary focus:ring-primary/20 cursor-pointer"
-                  />
-                </th>
+                {role === 'Super Admin' && (
+                  <th className="p-4 w-12 text-center">
+                    <input 
+                      type="checkbox" 
+                      checked={selectedIds.length === filteredRequests.length && filteredRequests.length > 0}
+                      onChange={toggleSelectAll}
+                      className="w-4 h-4 rounded border-border text-primary focus:ring-primary/20 cursor-pointer"
+                    />
+                  </th>
+                )}
                 <th className="p-4 font-medium">Mechanic</th>
                 <th className="p-4 font-medium">Requested By</th>
                 <th className="p-4 font-medium">Status</th>
@@ -311,18 +320,20 @@ export default function AdminUpdateRequests() {
             </thead>
             <tbody className="divide-y divide-border">
               {paginatedRequests.length === 0 ? (
-                <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">No update requests found</td></tr>
+                <tr><td colSpan={role === 'Super Admin' ? 5 : 4} className="p-8 text-center text-muted-foreground">No update requests found</td></tr>
               ) : (
                 paginatedRequests.map((req) => (
                   <tr key={req.id} className={`hover:bg-muted/50 transition-colors ${selectedIds.includes(req.id) ? 'bg-primary/5' : ''}`}>
-                    <td className="p-4 text-center">
-                      <input 
-                        type="checkbox" 
-                        checked={selectedIds.includes(req.id)}
-                        onChange={() => toggleSelect(req.id)}
-                        className="w-4 h-4 rounded border-border text-primary focus:ring-primary/20 cursor-pointer"
-                      />
-                    </td>
+                    {role === 'Super Admin' && (
+                      <td className="p-4 text-center">
+                        <input 
+                          type="checkbox" 
+                          checked={selectedIds.includes(req.id)}
+                          onChange={() => toggleSelect(req.id)}
+                          className="w-4 h-4 rounded border-border text-primary focus:ring-primary/20 cursor-pointer"
+                        />
+                      </td>
+                    )}
                     <td className="p-4">
                       <p className="font-bold text-foreground">{getRequestTitle(req)}</p>
                       <p className="text-xs text-muted-foreground">
@@ -349,17 +360,17 @@ export default function AdminUpdateRequests() {
                         >
                           <Eye size={16} />
                         </button>
-                        {req.mechanicId && (
+                        {req.status !== 'Approved' && (
                           <button 
-                            onClick={() => navigate(`/admin/mechanics/${req.mechanicId}/edit`)}
+                            onClick={() => navigate(`/admin/update-requests/${req.id}/edit`)}
                             className="p-2 bg-secondary text-secondary-foreground rounded-lg hover:bg-primary hover:text-primary-foreground transition-colors"
-                            title="Edit Mechanic Directly"
+                            title="Edit Update Request"
                           >
                             <Edit3 size={16} />
                           </button>
                         )}
                         
-                        {req.status === 'Pending Update Approval' && (
+                        {role === 'Super Admin' && req.status === 'Pending Update Approval' && (
                           <>
                             <button 
                               onClick={() => handleAction(req.id, 'approve')}
@@ -377,7 +388,7 @@ export default function AdminUpdateRequests() {
                             </button>
                           </>
                         )}
-                        {req.status === 'Rejected' && (
+                        {role === 'Super Admin' && req.status === 'Rejected' && (
                           <button 
                             onClick={() => handleDelete(req.id)}
                             className="p-2 bg-destructive/10 text-destructive rounded-lg hover:bg-destructive hover:text-destructive-foreground transition-colors"
@@ -429,6 +440,12 @@ export default function AdminUpdateRequests() {
               </div>
             </div>
             <div className="p-4 sm:p-6 space-y-8 flex-1">
+              {viewUpdateData.status === 'Rejected' && viewUpdateData.remarks && (
+                <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl -mb-2">
+                  <p className="text-sm font-bold text-red-600 mb-1 flex items-center gap-2"><AlertCircle size={16}/> Rejection Remarks</p>
+                  <p className="text-sm text-red-700">{viewUpdateData.remarks}</p>
+                </div>
+              )}
               {(() => {
                 try {
                   const data = parseUpdatedData(viewUpdateData.updatedData);
@@ -649,8 +666,10 @@ export default function AdminUpdateRequests() {
         title={confirmConfig?.title || ''}
         message={confirmConfig?.message || ''}
         type={confirmConfig?.type || 'warning'}
-        onConfirm={() => {
-          if (confirmConfig?.onConfirm) confirmConfig.onConfirm();
+        requireInput={confirmConfig?.requireInput}
+        inputPlaceholder={confirmConfig?.inputPlaceholder}
+        onConfirm={(val) => {
+          if (confirmConfig?.onConfirm) confirmConfig.onConfirm(val);
         }}
         onCancel={() => setConfirmConfig(null)}
       />

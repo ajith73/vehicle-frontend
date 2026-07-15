@@ -62,16 +62,17 @@ export default function AdminSettings() {
   const handleAddVehicle = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newVehicle.trim()) return;
+    const loadingToast = toast.loading('Adding vehicle...');
     try {
       await apiClient('/admin/vehicles', {
         method: 'POST',
         data: { name: newVehicle }
       });
-      toast.success('Vehicle added');
+      toast.success('Vehicle added', { id: loadingToast });
       setNewVehicle('');
       fetchData();
     } catch (err) {
-      toast.error(getErrorMessage(err, 'Failed to add vehicle'));
+      toast.error(getErrorMessage(err, 'Failed to add vehicle'), { id: loadingToast });
     }
   };
 
@@ -82,14 +83,15 @@ export default function AdminSettings() {
       message: 'Are you sure you want to delete this vehicle type?',
       type: 'danger',
       onConfirm: async () => {
+        const loadingToast = toast.loading('Deleting vehicle...');
         try {
           await apiClient(`/admin/vehicles/${id}`, {
             method: 'DELETE'
           });
-          toast.success('Vehicle deleted');
+          toast.success('Vehicle deleted', { id: loadingToast });
           fetchData();
         } catch (err) {
-          toast.error(getErrorMessage(err, 'Failed to delete vehicle'));
+          toast.error(getErrorMessage(err, 'Failed to delete vehicle'), { id: loadingToast });
         }
       }
     });
@@ -97,32 +99,34 @@ export default function AdminSettings() {
 
   const handleUpdateVehicle = async (id: number) => {
     if (!editingVehicleName.trim()) return;
+    const loadingToast = toast.loading('Updating vehicle...');
     try {
       await apiClient(`/admin/vehicles/${id}`, {
         method: 'PUT',
         data: { name: editingVehicleName }
       });
-      toast.success('Vehicle updated');
+      toast.success('Vehicle updated', { id: loadingToast });
       setEditingVehicleId(null);
       fetchData();
     } catch (err) {
-      toast.error(getErrorMessage(err, 'Failed to update vehicle'));
+      toast.error(getErrorMessage(err, 'Failed to update vehicle'), { id: loadingToast });
     }
   };
 
   const handleAddService = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newService.trim()) return;
+    const loadingToast = toast.loading('Adding service...');
     try {
       await apiClient('/admin/services', {
         method: 'POST',
         data: { name: newService }
       });
-      toast.success('Service added');
+      toast.success('Service added', { id: loadingToast });
       setNewService('');
       fetchData();
     } catch (err) {
-      toast.error(getErrorMessage(err, 'Failed to add service'));
+      toast.error(getErrorMessage(err, 'Failed to add service'), { id: loadingToast });
     }
   };
 
@@ -133,14 +137,15 @@ export default function AdminSettings() {
       message: 'Are you sure you want to delete this service type?',
       type: 'danger',
       onConfirm: async () => {
+        const loadingToast = toast.loading('Deleting service...');
         try {
           await apiClient(`/admin/services/${id}`, {
             method: 'DELETE'
           });
-          toast.success('Service deleted');
+          toast.success('Service deleted', { id: loadingToast });
           fetchData();
         } catch (err) {
-          toast.error(getErrorMessage(err, 'Failed to delete service'));
+          toast.error(getErrorMessage(err, 'Failed to delete service'), { id: loadingToast });
         }
       }
     });
@@ -148,20 +153,22 @@ export default function AdminSettings() {
 
   const handleUpdateService = async (id: number) => {
     if (!editingServiceName.trim()) return;
+    const loadingToast = toast.loading('Updating service...');
     try {
       await apiClient(`/admin/services/${id}`, {
         method: 'PUT',
         data: { name: editingServiceName }
       });
-      toast.success('Service updated');
+      toast.success('Service updated', { id: loadingToast });
       setEditingServiceId(null);
       fetchData();
     } catch (err) {
-      toast.error(getErrorMessage(err, 'Failed to update service'));
+      toast.error(getErrorMessage(err, 'Failed to update service'), { id: loadingToast });
     }
   };
 
   const handleSaveFeatured = async () => {
+    const loadingToast = toast.loading('Saving featured configuration...');
     try {
       setSavingFeatured(true);
       const vehicleIds = featuredVehicles.map(v => v.value);
@@ -178,10 +185,10 @@ export default function AdminSettings() {
         })
       ]);
 
-      toast.success('Featured configuration saved');
+      toast.success('Featured configuration saved', { id: loadingToast });
       fetchData();
     } catch (err) {
-      toast.error(getErrorMessage(err, 'Failed to save featured configuration'));
+      toast.error(getErrorMessage(err, 'Failed to save featured configuration'), { id: loadingToast });
     } finally {
       setSavingFeatured(false);
     }

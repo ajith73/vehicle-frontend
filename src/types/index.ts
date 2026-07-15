@@ -28,6 +28,7 @@ export interface Mechanic {
   serviceTypes?: any[];
   servicesAvailable?: string;
   status: string;
+  remarks?: string;
   description?: string;
   address?: string;
   landmark?: string;
@@ -40,6 +41,7 @@ export interface Mechanic {
   homeService?: boolean;
   roadsideAssistance?: boolean;
   is24Hours?: boolean;
+  is24x7?: boolean;
   holidayWorking?: boolean;
   operatingDays?: any[];
   operatingHours?: string;
@@ -72,10 +74,11 @@ export interface Donation {
 
 export interface UpdateRequest {
   id: number;
-  mechanicId?: number | null;
-  updatedData: Partial<Mechanic>;
-  status: string;
-  createdAt: string;
+  mechanicId: number | null;
+  updatedData?: Partial<Mechanic>;
+  status: 'Pending Update Approval' | 'Approved' | 'Rejected';
+  remarks?: string;
+  createdAt?: string;
   Mechanic?: Mechanic;
   Requestor?: { email: string };
   requesterDisplayName?: string;

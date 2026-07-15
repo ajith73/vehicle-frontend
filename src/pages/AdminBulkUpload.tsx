@@ -641,11 +641,26 @@ export default function AdminBulkUpload() {
                   description: editingRow.description,
                   image: editingRow.imageUrl,
                   websiteUrl: editingRow.websiteUrl,
-                  phone: [
-                    ...(normalizeDigits(editingRow.phone) ? [{ number: normalizeDigits(editingRow.phone), isWhatsapp: false }] : []),
-                    ...(normalizeDigits(editingRow.whatsappNumber) ? [{ number: normalizeDigits(editingRow.whatsappNumber), isWhatsapp: true }] : []),
-                    ...(normalizeDigits(editingRow.telNumber) ? [{ number: normalizeDigits(editingRow.telNumber), isWhatsapp: false, isTelephone: true }] : [])
-                  ],
+                  phone: (() => {
+                    const mobileNum = normalizeDigits(editingRow.phone);
+                    const waNum = normalizeDigits(editingRow.whatsappNumber);
+                    const telNum = normalizeDigits(editingRow.telNumber);
+                    
+                    const phoneArray = [];
+                    if (mobileNum) {
+                      if (mobileNum === waNum) {
+                        phoneArray.push({ number: mobileNum, isWhatsapp: true });
+                      } else {
+                        phoneArray.push({ number: mobileNum, isWhatsapp: false });
+                        if (waNum) phoneArray.push({ number: waNum, isWhatsapp: true });
+                      }
+                    } else if (waNum) {
+                      phoneArray.push({ number: waNum, isWhatsapp: true });
+                    }
+                    
+                    if (telNum) phoneArray.push({ number: telNum, isWhatsapp: false, isTelephone: true });
+                    return phoneArray;
+                  })(),
                   emails: editingRow.email ? [editingRow.email] : [],
                   address: editingRow.address,
                   landmark: editingRow.landmark,

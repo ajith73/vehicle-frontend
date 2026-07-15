@@ -24,7 +24,9 @@ axiosInstance.interceptors.response.use((response) => {
 }, (error) => {
   if (error.response?.status === 401) {
     localStorage.removeItem('token');
-    window.location.href = '/admin/login';
+    if (window.location.pathname !== '/admin/login') {
+      window.location.href = '/admin/login';
+    }
   }
   
   const errorMsg = error.response?.data?.error || error.message || 'An error occurred';

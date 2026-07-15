@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { AlertTriangle, CheckCircle, Info, Trash2 } from 'lucide-react';
 
 export interface ConfirmDialogProps {
@@ -7,7 +8,9 @@ export interface ConfirmDialogProps {
   confirmText?: string;
   cancelText?: string;
   type?: 'danger' | 'warning' | 'info' | 'success';
-  onConfirm: () => void;
+  requireInput?: boolean;
+  inputPlaceholder?: string;
+  onConfirm: (inputValue?: string) => void;
   onCancel: () => void;
 }
 
@@ -18,9 +21,13 @@ export function ConfirmDialog({
   confirmText = 'Confirm',
   cancelText = 'Cancel',
   type = 'warning',
+  requireInput = false,
+  inputPlaceholder = 'Enter details...',
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
+  const [inputValue, setInputValue] = useState('');
+
   if (!isOpen) return null;
 
   const typeConfig = {
@@ -74,19 +81,34 @@ export function ConfirmDialog({
         <p className="text-muted-foreground text-sm mb-6 whitespace-pre-line">
           {message}
         </p>
+        
+        {requireInput && (
+          <textarea
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            placeholder={inputPlaceholder}
+            className="w-full bg-background border border-border rounded-xl p-3 mb-6 focus:outline-none focus:ring-2 focus:ring-primary/20 min-h-[80px] resize-none"
+          />
+        )}
+
         <div className="flex gap-3">
           <button 
-            onClick={onCancel}
+            onClick={() => {
+              setInputValue('');
+              onCancel();
+            }}
             className="flex-1 py-2.5 rounded-xl font-bold bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors"
           >
             {cancelText}
           </button>
           <button 
+            disabled={requireInput && !inputValue.trim()}
             onClick={() => {
-              onConfirm();
+              onConfirm(inputValue);
+              setInputValue('');
               onCancel();
             }}
-            className={`flex-1 py-2.5 rounded-xl font-bold ${config.buttonBg} ${config.buttonText} ${config.buttonHover} transition-colors shadow-lg ${config.shadow}`}
+            className={`flex-1 py-2.5 rounded-xl font-bold ${config.buttonBg} ${config.buttonText} ${config.buttonHover} transition-colors shadow-lg ${config.shadow} disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             {confirmText}
           </button>
