@@ -3,11 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Activity, Fuel, Zap, Droplets, Settings, ArrowRight } from 'lucide-react';
 import ShareButtons from '../ShareButtons';
 
-interface InfoSectionsProps {
-  setShowMechanicSubmissionModal: (val: boolean) => void;
-}
-
-export function InfoSections({ setShowMechanicSubmissionModal }: InfoSectionsProps) {
+export function InfoSections() {
   const navigate = useNavigate();
 
   return (
@@ -112,8 +108,8 @@ export function InfoSections({ setShowMechanicSubmissionModal }: InfoSectionsPro
               <p className="text-sm text-muted-foreground">
                 Your submission goes to the Super Admin for review before it becomes live or updates the current listing.
               </p>
-              <button
-                onClick={() => setShowMechanicSubmissionModal(true)}
+              <button 
+                onClick={() => navigate('/submit')}
                 className="mt-2 inline-flex items-center justify-center rounded-2xl bg-primary px-5 py-3 text-sm font-black text-primary-foreground transition-colors hover:bg-primary/90"
               >
                 Create or Update Record

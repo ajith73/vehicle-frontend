@@ -16,12 +16,29 @@ export const isCurrentlyAvailable = (mechanic: any) => {
   if (!mechanic.operatingDays || !mechanic.operatingHours) return mechanic.availability !== false;
 
   const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  const currentDay = days[new Date().getDay()];
-  if (!mechanic.operatingDays.includes(currentDay)) return false;
+  const now = new Date();
+  const currentDay = days[now.getDay()];
+
+  let opDays = mechanic.operatingDays;
+  if (typeof opDays === 'string') {
+    try {
+      opDays = JSON.parse(opDays);
+    } catch(e) {
+      opDays = opDays.split(',');
+    }
+  }
+
+  if (Array.isArray(opDays)) {
+    const isDayIncluded = opDays.some((d: any) => 
+      String(d).toLowerCase().includes(currentDay.toLowerCase())
+    );
+    if (!isDayIncluded) return false;
+  } else if (typeof opDays === 'string') {
+    if (!opDays.toLowerCase().includes(currentDay.toLowerCase())) return false;
+  }
 
   try {
     const [openStr, closeStr] = mechanic.operatingHours.split('-').map((s: string) => s.trim());
-    const now = new Date();
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
     
     const openParts = openStr.split(':');
@@ -30,6 +47,10 @@ export const isCurrentlyAvailable = (mechanic: any) => {
     const closeParts = closeStr.split(':');
     const closeMinutes = parseInt(closeParts[0]) * 60 + parseInt(closeParts[1]);
 
+    if (closeMinutes < openMinutes) {
+      // Overnight hours (e.g. 21:00 - 05:00)
+      return currentMinutes >= openMinutes || currentMinutes <= closeMinutes;
+    }
     return currentMinutes >= openMinutes && currentMinutes <= closeMinutes;
   } catch(e) {
     return true;

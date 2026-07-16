@@ -1,27 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
-import Select from 'react-select';
+import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
-  ArrowLeft,
-  CalendarClock,
-  Globe,
-  Image,
-  Info,
-  Map,
-  MapPin,
   Plus,
-  Save,
+  ArrowLeft,
   Search,
-  Trash2,
-  User,
-  Wrench,
-  X
 } from 'lucide-react';
 import { apiClient } from '../api/apiClient';
 import { submitMechanicRegistration } from '../api/mechanics';
-import MechanicFormComponent from './MechanicFormComponent';
+import MechanicFormComponent from '../components/MechanicFormComponent';
 import type { Mechanic } from '../types';
-import { State, City } from 'country-state-city';
+import { State } from 'country-state-city';
 
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
@@ -209,49 +198,8 @@ const validateForm = (form: FormState) => {
   return null;
 };
 
-const searchSelectStyles = {
-  control: (base: any, state: any) => ({
-    ...base,
-    minHeight: 46,
-    backgroundColor: 'var(--background)',
-    borderColor: state.isFocused ? 'var(--primary)' : 'var(--border)',
-    boxShadow: state.isFocused ? '0 0 0 2px color-mix(in srgb, var(--primary) 18%, transparent)' : 'none'
-  }),
-  menu: (base: any) => ({
-    ...base,
-    backgroundColor: 'var(--card)',
-    color: 'var(--foreground)',
-    zIndex: 80
-  }),
-  option: (base: any, state: any) => ({
-    ...base,
-    backgroundColor: state.isFocused ? 'color-mix(in srgb, var(--primary) 12%, var(--card))' : 'var(--card)',
-    color: 'var(--foreground)'
-  }),
-  multiValue: (base: any) => ({
-    ...base,
-    backgroundColor: 'color-mix(in srgb, var(--primary) 12%, var(--secondary))'
-  }),
-  multiValueLabel: (base: any) => ({
-    ...base,
-    color: 'var(--foreground)'
-  }),
-  singleValue: (base: any) => ({
-    ...base,
-    color: 'var(--foreground)'
-  }),
-  input: (base: any) => ({
-    ...base,
-    color: 'var(--foreground)'
-  })
-};
-
-interface MechanicSubmissionModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
-
-export default function MechanicSubmissionModal({ isOpen, onClose }: MechanicSubmissionModalProps) {
+export default function SubmitMechanicPage() {
+  const navigate = useNavigate();
   const [mode, setMode] = useState<FormMode>('pick');
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState<Mechanic[]>([]);
@@ -270,10 +218,7 @@ export default function MechanicSubmissionModal({ isOpen, onClose }: MechanicSub
     [selectedMechanic]
   );
 
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const loadOptions = async () => {
+  useEffect(() => {    const loadOptions = async () => {
       try {
         const [vehicleData, serviceData] = await Promise.all([
           apiClient<any>('/public/vehicles'),
@@ -301,11 +246,10 @@ export default function MechanicSubmissionModal({ isOpen, onClose }: MechanicSub
 
     loadOptions();
     loadStates();
-  }, [isOpen]);
+  }, []);
 
   useEffect(() => {
-    if (!isOpen) return;
-    if (query.trim().length < 2) {
+    if (query.length < 2) {
       setSuggestions([]);
       return;
     }
@@ -324,7 +268,7 @@ export default function MechanicSubmissionModal({ isOpen, onClose }: MechanicSub
     }, 300);
 
     return () => window.clearTimeout(timeoutId);
-  }, [isOpen, query]);
+  }, [query]);
 
   useEffect(() => {
     const loadCities = async () => {
@@ -365,18 +309,6 @@ export default function MechanicSubmissionModal({ isOpen, onClose }: MechanicSub
       setForm((current) => ({ ...current, cityOption: matchedCity }));
     }
   }, [cityOptions, form.cityOption, form.stateOption, selectedMechanic]);
-
-  useEffect(() => {
-    if (!isOpen) {
-      setMode('pick');
-      setQuery('');
-      setSuggestions([]);
-      setSelectedMechanic(null);
-      setForm(defaultFormState());
-      setError('');
-      setSubmitting(false);
-    }
-  }, [isOpen]);
 
   const updateForm = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((current) => ({ ...current, [key]: value }));
@@ -425,7 +357,7 @@ export default function MechanicSubmissionModal({ isOpen, onClose }: MechanicSub
       });
 
       toast.success(selectedMechanic ? 'Update request sent to Super Admin' : 'New mechanic request sent to Super Admin');
-      onClose();
+      navigate('/');
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : 'Failed to submit request.');
     } finally {
@@ -433,13 +365,19 @@ export default function MechanicSubmissionModal({ isOpen, onClose }: MechanicSub
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-[130] bg-background/80 backdrop-blur-sm">
-      <div className="flex h-full w-full items-end justify-center sm:items-center sm:p-6">
-        <div className="flex h-[100dvh] w-full flex-col overflow-hidden bg-card shadow-2xl sm:h-[90vh] sm:max-w-5xl sm:rounded-3xl sm:border sm:border-border">
-          <div className="flex items-center justify-between border-b border-border px-4 py-4 sm:px-6">
+    <div className="min-h-screen bg-background sm:p-8 pt-16 sm:pt-20">
+      <div className="mx-auto max-w-4xl bg-card sm:rounded-2xl sm:shadow-xl flex flex-col min-h-[calc(100vh-4rem)] sm:min-h-0 overflow-hidden sm:border border-border">
+        {/* Header */}
+        <div className="border-b border-border p-4 sm:p-6 relative">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => mode === 'pick' ? navigate('/') : setMode('pick')}
+              className="rounded-full bg-secondary p-2 text-foreground transition-colors hover:bg-secondary/80"
+              title={mode === 'pick' ? 'Back to Home' : 'Back to Selection'}
+            >
+              <ArrowLeft size={24} />
+            </button>
             <div>
               <h3 className="text-lg font-black text-foreground sm:text-2xl">{mode === 'pick' ? 'Claim or create your mechanic listing' : modalTitle}</h3>
               <p className="mt-1 text-sm text-muted-foreground">
@@ -448,17 +386,11 @@ export default function MechanicSubmissionModal({ isOpen, onClose }: MechanicSub
                   : 'Review the details carefully. Your submission will go to the Super Admin for approval.'}
               </p>
             </div>
-            <button
-              onClick={onClose}
-              className="rounded-full border border-border p-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-            >
-              <X className="h-5 w-5" />
-            </button>
           </div>
 
           {mode === 'pick' ? (
             <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
-              <div className="mx-auto max-w-2xl rounded-3xl border border-border bg-background/60 p-5 shadow-sm">
+              <div className="mx-auto max-w-2xl sm:rounded-3xl sm:border border-border bg-card p-4 sm:p-5 sm:shadow-sm">
                 <label className="mb-2 block text-sm font-bold text-foreground">Search existing mechanic or service provider</label>
                 <div className="relative">
                   <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
@@ -516,9 +448,9 @@ export default function MechanicSubmissionModal({ isOpen, onClose }: MechanicSub
             </div>
           ) : (
             <div className="flex min-h-0 flex-1 flex-col">
-              <div className="flex-1 overflow-y-auto px-4 py-5 sm:px-6">
-                <div className="mx-auto max-w-4xl space-y-6 pb-6">
-                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-background/60 px-4 py-3">
+              <div className="flex-1 overflow-y-auto sm:px-6 py-4 sm:py-5">
+                <div className="mx-auto max-w-4xl space-y-4 sm:space-y-6 pb-6">
+                  <div className="flex flex-wrap items-center justify-between gap-3 sm:rounded-2xl sm:border border-border bg-background/60 px-4 py-3">
                     <div>
                       <p className="text-sm font-bold text-foreground">
                         {selectedMechanic ? `Editing existing record: ${selectedMechanic.businessName || selectedMechanic.name}` : 'Creating a new mechanic record'}
@@ -541,7 +473,7 @@ export default function MechanicSubmissionModal({ isOpen, onClose }: MechanicSub
                     </div>
                   )}
 
-                  <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+                  <div className="sm:rounded-2xl sm:border border-border bg-card p-4 sm:p-5 sm:shadow-sm">
                     <MechanicFormComponent 
                       isEdit={!!selectedMechanic}
                       initialData={selectedMechanic}
@@ -554,7 +486,7 @@ export default function MechanicSubmissionModal({ isOpen, onClose }: MechanicSub
                             existingMechanicId: selectedMechanic?.id
                           });
                           toast.success(selectedMechanic ? 'Update request sent to Super Admin' : 'New mechanic request sent to Super Admin');
-                          onClose();
+                          navigate('/');
                         } catch (submitError) {
                           setError(submitError instanceof Error ? submitError.message : 'Failed to submit request.');
                           window.scrollTo(0, 0);
@@ -563,7 +495,7 @@ export default function MechanicSubmissionModal({ isOpen, onClose }: MechanicSub
                         }
                       }}
                       onCancelOverride={() => setMode('pick')}
-                      isModal={true}
+                      isModal={false}
                     />
                   </div>
                 </div>

@@ -245,7 +245,8 @@ export default function AdminSettings() {
                 option: (base, state) => ({ ...base, backgroundColor: state.isFocused ? 'hsl(var(--secondary))' : 'hsl(var(--background))', color: 'hsl(var(--foreground))' }),
                 multiValue: (base) => ({ ...base, backgroundColor: 'hsl(var(--primary))', opacity: 0.9 }),
                 multiValueLabel: (base) => ({ ...base, color: 'hsl(var(--primary-foreground))' }),
-                multiValueRemove: (base) => ({ ...base, color: 'hsl(var(--primary-foreground))', ':hover': { backgroundColor: 'rgba(0,0,0,0.2)', color: 'white' } })
+                multiValueRemove: (base) => ({ ...base, color: 'hsl(var(--primary-foreground))', ':hover': { backgroundColor: 'rgba(0,0,0,0.2)', color: 'white' } }),
+                input: (base) => ({ ...base, color: 'hsl(var(--foreground))' })
               }}
             />
           </div>
@@ -265,7 +266,8 @@ export default function AdminSettings() {
                 option: (base, state) => ({ ...base, backgroundColor: state.isFocused ? 'hsl(var(--secondary))' : 'hsl(var(--background))', color: 'hsl(var(--foreground))' }),
                 multiValue: (base) => ({ ...base, backgroundColor: 'hsl(var(--primary))', opacity: 0.9 }),
                 multiValueLabel: (base) => ({ ...base, color: 'hsl(var(--primary-foreground))' }),
-                multiValueRemove: (base) => ({ ...base, color: 'hsl(var(--primary-foreground))', ':hover': { backgroundColor: 'rgba(0,0,0,0.2)', color: 'white' } })
+                multiValueRemove: (base) => ({ ...base, color: 'hsl(var(--primary-foreground))', ':hover': { backgroundColor: 'rgba(0,0,0,0.2)', color: 'white' } }),
+                input: (base) => ({ ...base, color: 'hsl(var(--foreground))' })
               }}
             />
           </div>

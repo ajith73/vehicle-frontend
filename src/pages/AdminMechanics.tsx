@@ -141,44 +141,63 @@ export default function AdminMechanics() {
     currentPage * ITEMS_PER_PAGE
   );
 
+  const formatMechanicForExport = (m: any) => {
+    const getArrayString = (val: any) => {
+      if (!val) return '';
+      let arr = val;
+      if (typeof arr === 'string') {
+        try { arr = JSON.parse(arr); } catch { return arr; }
+      }
+      return Array.isArray(arr) ? arr.join(', ') : String(arr);
+    };
+
+    const getPhones = (phone: any, alt: any) => {
+      let p = phone;
+      if (typeof p === 'string') {
+        try { p = JSON.parse(p); } catch {}
+      }
+      if (Array.isArray(p)) return p.map((x: any) => typeof x === 'object' ? x.number : x).filter(Boolean).join(', ');
+      return String(p || alt || '');
+    };
+
+    return {
+      ID: m.id,
+      'Business Name': m.businessName || m.name || '',
+      'Mechanic Name': m.mechanicName || '',
+      Type: m.mechanicType || '',
+      Status: m.status || '',
+      Availability: getMechanicStatus(m),
+      'Vehicle Types': getArrayString(m.vehicleTypes) || m.specializedVehicle || '',
+      'Services': getArrayString(m.services) || getArrayString(m.serviceTypes) || m.servicesAvailable || '',
+      Phone: getPhones(m.phone, m.alternatePhone),
+      Email: getArrayString(m.emails) || m.email || '',
+      Address: m.address || '',
+      Landmark: m.landmark || '',
+      Area: m.area || '',
+      City: m.city || '',
+      State: m.state || '',
+      Country: m.country || '',
+      Pincode: m.pincode || '',
+      'Operating Days': getArrayString(m.operatingDays),
+      'Operating Hours': m.operatingHours || (m.startTime ? `${m.startTime} - ${m.endTime}` : ''),
+      'Is 24x7': (m.is24Hours || m.is24x7) ? 'Yes' : 'No',
+      'Holiday Working': m.holidayWorking ? 'Yes' : 'No',
+      'EV Support': m.evSupport ? 'Yes' : 'No',
+      'Home Service': m.homeService ? 'Yes' : 'No',
+      'Roadside Assistance': m.roadsideAssistance ? 'Yes' : 'No',
+      'Service Radius (km)': m.serviceRadius || '',
+      Description: m.description || '',
+      'Website URL': m.websiteUrl || '',
+      'Map Link': (m.latitude && m.longitude) ? `https://www.google.com/maps?q=${m.latitude},${m.longitude}` : (m.mapLink || ''),
+      Latitude: m.latitude || '',
+      Longitude: m.longitude || '',
+      'Created At': m.createdAt ? new Date(m.createdAt).toLocaleDateString() : ''
+    };
+  };
+
   const exportToXLSX = () => {
     try {
-      const dataToExport = filteredMechanics.map(m => ({
-        ID: m.id,
-        'Business Name': m.businessName || m.name,
-        'Mechanic Name': m.mechanicName || '',
-        Type: m.mechanicType,
-        Status: m.status,
-        Availability: getMechanicStatus(m),
-        'Vehicle Types': m.vehicleTypes?.join(', ') || m.specializedVehicle || '',
-        'Services': m.services?.join(', ') || m.serviceTypes?.join(', ') || m.servicesAvailable || '',
-        Phone: Array.isArray(m.phone) ? m.phone.map((p: any) => p.number).join(', ') : (m.phone || m.alternatePhone || ''),
-        Email: Array.isArray(m.emails) ? m.emails.join(', ') : (m.email || ''),
-        Address: m.address || '',
-        Landmark: m.landmark || '',
-        Area: m.area || '',
-        City: m.city || '',
-        District: m.district || '',
-        State: m.state || '',
-        Country: m.country || '',
-        Pincode: m.pincode || '',
-        'Operating Days': m.operatingDays?.join(', ') || '',
-        'Operating Hours': m.operatingHours || (m.startTime ? `${m.startTime} - ${m.endTime}` : ''),
-        'Is 24x7': (m.is24Hours || m.is24x7) ? 'Yes' : 'No',
-        'Holiday Working': m.holidayWorking ? 'Yes' : 'No',
-        'EV Support': m.evSupport ? 'Yes' : 'No',
-        'Home Service': m.homeService ? 'Yes' : 'No',
-        'Roadside Assistance': m.roadsideAssistance ? 'Yes' : 'No',
-        'Service Radius (km)': m.serviceRadius || '',
-        Experience: m.experience || '',
-        Description: m.description || '',
-        'Website URL': m.websiteUrl || '',
-        'Map Link': m.mapLink || '',
-        Latitude: m.latitude || '',
-        Longitude: m.longitude || '',
-        'Created At': m.createdAt ? new Date(m.createdAt).toLocaleDateString() : ''
-      }));
-
+      const dataToExport = filteredMechanics.map(formatMechanicForExport);
       const ws = XLSX.utils.json_to_sheet(dataToExport);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Mechanics");
@@ -192,42 +211,7 @@ export default function AdminMechanics() {
 
   const exportSingleToXLSX = (mechanic: any) => {
     try {
-      const dataToExport = [{
-        ID: mechanic.id,
-        'Business Name': mechanic.businessName || mechanic.name,
-        'Mechanic Name': mechanic.mechanicName || '',
-        Type: mechanic.mechanicType,
-        Status: mechanic.status,
-        Availability: getMechanicStatus(mechanic),
-        'Vehicle Types': mechanic.vehicleTypes?.join(', ') || mechanic.specializedVehicle || '',
-        'Services': mechanic.services?.join(', ') || mechanic.serviceTypes?.join(', ') || mechanic.servicesAvailable || '',
-        Phone: Array.isArray(mechanic.phone) ? mechanic.phone.map((p: any) => p.number).join(', ') : (mechanic.phone || mechanic.alternatePhone || ''),
-        Email: Array.isArray(mechanic.emails) ? mechanic.emails.join(', ') : (mechanic.email || ''),
-        Address: mechanic.address || '',
-        Landmark: mechanic.landmark || '',
-        Area: mechanic.area || '',
-        City: mechanic.city || '',
-        District: mechanic.district || '',
-        State: mechanic.state || '',
-        Country: mechanic.country || '',
-        Pincode: mechanic.pincode || '',
-        'Operating Days': mechanic.operatingDays?.join(', ') || '',
-        'Operating Hours': mechanic.operatingHours || (mechanic.startTime ? `${mechanic.startTime} - ${mechanic.endTime}` : ''),
-        'Is 24x7': (mechanic.is24Hours || mechanic.is24x7) ? 'Yes' : 'No',
-        'Holiday Working': mechanic.holidayWorking ? 'Yes' : 'No',
-        'EV Support': mechanic.evSupport ? 'Yes' : 'No',
-        'Home Service': mechanic.homeService ? 'Yes' : 'No',
-        'Roadside Assistance': mechanic.roadsideAssistance ? 'Yes' : 'No',
-        'Service Radius (km)': mechanic.serviceRadius || '',
-        Experience: mechanic.experience || '',
-        Description: mechanic.description || '',
-        'Website URL': mechanic.websiteUrl || '',
-        'Map Link': mechanic.mapLink || '',
-        Latitude: mechanic.latitude || '',
-        Longitude: mechanic.longitude || '',
-        'Created At': mechanic.createdAt ? new Date(mechanic.createdAt).toLocaleDateString() : ''
-      }];
-
+      const dataToExport = [formatMechanicForExport(mechanic)];
       const ws = XLSX.utils.json_to_sheet(dataToExport);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Mechanic Details");

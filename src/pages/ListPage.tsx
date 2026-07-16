@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ChevronLeft, Filter, Search, AlertTriangle, Wrench } from 'lucide-react';
+import { ChevronLeft, Filter, Search, AlertTriangle, Wrench, RefreshCw } from 'lucide-react';
 import { apiClient } from '../api/apiClient';
 import { useLocationContext } from '../contexts/LocationContext';
 import { buildMechanicSearchParams, parseMechanicFilterParam, type MechanicSort } from '../utils/mechanicSearch';
@@ -35,6 +35,7 @@ export default function ListPage() {
   const [pendingVehicles, setPendingVehicles] = useState<string[]>(vehicleParams);
   const [pendingServices, setPendingServices] = useState<string[]>(serviceParams);
   const [isLocationMessageExpanded, setIsLocationMessageExpanded] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const {
     userLocation,
@@ -102,7 +103,7 @@ export default function ListPage() {
     setPage(1);
     setMechanics([]);
     setHasMore(true);
-  }, [searchParam, searchParams, radius, sortBy, userLocation]);
+  }, [searchParam, searchParams, radius, sortBy, userLocation, refreshKey]);
 
   useEffect(() => {
     const fetchMechanics = async () => {
@@ -145,7 +146,7 @@ export default function ListPage() {
     if (!locationLoading) {
       fetchMechanics();
     }
-  }, [searchParam, searchParams, userLocation, locationLoading, radius, sortBy, page]);
+  }, [searchParam, searchParams, userLocation, locationLoading, radius, sortBy, page, refreshKey]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -241,8 +242,16 @@ export default function ListPage() {
             <button
               onClick={() => setIsFilterOpen(true)}
               className="flex shrink-0 items-center justify-center rounded-xl border border-border bg-secondary px-4 transition-colors hover:bg-secondary/80"
+              title="Filters"
             >
               <Filter className="h-5 w-5 text-foreground" />
+            </button>
+            <button
+              onClick={() => setRefreshKey(k => k + 1)}
+              className="flex shrink-0 items-center justify-center rounded-xl border border-border bg-secondary px-4 transition-colors hover:bg-secondary/80"
+              title="Refresh results"
+            >
+              <RefreshCw className={`h-5 w-5 text-foreground ${loading ? 'animate-spin' : ''}`} />
             </button>
           </div>
         </div>

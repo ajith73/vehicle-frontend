@@ -15,6 +15,7 @@ const MapPage = lazy(() => import('./pages/MapPage'));
 const MapCNPage = lazy(() => import('./pages/MapCNPage'));
 const FeedbackPage = lazy(() => import('./pages/FeedbackPage'));
 const DonationPage = lazy(() => import('./pages/DonationPage'));
+const SubmitMechanicPage = lazy(() => import('./pages/SubmitMechanicPage'));
 const ContactPage = lazy(() => import('./pages/ContactPage'));
 const AboutPage = lazy(() => import('./pages/AboutPage'));
 const TermsPage = lazy(() => import('./pages/TermsPage'));
@@ -178,6 +179,7 @@ function App() {
             <Route path="/" element={<LandingPage />} />
             <Route path="/list" element={<ListPage />} />
             <Route path="/map" element={<MapPage />} />
+            <Route path="/submit" element={<SubmitMechanicPage />} />
             <Route path="/mapcn" element={<MapCNPage />} />
             <Route path="/feedback" element={<FeedbackPage />} />
             <Route path="/donate" element={<DonationPage />} />

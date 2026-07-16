@@ -316,9 +316,22 @@ export default function AdminBulkUpload() {
 
     const payload = selectedRows.map(row => {
       const phones = [];
-      if (row.phone) phones.push({ number: String(row.phone).replace(/\D/g, ''), isWhatsapp: false });
-      if (row.whatsappNumber) phones.push({ number: String(row.whatsappNumber).replace(/\D/g, ''), isWhatsapp: true });
-      if (row.telNumber) phones.push({ number: String(row.telNumber).replace(/\D/g, ''), isWhatsapp: false, isTelephone: true } as any);
+      const mobileNum = row.phone ? String(row.phone).replace(/\D/g, '') : '';
+      const waNum = row.whatsappNumber ? String(row.whatsappNumber).replace(/\D/g, '') : '';
+      const telNum = row.telNumber ? String(row.telNumber).replace(/\D/g, '') : '';
+
+      if (mobileNum) {
+        if (mobileNum === waNum) {
+          phones.push({ number: mobileNum, isWhatsapp: true });
+        } else {
+          phones.push({ number: mobileNum, isWhatsapp: false });
+          if (waNum) phones.push({ number: waNum, isWhatsapp: true });
+        }
+      } else if (waNum) {
+        phones.push({ number: waNum, isWhatsapp: true });
+      }
+
+      if (telNum) phones.push({ number: telNum, isWhatsapp: false, isTelephone: true } as any);
 
       // Normalize mechanicType to match backend Enums
       let normalizedMechanicType = row.mechanicType || 'Workshop / Garage';
@@ -356,7 +369,6 @@ export default function AdminBulkUpload() {
         description: cleanOptionalText(row.description),
         image: cleanOptionalText(row.imageUrl),
         websiteUrl: cleanOptionalText(row.websiteUrl),
-        googleMapsUrl: cleanOptionalText(row.googleMapsUrl),
         availability: true
       };
     });
@@ -406,6 +418,7 @@ export default function AdminBulkUpload() {
       const remainingRowsCount = data.length - savedIds.size;
       if (savedIds.size === 0) {
         toast.error(response.message || 'No mechanics were saved.');
+        setLoading(false);
         return;
       }
 
@@ -420,6 +433,70 @@ export default function AdminBulkUpload() {
     }
     setLoading(false);
   };
+
+  if (editingRow) {
+    const mappedInitialData = {
+      mechanicType: editingRow.mechanicType,
+      name: editingRow.businessName || editingRow.name,
+      businessName: editingRow.businessName,
+      mechanicName: editingRow.mechanicName,
+      description: editingRow.description,
+      image: editingRow.imageUrl,
+      websiteUrl: editingRow.websiteUrl,
+      phone: (() => {
+        const mobileNum = normalizeDigits(editingRow.phone);
+        const waNum = normalizeDigits(editingRow.whatsappNumber);
+        const telNum = normalizeDigits(editingRow.telNumber);
+        
+        const phoneArray = [];
+        if (mobileNum) {
+          if (mobileNum === waNum) {
+            phoneArray.push({ number: mobileNum, isWhatsapp: true });
+          } else {
+            phoneArray.push({ number: mobileNum, isWhatsapp: false });
+            if (waNum) phoneArray.push({ number: waNum, isWhatsapp: true });
+          }
+        } else if (waNum) {
+          phoneArray.push({ number: waNum, isWhatsapp: true });
+        }
+        
+        if (telNum) phoneArray.push({ number: telNum, isWhatsapp: false, isTelephone: true });
+        return phoneArray;
+      })(),
+      emails: editingRow.email ? [editingRow.email] : [],
+      address: editingRow.address,
+      landmark: editingRow.landmark,
+      pincode: editingRow.pincode,
+      city: editingRow.city,
+      state: editingRow.state,
+      latitude: parseFloat(editingRow.latitude) || 0,
+      longitude: parseFloat(editingRow.longitude) || 0,
+      serviceRadius: editingRow.serviceRadius ? parseFloat(editingRow.serviceRadius) : null,
+      evSupport: editingRow.evSupport === 'true',
+      homeService: editingRow.homeService === 'true',
+      roadsideAssistance: editingRow.roadsideAssistance === 'true',
+      is24Hours: editingRow.is24Hours === 'true',
+      holidayWorking: editingRow.holidayWorking === 'true',
+      vehicleTypes: editingRow.vehicleTypes || '',
+      serviceTypes: editingRow.serviceTypes || '',
+      operatingDays: editingRow.operatingDays || '',
+      operatingHours: editingRow.operatingHours,
+      availability: true
+    };
+
+    return (
+      <div className="p-4 sm:p-8 max-w-full mx-auto pb-12">
+        <MechanicFormComponent 
+          isEdit={true} 
+          initialData={mappedInitialData} 
+          onSubmitOverride={handleMechanicFormSubmit} 
+          onCancelOverride={() => setEditingRow(null)}
+          isModal={false}
+          submitButtonText="Save Changes to Table (Not Saved to DB yet)"
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 sm:p-8 max-w-full mx-auto pb-12">
@@ -620,82 +697,6 @@ export default function AdminBulkUpload() {
         </div>
       )}
 
-      {/* Edit Modal */}
-      {editingRow && (
-        <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-2 sm:p-4 backdrop-blur-sm">
-          <div className="bg-card border border-border rounded-xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-200">
-            <div className="p-4 sm:p-6 border-b border-border flex justify-between items-center shrink-0 bg-card/90">
-              <h3 className="font-bold text-2xl flex items-center gap-2"><Edit size={24} className="text-primary"/> Edit Row Data</h3>
-              <button onClick={() => setEditingRow(null)} className="p-2 text-muted-foreground hover:bg-secondary rounded-full transition-colors">
-                <X size={24} />
-              </button>
-            </div>
-            
-            <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-muted/10">
-              {(() => {
-                const mappedInitialData = {
-                  mechanicType: editingRow.mechanicType,
-                  name: editingRow.businessName || editingRow.name,
-                  businessName: editingRow.businessName,
-                  mechanicName: editingRow.mechanicName,
-                  description: editingRow.description,
-                  image: editingRow.imageUrl,
-                  websiteUrl: editingRow.websiteUrl,
-                  phone: (() => {
-                    const mobileNum = normalizeDigits(editingRow.phone);
-                    const waNum = normalizeDigits(editingRow.whatsappNumber);
-                    const telNum = normalizeDigits(editingRow.telNumber);
-                    
-                    const phoneArray = [];
-                    if (mobileNum) {
-                      if (mobileNum === waNum) {
-                        phoneArray.push({ number: mobileNum, isWhatsapp: true });
-                      } else {
-                        phoneArray.push({ number: mobileNum, isWhatsapp: false });
-                        if (waNum) phoneArray.push({ number: waNum, isWhatsapp: true });
-                      }
-                    } else if (waNum) {
-                      phoneArray.push({ number: waNum, isWhatsapp: true });
-                    }
-                    
-                    if (telNum) phoneArray.push({ number: telNum, isWhatsapp: false, isTelephone: true });
-                    return phoneArray;
-                  })(),
-                  emails: editingRow.email ? [editingRow.email] : [],
-                  address: editingRow.address,
-                  landmark: editingRow.landmark,
-                  pincode: editingRow.pincode,
-                  city: editingRow.city,
-                  state: editingRow.state,
-                  latitude: parseFloat(editingRow.latitude) || 0,
-                  longitude: parseFloat(editingRow.longitude) || 0,
-                  serviceRadius: editingRow.serviceRadius ? parseFloat(editingRow.serviceRadius) : null,
-                  evSupport: editingRow.evSupport === 'true',
-                  homeService: editingRow.homeService === 'true',
-                  roadsideAssistance: editingRow.roadsideAssistance === 'true',
-                  is24Hours: editingRow.is24Hours === 'true',
-                  holidayWorking: editingRow.holidayWorking === 'true',
-                  vehicleTypes: editingRow.vehicleTypes ? editingRow.vehicleTypes.split(',').map((s: string) => s.trim()).filter(Boolean) : [],
-                  serviceTypes: editingRow.serviceTypes ? editingRow.serviceTypes.split(',').map((s: string) => s.trim()).filter(Boolean) : [],
-                  operatingDays: editingRow.operatingDays ? editingRow.operatingDays.split(',').map((s: string) => s.trim()).filter(Boolean) : [],
-                  operatingHours: editingRow.operatingHours,
-                  availability: true
-                };
-
-                return (
-                  <MechanicFormComponent 
-                    isEdit={true} 
-                    initialData={mappedInitialData} 
-                    onSubmitOverride={handleMechanicFormSubmit} 
-                    onCancelOverride={() => setEditingRow(null)}
-                    isModal={true}
-                  />
-                );
-              })()}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* View Modal */}
       {viewingRow && (

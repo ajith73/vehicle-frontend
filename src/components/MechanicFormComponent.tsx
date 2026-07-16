@@ -24,9 +24,10 @@ interface MechanicFormComponentProps {
   onSubmitOverride?: (payload: any) => void | Promise<void>;
   onCancelOverride?: () => void;
   isModal?: boolean;
+  submitButtonText?: string;
 }
 
-export default function MechanicFormComponent({ id, isEdit, initialData, onSubmitOverride, onCancelOverride, isModal }: MechanicFormComponentProps) {
+export default function MechanicFormComponent({ id, isEdit, initialData, onSubmitOverride, onCancelOverride, isModal, submitButtonText }: MechanicFormComponentProps) {
   const navigate = useNavigate();
   const getSelectStyles = (hasError?: boolean) => ({
     control: (base: any, state: any) => ({
@@ -278,11 +279,17 @@ export default function MechanicFormComponent({ id, isEdit, initialData, onSubmi
     
     // Reconstruct vehicle/service types
     let vTypes = data.vehicleTypes || [];
-    if (typeof vTypes === 'string') try { vTypes = JSON.parse(vTypes); } catch(e) { vTypes = []; }
+    if (typeof vTypes === 'string') {
+      try { vTypes = JSON.parse(vTypes); } 
+      catch(e) { vTypes = vTypes.split(',').map((s: string) => s.trim()).filter(Boolean); }
+    }
     setVehicleTypes(Array.isArray(vTypes) ? vTypes.map((v: any) => ({ value: String(v), label: String(v) })) : []);
     
     let sTypes = data.serviceTypes || [];
-    if (typeof sTypes === 'string') try { sTypes = JSON.parse(sTypes); } catch(e) { sTypes = []; }
+    if (typeof sTypes === 'string') {
+      try { sTypes = JSON.parse(sTypes); } 
+      catch(e) { sTypes = sTypes.split(',').map((s: string) => s.trim()).filter(Boolean); }
+    }
     setServiceTypes(Array.isArray(sTypes) ? sTypes.map((s: any) => ({ value: String(s), label: String(s) })) : []);
     
     let opDays = data.operatingDays || [];
@@ -294,15 +301,47 @@ export default function MechanicFormComponent({ id, isEdit, initialData, onSubmi
       }
     }
     setOperatingDays(Array.isArray(opDays) ? opDays.map((d: string) => {
-      // Normalize day name to match DAYS_OF_WEEK exactly
-      const normalized = String(d).trim();
-      return normalized.charAt(0).toUpperCase() + normalized.slice(1).toLowerCase();
-    }) : []);
+      const normalized = String(d).trim().toLowerCase();
+      const dayMap: Record<string, string> = {
+        'mon': 'Monday', 'tue': 'Tuesday', 'wed': 'Wednesday', 'thu': 'Thursday',
+        'fri': 'Friday', 'sat': 'Saturday', 'sun': 'Sunday',
+        'monday': 'Monday', 'tuesday': 'Tuesday', 'wednesday': 'Wednesday',
+        'thursday': 'Thursday', 'friday': 'Friday', 'saturday': 'Saturday', 'sunday': 'Sunday'
+      };
+      
+      for (const [key, fullDay] of Object.entries(dayMap)) {
+        if (normalized.startsWith(key)) return fullDay;
+      }
+      
+      return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+    }).filter(Boolean) : []);
     
     if (data.operatingHours && typeof data.operatingHours === 'string') {
       const [sTime, eTime] = data.operatingHours.split(/\s*-\s*/);
-      if (sTime) setStartTime(sTime.trim());
-      if (eTime) setEndTime(eTime.trim());
+      
+      const parseTime = (timeStr: string) => {
+        if (!timeStr) return '';
+        const t = timeStr.trim().toUpperCase();
+        // If it's already HH:mm
+        if (/^\d{2}:\d{2}$/.test(t)) return t;
+        
+        // Match things like 9:00 AM, 09:00AM, 6 PM, 18:00
+        const match = t.match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?$/);
+        if (match) {
+          let hours = parseInt(match[1], 10);
+          const mins = match[2] || '00';
+          const modifier = match[3];
+          
+          if (modifier === 'PM' && hours < 12) hours += 12;
+          if (modifier === 'AM' && hours === 12) hours = 0;
+          
+          return `${hours.toString().padStart(2, '0')}:${mins.padStart(2, '0')}`;
+        }
+        return timeStr.trim();
+      };
+
+      if (sTime) setStartTime(parseTime(sTime));
+      if (eTime) setEndTime(parseTime(eTime));
     }
     
     setAvailability(data.availability !== undefined ? data.availability : true);
@@ -345,9 +384,7 @@ export default function MechanicFormComponent({ id, isEdit, initialData, onSubmi
       const fetchMechanic = async () => {
         try {
           const data = await apiClient<any>(`/admin/mechanics/${id}`);
-          console.log('Fetched mechanic data:', data);
           populateForm(data);
-          console.log('Successfully populated form');
         } catch (err) {
           console.error('Error in fetchMechanic or populateForm:', err);
           toast.error('Failed to load mechanic data');
@@ -862,8 +899,8 @@ export default function MechanicFormComponent({ id, isEdit, initialData, onSubmi
             
             <div className="flex flex-col sm:flex-row gap-6">
               {!is24Hours && (
-                <div className="flex gap-4 items-center flex-1">
-                  <div className="flex-1">
+                <div className="flex flex-col sm:flex-row gap-4 sm:items-center flex-1 w-full">
+                  <div className="flex-1 w-full">
                     <label className="block text-sm font-medium mb-1">Opening Time <span className="text-red-500">*</span></label>
                     <input
                       type="time"
@@ -873,8 +910,8 @@ export default function MechanicFormComponent({ id, isEdit, initialData, onSubmi
                       className={`w-full p-2 rounded border bg-background focus:border-primary outline-none dark:[&::-webkit-calendar-picker-indicator]:invert ${errors.operatingHours ? 'border-red-500 ring-1 ring-red-500 bg-red-50/50 dark:bg-red-950/30' : 'border-border'}`}
                     />
                   </div>
-                  <span className="text-muted-foreground mt-5">to</span>
-                  <div className="flex-1">
+                  <span className="text-muted-foreground hidden sm:inline-block mt-5">to</span>
+                  <div className="flex-1 w-full">
                     <label className="block text-sm font-medium mb-1">Closing Time <span className="text-red-500">*</span></label>
                     <input
                       type="time"
@@ -920,7 +957,7 @@ export default function MechanicFormComponent({ id, isEdit, initialData, onSubmi
           className="w-full py-4 bg-primary text-primary-foreground font-bold rounded-xl hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2 text-lg shadow-md transition-transform active:scale-[0.99]"
         >
           {loading ? <Loader2 size={24} className="animate-spin" /> : <Save size={24} />}
-          {loading ? (isEdit ? 'Updating...' : 'Saving...') : (isEdit ? 'Update Mechanic Details' : 'Save Mechanic Details')}
+          {loading ? (isEdit ? 'Updating...' : 'Saving...') : (submitButtonText ? submitButtonText : (isEdit ? 'Update Mechanic Details' : 'Save Mechanic Details'))}
         </button>
 
       </form>

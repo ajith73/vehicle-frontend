@@ -14,7 +14,7 @@ import { MechanicCard } from '../components/landing/MechanicCard';
 import { InfoSections } from '../components/landing/InfoSections';
 import { LocationPopup } from '../components/shared/LocationPopup';
 
-const MechanicSubmissionModal = lazy(() => import('../components/MechanicSubmissionModal'));
+const DonationBanner = lazy(() => import('../components/DonationBanner'));
 
 const getGreeting = () => {
   const hour = new Date().getHours();
@@ -44,7 +44,7 @@ export default function LandingPage() {
   const [isLoadingOptions, setIsLoadingOptions] = useState(true);
   const [showLocationPopup, setShowLocationPopup] = useState(false);
   const [showMapPicker, setShowMapPicker] = useState(false);
-  const [showMechanicSubmissionModal, setShowMechanicSubmissionModal] = useState(false);
+  const [showLocationWarning, setShowLocationWarning] = useState(false);
   const [isLocationMessageExpanded, setIsLocationMessageExpanded] = useState(true);
   const [centerSearchSuggestions, setCenterSearchSuggestions] = useState<PlaceSuggestion[]>([]);
   const searchDropdownRef = useRef<HTMLDivElement>(null);
@@ -398,7 +398,7 @@ export default function LandingPage() {
         </div>
       </div>
       
-      <InfoSections setShowMechanicSubmissionModal={setShowMechanicSubmissionModal} />
+      <InfoSections />
 
       <LocationPopup 
         isOpen={showLocationPopup} 
@@ -423,11 +423,12 @@ export default function LandingPage() {
       )}
 
       <Suspense fallback={null}>
-        <MechanicSubmissionModal
-          isOpen={showMechanicSubmissionModal}
-          onClose={() => setShowMechanicSubmissionModal(false)}
-        />
+        <DonationBanner />
       </Suspense>
+      
+      <footer className="py-6 text-center text-sm font-semibold text-muted-foreground mt-4 border-t border-border/50">
+        © 2026 RoadResQ. All Rights Reserved.
+      </footer>
     </div>
   );
 }

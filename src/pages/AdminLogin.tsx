@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { apiClient } from '../api/apiClient';
 
 export default function AdminLogin() {
@@ -38,7 +38,7 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center p-8 mt-12">
+    <div className="flex flex-col items-center justify-center p-8 mt-12 relative w-full h-full min-h-[80vh]">
       <div className="max-w-sm w-full bg-card shadow-lg rounded-2xl p-8 border border-border">
         <h2 className="text-2xl font-bold text-center mb-6 text-foreground">Admin Portal</h2>
         
@@ -81,6 +81,15 @@ export default function AdminLogin() {
             className="w-full py-3 bg-primary text-primary-foreground font-bold rounded-lg hover:bg-primary/90 disabled:opacity-50 mt-2"
           >
             {loading ? 'Authenticating...' : 'Login'}
+          </button>
+          
+          <button 
+            type="button"
+            onClick={() => navigate('/')}
+            className="w-full flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mt-2"
+          >
+            <ArrowLeft size={16} />
+            <span>Back to Home</span>
           </button>
         </form>
       </div>
