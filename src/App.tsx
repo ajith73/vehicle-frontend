@@ -8,6 +8,7 @@ import { Wrench, MessageSquare, Heart, Sun, Moon, Home, Map as MapIcon, List, Sh
 import { Toaster } from 'react-hot-toast';
 import { LocationProvider } from './contexts/LocationContext';
 import { DataProvider } from './contexts/DataContext';
+import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 
 const LandingPage = lazy(() => import('./pages/LandingPage'));
 const ListPage = lazy(() => import('./pages/ListPage'));
@@ -26,6 +27,7 @@ const AdminMechanics = lazy(() => import('./pages/AdminMechanics'));
 const AdminUsers = lazy(() => import('./pages/AdminUsers'));
 const MechanicForm = lazy(() => import('./pages/MechanicForm'));
 const AdminBulkUpload = lazy(() => import('./pages/AdminBulkUpload'));
+const AdminGMapsImport = lazy(() => import('./pages/AdminGMapsImport'));
 const AdminUpdateRequests = lazy(() => import('./pages/AdminUpdateRequests'));
 const UpdateRequestForm = lazy(() => import('./pages/UpdateRequestForm'));
 const AdminFeedback = lazy(() => import('./pages/AdminFeedback'));
@@ -55,38 +57,10 @@ function RouteLoader() {
 }
 
 function App() {
-  // Default to system preference
-  const getSystemTheme = () => {
-    if (typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      return 'dark';
-    }
-    return 'light';
-  };
-
-  const [theme, setTheme] = useState<'light' | 'dark'>(getSystemTheme());
-
-  // Sync theme to document body and listen to system changes
-  useEffect(() => {
-    const root = document.documentElement;
-    if (theme === 'dark') {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
-  }, [theme]);
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = (e: MediaQueryListEvent) => {
-      setTheme(e.matches ? 'dark' : 'light');
-    };
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, []);
-
   // Layout for public pages
   const PublicLayout = () => {
     const location = useLocation();
+    const { theme, toggleTheme } = useTheme();
     
     return (
       <DataProvider>
@@ -121,7 +95,7 @@ function App() {
                 </Link>
   
                 <button 
-                  onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+                  onClick={toggleTheme}
                   className="p-2 rounded-full bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors"
                   aria-label="Toggle theme"
                 >
@@ -169,49 +143,52 @@ function App() {
   };
 
   return (
-    <Router>
-      <AnalyticsTracker />
-      <Toaster position="top-right" containerStyle={{ zIndex: 99999 }} toastOptions={{ className: 'dark:bg-card dark:text-foreground dark:border dark:border-border' }} />
-      <Suspense fallback={<RouteLoader />}>
-        <Routes>
-          {/* Public Routes with Header */}
-          <Route element={<PublicLayout />}>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/list" element={<ListPage />} />
-            <Route path="/map" element={<MapPage />} />
-            <Route path="/submit" element={<SubmitMechanicPage />} />
-            <Route path="/mapcn" element={<MapCNPage />} />
-            <Route path="/feedback" element={<FeedbackPage />} />
-            <Route path="/donate" element={<DonationPage />} />
-            <Route path="/contact" element={<ContactPage />} />
-            <Route path="/about" element={<AboutPage />} />
-            <Route path="/terms" element={<TermsPage />} />
-            <Route path="/privacy" element={<PrivacyPage />} />
-          </Route>
-          
-          {/* Admin Login (No Layout) */}
-          <Route path="/admin/login" element={<AdminLogin />} />
-          
-          {/* Admin Protected Routes with Sidebar Layout */}
-          <Route path="/admin" element={<AdminLayout />}>
-            <Route path="dashboard" element={<AdminDashboard />} />
-            <Route path="mechanics" element={<AdminMechanics />} />
-            <Route path="mechanics/new" element={<MechanicForm />} />
-            <Route path="mechanics/:id/edit" element={<MechanicForm />} />
-            <Route path="mechanics/bulk-upload" element={<AdminBulkUpload />} />
-            <Route path="update-requests" element={<AdminUpdateRequests />} />
-            <Route path="update-requests/:id/edit" element={<UpdateRequestForm />} />
-            <Route path="feedback" element={<AdminFeedback />} />
-            <Route path="donations" element={<AdminDonations />} />
-            <Route path="settings" element={<AdminSettings />} />
-            <Route path="users" element={<AdminUsers />} />
-          </Route>
+    <ThemeProvider>
+      <Router>
+        <AnalyticsTracker />
+        <Toaster position="top-right" containerStyle={{ zIndex: 99999 }} toastOptions={{ className: 'dark:bg-card dark:text-foreground dark:border dark:border-border' }} />
+        <Suspense fallback={<RouteLoader />}>
+          <Routes>
+            {/* Public Routes with Header */}
+            <Route element={<PublicLayout />}>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/list" element={<ListPage />} />
+              <Route path="/map" element={<MapPage />} />
+              <Route path="/submit" element={<SubmitMechanicPage />} />
+              <Route path="/mapcn" element={<MapCNPage />} />
+              <Route path="/feedback" element={<FeedbackPage />} />
+              <Route path="/donate" element={<DonationPage />} />
+              <Route path="/contact" element={<ContactPage />} />
+              <Route path="/about" element={<AboutPage />} />
+              <Route path="/terms" element={<TermsPage />} />
+              <Route path="/privacy" element={<PrivacyPage />} />
+            </Route>
+            
+            {/* Admin Login (No Layout) */}
+            <Route path="/admin/login" element={<AdminLogin />} />
+            
+            {/* Admin Protected Routes with Sidebar Layout */}
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="mechanics" element={<AdminMechanics />} />
+              <Route path="mechanics/new" element={<MechanicForm />} />
+              <Route path="mechanics/:id/edit" element={<MechanicForm />} />
+              <Route path="mechanics/bulk-upload" element={<AdminBulkUpload />} />
+              <Route path="mechanics/gmaps-import" element={<AdminGMapsImport />} />
+              <Route path="update-requests" element={<AdminUpdateRequests />} />
+              <Route path="update-requests/:id/edit" element={<UpdateRequestForm />} />
+              <Route path="feedback" element={<AdminFeedback />} />
+              <Route path="donations" element={<AdminDonations />} />
+              <Route path="settings" element={<AdminSettings />} />
+              <Route path="users" element={<AdminUsers />} />
+            </Route>
 
-          {/* Fallback */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Suspense>
-    </Router>
+            {/* Fallback */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
+      </Router>
+    </ThemeProvider>
   );
 }
 

@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Select, { type StylesConfig } from 'react-select';
-import { X } from 'lucide-react';
+import { X, Search } from 'lucide-react';
 import { buildMechanicSearchParams } from '../../utils/mechanicSearch';
 import { useNavigate } from 'react-router-dom';
 
@@ -110,6 +110,31 @@ export function MapFiltersControl({
   handleFilterTouchEnd
 }: MapFiltersControlProps) {
   const navigate = useNavigate();
+  const [localSearch, setLocalSearch] = useState(search);
+
+  useEffect(() => {
+    if (showControls) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showControls]);
+
+  useEffect(() => {
+    setLocalSearch(search);
+  }, [search]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (localSearch !== search) {
+        syncQuery({ search: localSearch });
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [localSearch, search, syncQuery]);
 
   if (!showControls) return null;
 
@@ -125,18 +150,32 @@ export function MapFiltersControl({
       >
         <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-muted sm:hidden"></div>
         
-        <button 
-          onClick={() => setShowControls(false)}
-          className="absolute top-4 right-4 p-2 rounded-full hover:bg-secondary text-muted-foreground transition-colors"
-        >
-          <X className="w-5 h-5" />
-        </button>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-bold">Filters</h3>
+          <button 
+            onClick={() => setShowControls(false)}
+            className="p-2 rounded-full hover:bg-secondary text-muted-foreground transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
 
-        <div className="mb-4 mt-2 sm:mt-0 pr-8 rounded-xl border border-border bg-secondary/30 p-3">
-          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Current Filters</p>
-          <p className="mt-1 text-sm font-semibold text-foreground">{search ? `Search: ${search}` : 'No text search applied'}</p>
+        <div className="mb-4 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Search mechanics..."
+            value={localSearch}
+            onChange={(e) => setLocalSearch(e.target.value)}
+            className="w-full rounded-xl border border-border bg-background py-2.5 pl-9 pr-4 text-sm outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary"
+          />
+        </div>
+
+        <div className="mb-4 pr-8 rounded-xl border border-border bg-secondary/30 p-3">
+          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Current Summary</p>
           <p className="mt-1 text-xs text-muted-foreground">{vehicleParams.length > 0 ? `${vehicleParams.length} vehicles` : 'Any vehicle'} • {serviceParams.length > 0 ? `${serviceParams.length} services` : 'Any service'} • {radius === 50000 ? 'Any distance' : `${radius} km`} • {availability}</p>
         </div>
+
         <div className="mb-4">
           <label className="mb-2 block text-sm font-bold text-foreground">Vehicle Type</label>
           <Select

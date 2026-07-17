@@ -54,3 +54,16 @@ export async function apiClient<T>(endpoint: string, options: FetchOptions = {})
   const response = await axiosInstance(config);
   return response.data;
 }
+
+export async function apiClientWithHeaders<T>(endpoint: string, options: FetchOptions = {}): Promise<{ data: T; headers: any }> {
+  const config: AxiosRequestConfig = {
+    url: endpoint,
+    method: options.method || 'GET',
+    data: options.data,
+    headers: options.headers,
+    params: options.params,
+  };
+  
+  const response = await axiosInstance(config);
+  return { data: response.data, headers: response.headers };
+}

@@ -30,6 +30,17 @@ export default function DonationPage() {
     return () => clearTimeout(timer);
   }, [hasConsented]);
 
+  useEffect(() => {
+    if (isConsentOpen || isThankYouOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isConsentOpen, isThankYouOpen]);
+
   const handleInitiateDonation = (e: React.FormEvent) => {
     e.preventDefault();
     setIsConsentOpen(true);

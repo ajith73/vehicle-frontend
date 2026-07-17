@@ -13,8 +13,10 @@ import { ServiceSelector } from '../components/landing/ServiceSelector';
 import { MechanicCard } from '../components/landing/MechanicCard';
 import { InfoSections } from '../components/landing/InfoSections';
 import { LocationPopup } from '../components/shared/LocationPopup';
+import { MechanicCardSkeleton } from '../components/landing/MechanicCardSkeleton';
+import { useTheme } from '../contexts/ThemeContext';
+import toast from 'react-hot-toast';
 
-const DonationBanner = lazy(() => import('../components/DonationBanner'));
 
 const getGreeting = () => {
   const hour = new Date().getHours();
@@ -48,9 +50,9 @@ export default function LandingPage() {
   const [isLocationMessageExpanded, setIsLocationMessageExpanded] = useState(true);
   const [centerSearchSuggestions, setCenterSearchSuggestions] = useState<PlaceSuggestion[]>([]);
   const searchDropdownRef = useRef<HTMLDivElement>(null);
-  
-  // Local state for mobile theme toggle
-  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
+  const [isFetchingMechanics, setIsFetchingMechanics] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -112,21 +114,16 @@ export default function LandingPage() {
 
   useEffect(() => {
     const fetchMechanics = async () => {
+      setIsFetchingMechanics(true);
+      setFetchError(false);
       try {
-        const data = await apiClient<any>(`/public/mechanics?vehicleType=${selectedVehicle}&serviceType=${selectedService}&search=${encodeURIComponent(localSearch)}`);
+        const searchParam = locationName === 'Current Location' ? '' : locationName;
+        const data = await apiClient<any>(`/public/mechanics?vehicleType=${selectedVehicle}&serviceType=${selectedService}&search=${encodeURIComponent(searchParam)}`);
 
         let filtered = data.map((mechanic: any) => ({
           ...mechanic,
           currentStatus: getMechanicStatus(mechanic)
         }));
-
-        if (localSearch && localSearch !== 'Current Location') {
-          filtered = filtered.filter((mechanic: any) =>
-            (mechanic.businessName || mechanic.name || '').toLowerCase().includes(localSearch.toLowerCase()) ||
-            (mechanic.area || '').toLowerCase().includes(localSearch.toLowerCase()) ||
-            (mechanic.city || '').toLowerCase().includes(localSearch.toLowerCase())
-          );
-        }
 
         if (userLocation) {
           filtered.sort((a: any, b: any) => {
@@ -139,6 +136,10 @@ export default function LandingPage() {
         setNearbyMechanics(filtered.slice(0, 10));
       } catch (err) {
         console.error('Failed to fetch nearby mechanics', err);
+        setFetchError(true);
+        toast.error('Failed to load nearby mechanics.');
+      } finally {
+        setIsFetchingMechanics(false);
       }
     };
 
@@ -149,7 +150,7 @@ export default function LandingPage() {
     }, 500);
 
     return () => clearTimeout(delayFn);
-  }, [selectedVehicle, selectedService, userLocation, localSearch, isLoading]);
+  }, [selectedVehicle, selectedService, userLocation, locationName, isLoading]);
 
   const handleSearch = () => {
     navigate(`/list?search=${encodeURIComponent(localSearch)}&vehicle=${selectedVehicle}&service=${selectedService}`);
@@ -174,28 +175,23 @@ export default function LandingPage() {
             <span className="text-base font-bold text-foreground sm:text-lg">{getGreeting()}, User</span>
           </div>
           <div className="flex items-center gap-2">
-            <div
-              className="flex max-w-full shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-border bg-secondary/50 px-3 py-1.5 transition-colors hover:bg-secondary/80"
+            <button
+              className="flex max-w-full shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-border bg-secondary/50 px-3 py-1.5 transition-colors hover:bg-secondary/80 focus:outline-none focus:ring-2 focus:ring-primary"
               onClick={() => setShowLocationPopup(true)}
+              aria-label="Change location"
             >
               <MapPin className="h-4 w-4 shrink-0 text-primary" />
               <span className="truncate text-xs font-semibold text-muted-foreground sm:text-sm">{locationName}</span>
               <Edit2 className="ml-1 h-3.5 w-3.5 text-muted-foreground transition-colors hover:text-primary" />
-            </div>
+            </button>
 
             {/* Mobile Theme Toggle */}
             <button 
-              onClick={() => {
-                const root = document.documentElement;
-                const currentlyDark = root.classList.contains('dark');
-                if (currentlyDark) root.classList.remove('dark');
-                else root.classList.add('dark');
-                setIsDark(!currentlyDark);
-              }}
-              className="sm:hidden flex items-center justify-center w-8 h-8 rounded-full border border-border bg-secondary/50 text-foreground transition-colors hover:bg-secondary/80"
+              onClick={toggleTheme}
+              className="sm:hidden flex items-center justify-center w-8 h-8 rounded-full border border-border bg-secondary/50 text-foreground transition-colors hover:bg-secondary/80 focus:outline-none focus:ring-2 focus:ring-primary"
               aria-label="Toggle theme"
             >
-              {!isDark ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+              {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
             </button>
           </div>
         </div>
@@ -210,9 +206,10 @@ export default function LandingPage() {
             <span>{locationBadge.label}</span>
           </div>
           {locationMessage && (
-            <div 
+            <button 
               onClick={() => !isLocationMessageExpanded && setIsLocationMessageExpanded(true)}
-              className={`mx-auto flex max-w-2xl gap-3 rounded-2xl border border-amber-500/30 bg-card/90 px-4 py-3 text-left shadow-sm backdrop-blur transition-all duration-300 ${isLocationMessageExpanded ? 'items-start cursor-default' : 'items-center cursor-pointer hover:bg-card w-fit'}`}
+              className={`mx-auto flex max-w-2xl gap-3 rounded-2xl border border-amber-500/30 bg-card/90 px-4 py-3 text-left shadow-sm backdrop-blur transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-amber-500 ${isLocationMessageExpanded ? 'items-start cursor-default' : 'items-center cursor-pointer hover:bg-card w-fit'}`}
+              aria-label={isLocationMessageExpanded ? "Location alert" : "Expand location alert"}
             >
               <AlertTriangle className={`${isLocationMessageExpanded ? 'mt-0.5' : ''} h-4 w-4 shrink-0 text-amber-600`} />
               
@@ -240,7 +237,7 @@ export default function LandingPage() {
                   )}
                 </div>
               )}
-            </div>
+            </button>
           )}
         </div>
 
@@ -339,16 +336,17 @@ export default function LandingPage() {
           {popularServices.map((service) => {
             const Icon = getServiceIcon(service.name);
             return (
-              <div
+              <button
                 key={service.id || service.name}
                 onClick={() => navigate(`/list?service=${encodeURIComponent(service.name)}`)}
-                className="flex cursor-pointer flex-col items-center gap-2 rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:border-primary/50 hover:bg-secondary/30"
+                className="flex cursor-pointer flex-col items-center gap-2 rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:border-primary/50 hover:bg-secondary/30 focus:outline-none focus:ring-2 focus:ring-primary"
+                aria-label={`Search mechanics for ${service.name}`}
               >
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
                   <Icon className="h-6 w-6" />
                 </div>
                 <span className="text-center text-sm font-bold">{service.name}</span>
-              </div>
+              </button>
             );
           })}
         </div>
@@ -362,14 +360,32 @@ export default function LandingPage() {
           <button onClick={() => navigate(`/map?vehicle=${selectedVehicle}&service=${selectedService}`)} className="text-sm font-bold text-primary hover:underline">View Map</button>
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
-          {nearbyMechanics.length > 0 ? nearbyMechanics.slice(0, 5).map((mechanic) => (
-            <MechanicCard 
-              key={mechanic.id} 
-              mechanic={mechanic} 
-              userLocation={userLocation} 
-              navigateToMechanic={navigateToMechanic} 
-            />
-          )) : (
+          {isFetchingMechanics ? (
+            Array.from({ length: 3 }).map((_, i) => <MechanicCardSkeleton key={i} />)
+          ) : fetchError ? (
+            <div className="col-span-full rounded-2xl border border-red-500/20 bg-red-500/5 px-6 py-8 text-center">
+              <AlertTriangle className="mx-auto h-8 w-8 text-red-500 mb-3" />
+              <p className="text-base font-bold text-red-600 dark:text-red-400">Failed to load nearby mechanics.</p>
+              <p className="mt-2 text-sm text-red-500/80">Please check your connection and try again.</p>
+              <button
+                onClick={() => {
+                  setSelectedService('');
+                }}
+                className="mt-4 rounded-xl bg-red-500/10 px-4 py-2 text-sm font-bold text-red-600 hover:bg-red-500/20"
+              >
+                Reset Filters
+              </button>
+            </div>
+          ) : nearbyMechanics.length > 0 ? (
+            nearbyMechanics.slice(0, 5).map((mechanic) => (
+              <MechanicCard 
+                key={mechanic.id} 
+                mechanic={mechanic} 
+                userLocation={userLocation} 
+                navigateToMechanic={navigateToMechanic} 
+              />
+            ))
+          ) : (
             <div className="col-span-full rounded-2xl border border-border bg-card px-6 py-8 text-center">
               <p className="text-base font-bold text-foreground">No nearby mechanics found for the current filters.</p>
               <p className="mt-2 text-sm text-muted-foreground">
@@ -422,9 +438,7 @@ export default function LandingPage() {
         />
       )}
 
-      <Suspense fallback={null}>
-        <DonationBanner />
-      </Suspense>
+
       
       <footer className="py-6 text-center text-sm font-semibold text-muted-foreground mt-4 border-t border-border/50">
         © 2026 RoadResQ. All Rights Reserved.

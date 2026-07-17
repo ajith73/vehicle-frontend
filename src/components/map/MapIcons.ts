@@ -35,3 +35,16 @@ export const getIconForStatus = (status: string) => {
   if (status === 'Available') return availableIcon;
   return closedIcon;
 };
+
+export const createClusterIcon = (cluster: any) => {
+  const count = cluster.getChildCount();
+  return new L.DivIcon({
+    className: 'bg-transparent border-none',
+    html: `<div class="relative w-10 h-10 bg-primary rounded-full border-2 border-white shadow-lg flex items-center justify-center text-white font-bold text-sm">
+             ${count}
+             <div class="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2 h-2 bg-primary rotate-45 border-r-2 border-b-2 border-white"></div>
+           </div>`,
+    iconSize: [40, 44],
+    iconAnchor: [20, 44],
+  });
+};

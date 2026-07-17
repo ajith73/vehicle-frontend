@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { apiClient } from '../../api/apiClient';
@@ -20,6 +20,17 @@ interface FeedbackModalProps {
 export function FeedbackModal({ isOpen, onClose, selectedMechanic }: FeedbackModalProps) {
   const [selectedFeedback, setSelectedFeedback] = useState<string[]>([]);
   const [feedbackText, setFeedbackText] = useState('');
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Wrench, Users, LogOut, Menu, X, Sun, Moon, Edit3, UserCircle, CheckCircle, BellRing, MessageSquare, Heart, Settings, ChevronLeft, ChevronRight, ShieldAlert, ShieldCheck } from 'lucide-react';
+import { LayoutDashboard, Wrench, Users, LogOut, Menu, X, Sun, Moon, Edit3, UserCircle, CheckCircle, BellRing, MessageSquare, Heart, Settings, ChevronLeft, ChevronRight, ShieldAlert, ShieldCheck, Globe } from 'lucide-react';
 import { apiClient } from '../api/apiClient';
 
 export default function AdminLayout() {
@@ -92,6 +92,7 @@ export default function AdminLayout() {
   const navItems = [
     { name: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
     { name: 'Mechanics', path: '/admin/mechanics', icon: Wrench },
+    { name: 'GMaps Import', path: '/admin/mechanics/gmaps-import', icon: Globe },
     { name: 'Updates', path: '/admin/update-requests', icon: BellRing },
     { name: 'Feedback', path: '/admin/feedback', icon: MessageSquare },
     { name: 'Donations', path: '/admin/donations', icon: Heart },
@@ -103,6 +104,7 @@ export default function AdminLayout() {
   
   const routeAccessMap: Record<string, string> = {
     '/admin/dashboard': 'Dashboard',
+    '/admin/mechanics/gmaps-import': 'GMaps Import',
     '/admin/mechanics': 'Mechanics',
     '/admin/update-requests': 'Updates',
     '/admin/feedback': 'Feedback',
@@ -170,7 +172,7 @@ export default function AdminLayout() {
         <nav className="flex-1 overflow-y-auto overflow-x-hidden p-3 space-y-2">
           {filteredNavItems.map((item) => {
             const Icon = item.icon;
-            const isActive = location.pathname.startsWith(item.path);
+            const isActive = location.pathname === item.path || (location.pathname.startsWith(item.path) && item.path !== '/admin/mechanics');
             return (
               <Link
                 key={item.path}

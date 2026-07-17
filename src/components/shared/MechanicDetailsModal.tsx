@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { X, Wrench, MapPin, Info, Star, Phone, MessageSquare, MessageCircle, Mail, Globe, Navigation } from 'lucide-react';
 import { getMechanicStatus, getDistanceFromLatLonInKm } from '../../utils/mechanicUtils';
 
@@ -17,6 +17,17 @@ export function MechanicDetailsModal({
   userLocation,
   onNavigate
 }: MechanicDetailsModalProps) {
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
+
   if (!isOpen || !selectedMechanicForDetails) return null;
 
   return (

@@ -247,6 +247,18 @@ export default function MapPage() {
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [selectedFeedback, setSelectedFeedback] = useState<string[]>([]);
   const [feedbackText, setFeedbackText] = useState('');
+
+  useEffect(() => {
+    if (isFeedbackOpen || isDetailsOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isFeedbackOpen, isDetailsOpen]);
+
   const [vehicleOptions, setVehicleOptions] = useState<string[]>([]);
   const [serviceOptions, setServiceOptions] = useState<string[]>([]);
   const [searchDraft, setSearchDraft] = useState(search);

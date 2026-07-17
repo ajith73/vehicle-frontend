@@ -10,8 +10,9 @@ import { useDataContext } from '../contexts/DataContext';
 import toast from 'react-hot-toast';
 import { buildMechanicSearchParams, parseMechanicFilterParam, type MechanicSort } from '../utils/mechanicSearch';
 import { getDistanceFromLatLonInKm, getMechanicStatus } from '../utils/mechanicUtils';
-import { userIcon, getIconForStatus, selectedIcon } from '../components/map/MapIcons';
+import { userIcon, getIconForStatus, selectedIcon, createClusterIcon } from '../components/map/MapIcons';
 import { ChangeView, MapBoundsListener } from '../components/map/MapHelpers';
+import MarkerClusterGroup from 'react-leaflet-cluster';
 import { MapFiltersControl } from '../components/map/MapFiltersControl';
 import { FeedbackModal } from '../components/map/FeedbackModal';
 import { MechanicDetailsModal } from '../components/shared/MechanicDetailsModal';
@@ -164,6 +165,7 @@ export default function MapPage() {
         }
       } catch (err) {
         console.error('Failed to fetch mechanics', err);
+        toast.error('Failed to load mechanics. Please try again.');
       } finally {
         setMechanicsLoading(false);
       }
@@ -395,13 +397,10 @@ export default function MapPage() {
       </div>
 
       {isLoading && (
-        <div className="absolute inset-0 z-[2000] flex items-center justify-center bg-background/80 backdrop-blur-md">
-          <div className="flex flex-col items-center gap-5 p-8 bg-card rounded-3xl shadow-2xl border border-border/50 animate-in zoom-in-95 duration-300">
-            <div className="relative w-16 h-16">
-              <div className="absolute inset-0 border-4 border-primary/20 rounded-full"></div>
-              <div className="absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-            </div>
-            <p className="text-lg font-bold text-foreground animate-pulse">{loadingMessage}</p>
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[2000]">
+          <div className="flex items-center gap-3 px-4 py-2 bg-card rounded-full shadow-lg border border-border/50 animate-in fade-in duration-300 zoom-in-95">
+            <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-sm font-bold text-foreground">{loadingMessage}</p>
           </div>
         </div>
       )}
@@ -410,12 +409,14 @@ export default function MapPage() {
       <div className="absolute top-4 right-4 z-[400] flex flex-col gap-3 pointer-events-auto">
         <button
           onClick={() => setShowControls(!showControls)}
+          aria-label="Map Settings and Filters"
           className="bg-card text-foreground p-3 rounded-full shadow-lg border border-border hover:bg-secondary/50 transition-colors w-12 h-12 flex items-center justify-center"
         >
           <Settings2 className="w-6 h-6" />
         </button>
         <button
           onClick={locateUser}
+          aria-label="Center on my location"
           className="bg-primary text-primary-foreground p-3 rounded-full shadow-lg hover:bg-primary/90 transition-colors w-12 h-12 flex items-center justify-center"
           title={userLocation ? 'Center on my location' : 'Location not available'}
         >
@@ -427,6 +428,7 @@ export default function MapPage() {
               (mapInstance as any).setBearing(0);
             }
           }}
+          aria-label="Reset Map North"
           className="bg-card text-foreground p-3 rounded-full shadow-lg border border-border hover:bg-secondary/50 transition-colors w-12 h-12 flex items-center justify-center"
           title="drag to rotate map & click to reset north"
         >
@@ -436,6 +438,7 @@ export default function MapPage() {
         <div className="flex flex-col rounded-full shadow-lg border border-border overflow-hidden bg-card mt-2">
           <button
             onClick={() => mapInstance?.zoomIn()}
+            aria-label="Zoom In"
             className="text-foreground p-3 hover:bg-secondary/50 transition-colors w-12 h-12 flex items-center justify-center border-b border-border"
             title="Zoom In"
           >
@@ -443,6 +446,7 @@ export default function MapPage() {
           </button>
           <button
             onClick={() => mapInstance?.zoomOut()}
+            aria-label="Zoom Out"
             className="text-foreground p-3 hover:bg-secondary/50 transition-colors w-12 h-12 flex items-center justify-center"
             title="Zoom Out"
           >
@@ -496,27 +500,29 @@ export default function MapPage() {
         
         {userLocation && <Marker position={userLocation} icon={userIcon} />}
 
-        {positionedVisibleMechanics.filter((mechanic) => mechanic.id !== selectedMechanic?.id).map((mechanic) => (
-          <Marker 
-            key={mechanic.id} 
-            position={[mechanic.displayLatitude, mechanic.displayLongitude]}
-            icon={getIconForStatus(mechanic.currentStatus)}
-            eventHandlers={{
-              click: () => {
-                setSelectedMechanic(mechanic);
-                setSheetState(1);
-                setShowControls(false);
-              }
-            }}
-          >
-            <Tooltip direction="top" offset={[0, -22]} opacity={0.95}>
-              <div className="min-w-[130px]">
-                <p className="font-semibold">{mechanic.businessName || mechanic.name}</p>
-                <p className="text-xs text-muted-foreground">{mechanic.area}</p>
-              </div>
-            </Tooltip>
-          </Marker>
-        ))}
+        <MarkerClusterGroup chunkedLoading maxClusterRadius={60} iconCreateFunction={createClusterIcon}>
+          {positionedVisibleMechanics.filter((mechanic) => mechanic.id !== selectedMechanic?.id).map((mechanic) => (
+            <Marker 
+              key={mechanic.id} 
+              position={[mechanic.displayLatitude, mechanic.displayLongitude]}
+              icon={getIconForStatus(mechanic.currentStatus)}
+              eventHandlers={{
+                click: () => {
+                  setSelectedMechanic(mechanic);
+                  setSheetState(1);
+                  setShowControls(false);
+                }
+              }}
+            >
+              <Tooltip direction="top" offset={[0, -22]} opacity={0.95}>
+                <div className="min-w-[130px]">
+                  <p className="font-semibold">{mechanic.businessName || mechanic.name}</p>
+                  <p className="text-xs text-muted-foreground">{mechanic.area}</p>
+                </div>
+              </Tooltip>
+            </Marker>
+          ))}
+        </MarkerClusterGroup>
 
         {selectedMechanic && selectedMechanicPosition && (
           <Marker

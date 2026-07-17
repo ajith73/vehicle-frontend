@@ -1,13 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ChevronLeft, Filter, Search, AlertTriangle, Wrench, RefreshCw } from 'lucide-react';
-import { apiClient } from '../api/apiClient';
+import { Filter, Search, AlertTriangle, Wrench, RefreshCw } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { apiClient, apiClientWithHeaders } from '../api/apiClient';
 import { useLocationContext } from '../contexts/LocationContext';
 import { buildMechanicSearchParams, parseMechanicFilterParam, type MechanicSort } from '../utils/mechanicSearch';
-import { getDistanceFromLatLonInKm, getMechanicStatus } from '../utils/mechanicUtils';
 import { ListFiltersModal } from '../components/list/ListFiltersModal';
 import { MechanicListCard } from '../components/list/MechanicListCard';
 import { MechanicDetailsModal } from '../components/shared/MechanicDetailsModal';
+import { MechanicListSkeleton } from '../components/list/MechanicListSkeleton';
 
 export default function ListPage() {
   const navigate = useNavigate();
@@ -36,6 +37,10 @@ export default function ListPage() {
   const [pendingServices, setPendingServices] = useState<string[]>(serviceParams);
   const [isLocationMessageExpanded, setIsLocationMessageExpanded] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+
+  const observerTarget = useRef<HTMLDivElement>(null);
 
   const {
     userLocation,
@@ -80,7 +85,7 @@ export default function ListPage() {
     }
   }, [locationMessage]);
 
-  const updateQuery = (updates: {
+  const updateQuery = useCallback((updates: {
     search?: string;
     vehicle?: string[];
     service?: string[];
@@ -97,7 +102,17 @@ export default function ListPage() {
       routeTo: updates.routeTo
     });
     setSearchParams(params);
-  };
+  }, [searchQuery, vehicleParams, serviceParams, radius, sortBy, setSearchParams]);
+
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchQuery !== searchParam) {
+        updateQuery({ search: searchQuery });
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery, searchParam, updateQuery]);
 
   useEffect(() => {
     setPage(1);
@@ -122,7 +137,16 @@ export default function ListPage() {
           page,
           limit
         });
-        const data = await apiClient<any>(`/public/mechanics?${params.toString()}`);
+        setError(null);
+
+        const { data, headers } = await apiClientWithHeaders<any>(`/public/mechanics?${params.toString()}`);
+
+        if (headers && headers['x-total-count']) {
+          setTotalCount(parseInt(headers['x-total-count'], 10));
+        } else if (page === 1) {
+          // Fallback if header is missing
+          setTotalCount(data.length);
+        }
 
         if (page === 1) {
           setMechanics(data);
@@ -137,6 +161,8 @@ export default function ListPage() {
         }
       } catch (err) {
         console.error('Failed to fetch mechanics', err);
+        setError('Failed to fetch mechanics. Please try again.');
+        toast.error('Failed to fetch mechanics');
       } finally {
         if (page === 1) setLoading(false);
         else setIsLoadingMore(false);
@@ -148,27 +174,28 @@ export default function ListPage() {
     }
   }, [searchParam, searchParams, userLocation, locationLoading, radius, sortBy, page, refreshKey]);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      if (
-        window.innerHeight + document.documentElement.scrollTop >= document.documentElement.offsetHeight - 500 &&
-        !loading &&
-        !isLoadingMore &&
-        hasMore
-      ) {
+  // Infinite Scroll via Intersection Observer
+  const handleObserver = useCallback(
+    (entries: IntersectionObserverEntry[]) => {
+      const target = entries[0];
+      if (target.isIntersecting && !loading && !isLoadingMore && hasMore) {
         setPage(p => p + 1);
       }
-    };
+    },
+    [loading, isLoadingMore, hasMore]
+  );
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [loading, isLoadingMore, hasMore]);
+  useEffect(() => {
+    const observer = new IntersectionObserver(handleObserver, { threshold: 0.1 });
+    if (observerTarget.current) observer.observe(observerTarget.current);
+    return () => observer.disconnect();
+  }, [handleObserver, observerTarget.current]);
 
   const displayedMechanics = mechanics;
   const hasMoreResults = hasMore;
   const resultSummary = userLocation
-    ? `${mechanics.length}${hasMore ? '+' : ''} mechanics within ${radius} km`
-    : `${mechanics.length}${hasMore ? '+' : ''} mechanics found`;
+    ? `${totalCount} mechanics within ${radius} km`
+    : `${totalCount} mechanics found`;
   const emptyStateReason = [
     searchParam ? `search "${searchParam}"` : null,
     vehicleParams.length > 0 ? `vehicle "${vehicleParams.join(', ')}"` : null,
@@ -200,9 +227,6 @@ export default function ListPage() {
       <div className="sticky top-0 z-10 border-b border-border bg-card px-4 pt-6 pb-4 shadow-sm sm:px-8">
         <div className="mx-auto mb-4 flex w-full max-w-7xl items-center justify-between">
           <div className="flex items-center gap-3">
-            <button onClick={() => navigate('/')} className="p-2 -ml-2 rounded-full transition-colors hover:bg-secondary active:scale-95">
-              <ChevronLeft size={24} />
-            </button>
             <h2 className="bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-2xl font-black text-transparent">
               Mechanics
             </h2>
@@ -227,20 +251,16 @@ export default function ListPage() {
               <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
               <input
                 type="text"
+                aria-label="Search mechanics"
                 placeholder="Search by name, area, city, vehicle, or service..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') updateQuery({ search: searchQuery });
-                }}
-                onBlur={() => {
-                  if (searchQuery !== searchParam) updateQuery({ search: searchQuery });
-                }}
                 className="w-full rounded-xl border border-border bg-secondary/30 py-3 pl-12 pr-4 text-base shadow-sm transition-all focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
             </div>
             <button
               onClick={() => setIsFilterOpen(true)}
+              aria-label="Open Filters"
               className="flex shrink-0 items-center justify-center rounded-xl border border-border bg-secondary px-4 transition-colors hover:bg-secondary/80"
               title="Filters"
             >
@@ -248,6 +268,7 @@ export default function ListPage() {
             </button>
             <button
               onClick={() => setRefreshKey(k => k + 1)}
+              aria-label="Refresh results"
               className="flex shrink-0 items-center justify-center rounded-xl border border-border bg-secondary px-4 transition-colors hover:bg-secondary/80"
               title="Refresh results"
             >
@@ -259,14 +280,14 @@ export default function ListPage() {
 
       <div className="mx-auto flex-1 w-full max-w-7xl px-4 py-6 sm:px-8">
         {locationMessage && (
-          <div 
+          <div
             onClick={() => !isLocationMessageExpanded && setIsLocationMessageExpanded(true)}
             className={`mb-5 flex gap-3 rounded-2xl border border-amber-500/30 bg-card p-4 shadow-sm transition-all duration-300 ${isLocationMessageExpanded ? 'items-start cursor-default' : 'items-center cursor-pointer hover:bg-card/80 w-fit'}`}
           >
             <div className={`rounded-xl bg-amber-500/15 p-2 text-amber-600 ${!isLocationMessageExpanded && 'shrink-0'}`}>
               <AlertTriangle className="h-5 w-5" />
             </div>
-            
+
             {isLocationMessageExpanded ? (
               <div className="min-w-0 flex-1 animate-in fade-in duration-300 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
@@ -298,7 +319,7 @@ export default function ListPage() {
             <h3 className="text-lg font-bold text-foreground">
               {vehicleParams.length > 0 || serviceParams.length > 0 || searchParam ? 'Filtered Results' : 'Nearby Mechanics'}
             </h3>
-            <p className="text-sm text-muted-foreground">{resultSummary}</p>
+            <p className="text-sm text-muted-foreground">{loading && page === 1 ? 'Loading mechanics...' : resultSummary}</p>
           </div>
           <div className="flex flex-wrap gap-2 text-xs font-semibold text-muted-foreground">
             {vehicleParams.length > 0 && <span className="rounded-full bg-secondary px-3 py-1">Vehicle: {vehicleParams.join(', ')}</span>}
@@ -309,8 +330,21 @@ export default function ListPage() {
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center py-10">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <MechanicListSkeleton key={i} />
+            ))}
+          </div>
+        ) : error ? (
+          <div className="rounded-2xl border border-red-500/30 bg-red-50 py-10 px-6 sm:px-8 text-center text-red-600">
+            <AlertTriangle className="mx-auto mb-3 h-12 w-12 opacity-50" />
+            <p className="font-semibold">{error}</p>
+            <button
+              onClick={() => setRefreshKey(k => k + 1)}
+              className="mt-4 rounded-lg bg-red-100 px-4 py-2 font-bold text-red-700 hover:bg-red-200"
+            >
+              Try Again
+            </button>
           </div>
         ) : mechanics.length === 0 ? (
           <div className="rounded-2xl border border-border bg-card py-10 px-6 sm:px-8 text-center text-muted-foreground">
@@ -345,7 +379,7 @@ export default function ListPage() {
           <>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {displayedMechanics.map((mechanic) => (
-                <MechanicListCard 
+                <MechanicListCard
                   key={mechanic.id}
                   mechanic={mechanic}
                   onOpenDetails={(m) => {
@@ -359,12 +393,14 @@ export default function ListPage() {
               ))}
             </div>
 
-            <div className="py-8 text-center">
-              {hasMoreResults ? (
+            <div ref={observerTarget} className="py-8 text-center">
+              {isLoadingMore ? (
                 <div className="flex items-center justify-center gap-3 text-sm text-muted-foreground">
                   <div className="h-6 w-6 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-                  <span>Showing {displayedMechanics.length} of {mechanics.length} mechanics. Scroll to load more.</span>
+                  <span>Loading more mechanics...</span>
                 </div>
+              ) : hasMoreResults ? (
+                <div className="h-6" /> // spacer
               ) : (
                 <p className="text-sm text-muted-foreground">You have reached the end of the results list.</p>
               )}

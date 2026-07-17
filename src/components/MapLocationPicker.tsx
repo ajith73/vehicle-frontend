@@ -165,6 +165,7 @@ export function MapLocationPicker({ initialLocation, onSelect, onClose }: MapLoc
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              className="dark:brightness-75 dark:contrast-125 dark:invert dark:hue-rotate-180 transition-all duration-300"
             />
             <Marker 
               position={coords} 

@@ -172,6 +172,7 @@ export default function MechanicFormComponent({ id, isEdit, initialData, onSubmi
   const [endTime, setEndTime] = useState('21:00');
   const [telephones, setTelephones] = useState(['']);
   const [availability, setAvailability] = useState(true);
+  const [googlePlaceId, setGooglePlaceId] = useState('');
 
   useEffect(() => {
     const loadCities = async () => {
@@ -256,6 +257,7 @@ export default function MechanicFormComponent({ id, isEdit, initialData, onSubmi
     setDescription(data.description || '');
     setImageUrl(data.image || '');
     setWebsiteUrl(data.websiteUrl || '');
+    setGooglePlaceId(data.googlePlaceId || '');
     let phonesData = data.phone || [];
     if (typeof phonesData === 'string') try { phonesData = JSON.parse(phonesData); } catch(e) { phonesData = []; }
     const mobilePhones = Array.isArray(phonesData) ? phonesData.filter((p: any) => !p.isTelephone) : [];
@@ -463,6 +465,7 @@ export default function MechanicFormComponent({ id, isEdit, initialData, onSubmi
         description: cleanString(description),
         image: cleanString(imageUrl),
         websiteUrl: cleanString(websiteUrl),
+        googlePlaceId: cleanString(googlePlaceId),
         phone: finalPhones,
         emails: emails.filter(e => e.trim() !== ''),
         address,

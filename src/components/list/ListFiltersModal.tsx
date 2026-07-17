@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import Select from 'react-select';
 import { X } from 'lucide-react';
 import type { MechanicSort } from '../../utils/mechanicSearch';
@@ -75,6 +75,17 @@ export function ListFiltersModal({
   onReset,
   onApply
 }: ListFiltersModalProps) {
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (
