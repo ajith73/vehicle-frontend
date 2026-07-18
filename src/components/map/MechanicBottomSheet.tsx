@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, Wrench, MapPin, Phone, MessageCircle, MessageSquare, Mail, Globe, Navigation, Heart, ChevronLeft, X } from 'lucide-react';
 import { getMechanicStatus, getDistanceFromLatLonInKm } from '../../utils/mechanicUtils';
@@ -44,6 +44,13 @@ export function MechanicBottomSheet({
   mapInstance
 }: MechanicBottomSheetProps) {
   const navigate = useNavigate();
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = 0;
+    }
+  }, [selectedMechanic?.id]);
 
   if (!selectedMechanic) return null;
 
@@ -78,14 +85,14 @@ export function MechanicBottomSheet({
         </div>
         
         {/* The Single Scrollable Container */}
-        <div className="flex-1 overflow-y-auto hide-scrollbar pb-6">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto hide-scrollbar pb-6">
           <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-0 flex gap-4 relative">
-            {selectedMechanic.image ? (
+            {selectedMechanic.image || selectedMechanic.imageUrl ? (
               <div 
                 className="relative shrink-0 overflow-hidden rounded-xl w-20 h-20 group/img cursor-pointer shadow-sm hover:shadow-md transition-shadow"
                 onClick={(e) => { e.stopPropagation(); setSelectedMechanicForDetails(selectedMechanic); setIsDetailsOpen(true); }}
               >
-                <img src={selectedMechanic.image} alt={selectedMechanic.businessName || selectedMechanic.name} className="w-full h-full object-cover bg-secondary group-hover/img:scale-110 transition-transform duration-500" />
+                <img src={selectedMechanic.image || selectedMechanic.imageUrl} alt={selectedMechanic.businessName || selectedMechanic.name} className="w-full h-full object-cover bg-secondary group-hover/img:scale-110 transition-transform duration-500" onError={(e) => { (e.target as HTMLImageElement).src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#f1f5f9"/><text x="50" y="50" font-size="40" text-anchor="middle" dominant-baseline="central">🛠️</text></svg>')}` }} />
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px]">
                   <Eye className="w-6 h-6 text-white drop-shadow-md" />
                 </div>
@@ -185,16 +192,21 @@ export function MechanicBottomSheet({
                       }}
                       className="bg-background border border-border rounded-xl p-3 flex items-center gap-3 cursor-pointer hover:border-primary/50 transition-colors"
                     >
-                      {m.image ? (
-                        <img src={m.image} alt={m.businessName} className="w-12 h-12 rounded-lg object-cover shrink-0" />
+                      {m.image || m.imageUrl ? (
+                        <img src={m.image || m.imageUrl} alt={m.businessName} className="w-12 h-12 rounded-lg object-cover shrink-0" onError={(e) => { (e.target as HTMLImageElement).src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#f1f5f9"/><text x="50" y="50" font-size="50" text-anchor="middle" dominant-baseline="central">🛠️</text></svg>')}` }} />
                       ) : (
                         <div className="w-12 h-12 bg-secondary rounded-lg flex items-center justify-center shrink-0">
                           <Wrench className="w-5 h-5 text-muted-foreground" />
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
-                        <h5 className="font-bold text-sm text-foreground truncate">{m.businessName || m.name}</h5>
-                        <p className="text-xs text-muted-foreground truncate">{m.distToSelected?.toFixed(1)} km away • {m.area}</p>
+                        <div className="flex items-start justify-between gap-2">
+                          <h5 className="font-bold text-sm text-foreground truncate">{m.businessName || m.name}</h5>
+                          <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${(m.currentStatus || 'Available') === 'Available' ? 'bg-green-500/10 text-green-600' : 'bg-amber-500/10 text-amber-700'}`}>
+                            {m.currentStatus || 'Available'}
+                          </span>
+                        </div>
+                        <p className="mt-0.5 text-xs text-muted-foreground truncate">{m.distToSelected?.toFixed(1)} km away • {m.area}</p>
                       </div>
                       <ChevronLeft className="w-4 h-4 text-muted-foreground rotate-180" />
                     </div>

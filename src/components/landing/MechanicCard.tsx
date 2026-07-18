@@ -1,5 +1,6 @@
 import React from 'react';
 import { getDistanceFromLatLonInKm } from '../../utils/mechanicUtils';
+import toast from 'react-hot-toast';
 
 interface MechanicCardProps {
   mechanic: any;
@@ -22,7 +23,7 @@ export function MechanicCard({ mechanic, userLocation, navigateToMechanic }: Mec
       <div className="flex items-center gap-4">
         <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-secondary text-2xl">
           {mechanic.image || mechanic.imageUrl
-            ? <img src={mechanic.image || mechanic.imageUrl} alt={mechanic.businessName || mechanic.name} className="h-full w-full object-cover" />
+            ? <img src={mechanic.image || mechanic.imageUrl} alt={mechanic.businessName || mechanic.name} className="h-full w-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#f1f5f9"/><text x="50" y="50" font-size="50" text-anchor="middle" dominant-baseline="central">🛠️</text></svg>')}` }} />
             : '🛠️'}
         </div>
         <div className="min-w-0 flex-1">
@@ -39,15 +40,19 @@ export function MechanicCard({ mechanic, userLocation, navigateToMechanic }: Mec
         </div>
       </div>
       <div className="mt-4 flex gap-2">
-        <button
+        <a
+          href={mechanic.phone ? `tel:${mechanic.phone}` : '#'}
           onClick={(e) => {
             e.stopPropagation();
-            navigateToMechanic(mechanic.id);
+            if (!mechanic.phone) {
+              e.preventDefault();
+              toast.error('Phone number not available');
+            }
           }}
-          className="flex-1 rounded-xl border border-border bg-secondary/70 px-3 py-2 text-sm font-bold text-foreground hover:bg-secondary"
+          className="flex-1 flex items-center justify-center rounded-xl border border-border bg-secondary/70 px-3 py-2 text-sm font-bold text-foreground hover:bg-secondary"
         >
-          View
-        </button>
+          Call
+        </a>
         <button
           onClick={(e) => {
             e.stopPropagation();

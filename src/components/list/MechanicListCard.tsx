@@ -22,7 +22,7 @@ export function MechanicListCard({ mechanic, onOpenDetails, onNavigate }: Mechan
               onOpenDetails(mechanic);
             }}
           >
-            <img src={mechanic.image} alt={mechanic.businessName || mechanic.name} className="h-full w-full object-cover bg-secondary transition-transform duration-500 group-hover/img:scale-110" />
+            <img src={mechanic.image || mechanic.imageUrl} alt={mechanic.businessName || mechanic.name} className="h-full w-full object-cover bg-secondary transition-transform duration-500 group-hover/img:scale-110" onError={(e) => { (e.target as HTMLImageElement).src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#f1f5f9"/><text x="50" y="50" font-size="50" text-anchor="middle" dominant-baseline="central">🛠️</text></svg>')}` }} />
             <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 backdrop-blur-[2px] transition-opacity duration-300 group-hover/img:opacity-100">
               <Eye className="h-8 w-8 text-white drop-shadow-md" />
             </div>

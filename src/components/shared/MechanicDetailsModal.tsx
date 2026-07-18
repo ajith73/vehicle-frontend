@@ -37,8 +37,8 @@ export function MechanicDetailsModal({
         onClick={e => e.stopPropagation()}
       >
         <div className="relative h-48 sm:h-56 shrink-0 bg-secondary/50">
-          {selectedMechanicForDetails.image ? (
-            <img src={selectedMechanicForDetails.image} alt="Mechanic" className="w-full h-full object-cover" />
+          {selectedMechanicForDetails.image || selectedMechanicForDetails.imageUrl ? (
+            <img src={selectedMechanicForDetails.image || selectedMechanicForDetails.imageUrl} alt="Mechanic" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#f1f5f9"/><text x="50" y="50" font-size="50" text-anchor="middle" dominant-baseline="central">🛠️</text></svg>')}` }} />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
               <Wrench className="w-16 h-16 text-muted-foreground/30" />
@@ -265,12 +265,16 @@ export function MechanicDetailsModal({
         </div>
         
         <div className="shrink-0 p-4 border-t border-border/50 bg-muted/10 flex gap-2">
-           {selectedMechanicForDetails.phone?.[0] && (
-             <a href={`tel:${selectedMechanicForDetails.phone[0].number}`} className="flex-1 bg-secondary/80 hover:bg-primary hover:text-primary-foreground text-foreground h-12 rounded-xl flex justify-center items-center active:scale-95 transition-all font-bold text-sm gap-2 border border-border/50">
-               <Phone size={18} /> Call
-             </a>
-           )}
-           <button onClick={() => { onClose(); onNavigate(); }} className="flex-[1.5] bg-primary text-primary-foreground h-12 rounded-xl flex justify-center items-center hover:bg-primary/90 active:scale-95 transition-all shadow-md shadow-primary/20 font-bold text-sm gap-2">
+           <button onClick={onClose} className="flex-1 bg-secondary/80 hover:bg-secondary text-foreground h-12 rounded-xl flex justify-center items-center active:scale-95 transition-all font-bold text-sm gap-2 border border-border/50">
+             <X size={18} /> Close
+           </button>
+           <button 
+             onClick={() => {
+               const { latitude, longitude } = selectedMechanicForDetails;
+               window.open(`https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`, '_blank');
+             }} 
+             className="flex-[1.5] bg-primary text-primary-foreground h-12 rounded-xl flex justify-center items-center hover:bg-primary/90 active:scale-95 transition-all shadow-md shadow-primary/20 font-bold text-sm gap-2"
+           >
              <Navigation size={18} /> Navigate
            </button>
         </div>

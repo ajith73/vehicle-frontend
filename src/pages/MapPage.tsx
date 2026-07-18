@@ -81,9 +81,6 @@ export default function MapPage() {
   // Route Fetching
   useEffect(() => {
     if (!selectedMechanic || !userLocation) {
-      setRouteCoords([]);
-      setDrivingDistance(null);
-      setDrivingTime(null);
       return;
     }
 
@@ -301,8 +298,6 @@ export default function MapPage() {
         setSheetState(prev => (prev - 1) as 0 | 1 | 2);
       } else {
         setSelectedMechanic(null);
-        setRouteCoords([]);
-        setDrivingDistance(null);
       }
     }
     setTouchStart(null);
@@ -406,51 +401,40 @@ export default function MapPage() {
       )}
 
       {/* Floating Action Buttons */}
-      <div className="absolute top-4 right-4 z-[400] flex flex-col gap-3 pointer-events-auto">
+      <div className="absolute top-4 right-4 z-[400] flex flex-col gap-2 pointer-events-auto">
         <button
           onClick={() => setShowControls(!showControls)}
           aria-label="Map Settings and Filters"
-          className="bg-card text-foreground p-3 rounded-full shadow-lg border border-border hover:bg-secondary/50 transition-colors w-12 h-12 flex items-center justify-center"
+          className="bg-card text-foreground p-2 rounded-full shadow-lg border border-border hover:bg-secondary/50 transition-colors w-10 h-10 flex items-center justify-center"
         >
-          <Settings2 className="w-6 h-6" />
+          <Settings2 className="w-5 h-5" />
         </button>
         <button
           onClick={locateUser}
           aria-label="Center on my location"
-          className="bg-primary text-primary-foreground p-3 rounded-full shadow-lg hover:bg-primary/90 transition-colors w-12 h-12 flex items-center justify-center"
+          className="bg-primary text-primary-foreground p-2 rounded-full shadow-lg hover:bg-primary/90 transition-colors w-10 h-10 flex items-center justify-center"
           title={userLocation ? 'Center on my location' : 'Location not available'}
         >
-          <LocateFixed className="w-6 h-6" />
+          <LocateFixed className="w-5 h-5" />
         </button>
-        <button
-          onClick={() => {
-            if (mapInstance && typeof (mapInstance as any).setBearing === 'function') {
-              (mapInstance as any).setBearing(0);
-            }
-          }}
-          aria-label="Reset Map North"
-          className="bg-card text-foreground p-3 rounded-full shadow-lg border border-border hover:bg-secondary/50 transition-colors w-12 h-12 flex items-center justify-center"
-          title="drag to rotate map & click to reset north"
-        >
-          <Compass className="w-6 h-6" />
-        </button>
+
         
-        <div className="flex flex-col rounded-full shadow-lg border border-border overflow-hidden bg-card mt-2">
+        <div className="flex flex-col rounded-full shadow-lg border border-border overflow-hidden bg-card mt-1">
           <button
             onClick={() => mapInstance?.zoomIn()}
             aria-label="Zoom In"
-            className="text-foreground p-3 hover:bg-secondary/50 transition-colors w-12 h-12 flex items-center justify-center border-b border-border"
+            className="text-foreground p-2 hover:bg-secondary/50 transition-colors w-10 h-10 flex items-center justify-center border-b border-border"
             title="Zoom In"
           >
-            <Plus className="w-6 h-6" />
+            <Plus className="w-5 h-5" />
           </button>
           <button
             onClick={() => mapInstance?.zoomOut()}
             aria-label="Zoom Out"
-            className="text-foreground p-3 hover:bg-secondary/50 transition-colors w-12 h-12 flex items-center justify-center"
+            className="text-foreground p-2 hover:bg-secondary/50 transition-colors w-10 h-10 flex items-center justify-center"
             title="Zoom Out"
           >
-            <Minus className="w-6 h-6" />
+            <Minus className="w-5 h-5" />
           </button>
         </div>
       </div>
