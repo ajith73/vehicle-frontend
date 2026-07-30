@@ -5,6 +5,8 @@ import { Settings2, LocateFixed, AlertTriangle, Plus, Minus, Compass } from 'luc
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { apiClient } from '../api/apiClient';
+import { MapLocationPicker } from '../components/MapLocationPicker';
+import { SEO } from '../components/SEO';
 import { useLocationContext } from '../contexts/LocationContext';
 import { useDataContext } from '../contexts/DataContext';
 import toast from 'react-hot-toast';
@@ -333,6 +335,10 @@ export default function MapPage() {
 
   return (
     <div className="flex-1 w-full relative bg-background flex flex-col min-h-0">
+      <SEO 
+        title="Interactive Mechanics Map | RoadResQ"
+        description="View all available vehicle mechanics, towing services, and roadside assistance on the map."
+      />
       {locationMessage && (
         <div className="absolute left-4 right-4 top-4 z-[1200] sm:left-1/2 sm:right-auto sm:w-[520px] sm:-translate-x-1/2">
           <div 

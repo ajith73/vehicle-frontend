@@ -54,6 +54,16 @@ export interface Mechanic {
   endTime?: string;
   createdAt: string;
   updatedAt: string;
+  verificationLevel?: number;
+  verificationChecklist?: any;
+  shopPhotosLink?: string;
+  ownerIdentityLink?: string;
+  priceListLink?: string;
+  pendingVerification?: {
+    status: string;
+    remarks?: string;
+  };
+  rejectionReason?: string;
 }
 
 export interface Feedback {

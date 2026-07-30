@@ -23,7 +23,12 @@ export function MechanicListCard({ mechanic, onOpenDetails, onNavigate }: Mechan
             }}
           >
             <img src={mechanic.image || mechanic.imageUrl} alt={mechanic.businessName || mechanic.name} className="h-full w-full object-cover bg-secondary transition-transform duration-500 group-hover/img:scale-110" onError={(e) => { (e.target as HTMLImageElement).src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#f1f5f9"/><text x="50" y="50" font-size="50" text-anchor="middle" dominant-baseline="central">🛠️</text></svg>')}` }} />
-            <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 backdrop-blur-[2px] transition-opacity duration-300 group-hover/img:opacity-100">
+            {mechanic.verificationLevel > 0 && (
+              <div className="absolute top-0 left-0 bg-blue-600 text-white rounded-br-lg p-0.5 shadow-md flex items-center justify-center z-10" title={`Verified Level ${mechanic.verificationLevel}`}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+              </div>
+            )}
+            <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 backdrop-blur-[2px] transition-opacity duration-300 group-hover/img:opacity-100 z-20">
               <Eye className="h-8 w-8 text-white drop-shadow-md" />
             </div>
           </div>
@@ -36,7 +41,12 @@ export function MechanicListCard({ mechanic, onOpenDetails, onNavigate }: Mechan
             }}
           >
             <Wrench className="h-8 w-8 text-muted-foreground/30" />
-            <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 backdrop-blur-[2px] transition-opacity duration-300 group-hover/img:opacity-100">
+            {mechanic.verificationLevel > 0 && (
+              <div className="absolute top-0 left-0 bg-blue-600 text-white rounded-br-lg p-0.5 shadow-md flex items-center justify-center z-10" title={`Verified Level ${mechanic.verificationLevel}`}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+              </div>
+            )}
+            <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 backdrop-blur-[2px] transition-opacity duration-300 group-hover/img:opacity-100 z-20">
               <Eye className="h-8 w-8 text-white drop-shadow-md" />
             </div>
           </div>
@@ -44,7 +54,18 @@ export function MechanicListCard({ mechanic, onOpenDetails, onNavigate }: Mechan
         <div className="flex min-w-0 flex-1 flex-col justify-between py-0.5">
           <div>
             <div className="mb-1.5 flex items-start justify-between gap-2">
-              <h4 className="truncate text-lg font-bold leading-tight text-foreground transition-colors group-hover:text-primary">{mechanic.businessName || mechanic.name}</h4>
+              <div className="flex flex-col min-w-0">
+                <h4 className="truncate text-lg font-bold leading-tight text-foreground transition-colors group-hover:text-primary">
+                  {mechanic.businessName || mechanic.name}
+                </h4>
+                {(mechanic.rating || mechanic.rating > 0) ? (
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="text-yellow-500"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                    <span className="text-xs font-bold text-foreground">{mechanic.rating}</span>
+                    <span className="text-[10px] text-muted-foreground">({mechanic.reviewCount || 0})</span>
+                  </div>
+                ) : null}
+              </div>
               {mechanic.dist !== null && mechanic.dist !== undefined && (
                 <span className="shrink-0 rounded-lg bg-primary/10 px-2.5 py-1 text-xs font-black text-primary">
                   {mechanic.dist.toFixed(1)} km

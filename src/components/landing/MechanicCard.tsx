@@ -21,14 +21,31 @@ export function MechanicCard({ mechanic, userLocation, navigateToMechanic }: Mec
       onClick={() => navigateToMechanic(mechanic.id)}
     >
       <div className="flex items-center gap-4">
-        <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-secondary text-2xl">
+        <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-secondary text-2xl">
           {mechanic.image || mechanic.imageUrl
             ? <img src={mechanic.image || mechanic.imageUrl} alt={mechanic.businessName || mechanic.name} className="h-full w-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#f1f5f9"/><text x="50" y="50" font-size="50" text-anchor="middle" dominant-baseline="central">🛠️</text></svg>')}` }} />
             : '🛠️'}
+            
+          {mechanic.verificationLevel > 0 && (
+            <div className="absolute top-0 left-0 bg-blue-600 text-white rounded-br-lg p-0.5 shadow-md flex items-center justify-center" title={`Verified Level ${mechanic.verificationLevel}`}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+            </div>
+          )}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
-            <h4 className="truncate font-bold text-foreground">{mechanic.businessName || mechanic.name}</h4>
+            <div className="flex flex-col min-w-0">
+              <h4 className="truncate font-bold text-foreground">
+                {mechanic.businessName || mechanic.name}
+              </h4>
+              {(mechanic.rating || mechanic.rating > 0) ? (
+                <div className="flex items-center gap-1 mt-0.5">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="text-yellow-500"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                  <span className="text-xs font-bold text-foreground">{mechanic.rating}</span>
+                  <span className="text-[10px] text-muted-foreground">({mechanic.reviewCount || 0})</span>
+                </div>
+              ) : null}
+            </div>
             <span className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-bold ${status === 'Available' ? 'bg-green-500/10 text-green-600' : 'bg-amber-500/10 text-amber-700'}`}>
               {status}
             </span>

@@ -33,27 +33,27 @@ export default function MechanicFormComponent({ id, isEdit, initialData, onSubmi
     control: (base: any, state: any) => ({
       ...base,
       minHeight: 42,
-      backgroundColor: 'var(--background)',
-      borderColor: hasError ? '#ef4444' : state.isFocused ? 'var(--primary)' : 'var(--border)',
+      backgroundColor: 'hsl(var(--background))',
+      borderColor: hasError ? '#ef4444' : state.isFocused ? 'hsl(var(--primary))' : 'hsl(var(--border))',
       boxShadow: hasError
         ? '0 0 0 1px #ef4444'
         : state.isFocused
-          ? '0 0 0 2px color-mix(in srgb, var(--primary) 18%, transparent)'
+          ? '0 0 0 2px color-mix(in srgb, hsl(var(--primary)) 18%, transparent)'
           : 'none',
       '&:hover': {
-        borderColor: hasError ? '#ef4444' : state.isFocused ? 'var(--primary)' : 'var(--border)'
+        borderColor: hasError ? '#ef4444' : state.isFocused ? 'hsl(var(--primary))' : 'hsl(var(--border))'
       }
     }),
     menu: (base: any) => ({
       ...base,
-      backgroundColor: 'var(--card)',
-      color: 'var(--foreground)',
+      backgroundColor: 'hsl(var(--card))',
+      color: 'hsl(var(--foreground))',
       zIndex: 90
     }),
     option: (base: any, state: any) => ({
       ...base,
-      backgroundColor: state.isFocused ? 'color-mix(in srgb, var(--primary) 12%, var(--card))' : 'var(--card)',
-      color: 'var(--foreground)'
+      backgroundColor: state.isFocused ? 'color-mix(in srgb, hsl(var(--primary)) 12%, hsl(var(--card)))' : 'hsl(var(--card))',
+      color: 'hsl(var(--foreground))'
     }),
     multiValue: (base: any) => ({
       ...base,
@@ -74,11 +74,11 @@ export default function MechanicFormComponent({ id, isEdit, initialData, onSubmi
     }),
     singleValue: (base: any) => ({
       ...base,
-      color: 'var(--foreground)'
+      color: 'hsl(var(--foreground))'
     }),
     input: (base: any) => ({
       ...base,
-      color: 'var(--foreground)'
+      color: 'hsl(var(--foreground))'
     })
   });
 
@@ -137,7 +137,7 @@ export default function MechanicFormComponent({ id, isEdit, initialData, onSubmi
   const [imageUrl, setImageUrl] = useState('');
   const [websiteUrl, setWebsiteUrl] = useState('');
   const [phones, setPhones] = useState([{ number: '', isWhatsapp: false }]);
-  const [emails, setEmails] = useState(['']);
+  const [emails, setEmails] = useState<string[]>(['']);
   
   const [address, setAddress] = useState('');
   const [pincode, setPincode] = useState('');
@@ -258,6 +258,8 @@ export default function MechanicFormComponent({ id, isEdit, initialData, onSubmi
     setImageUrl(data.image || '');
     setWebsiteUrl(data.websiteUrl || '');
     setGooglePlaceId(data.googlePlaceId || '');
+    
+    setEmails(Array.isArray(data.emails) && data.emails.length > 0 ? data.emails : ['']);
     let phonesData = data.phone || [];
     if (typeof phonesData === 'string') try { phonesData = JSON.parse(phonesData); } catch(e) { phonesData = []; }
     const mobilePhones = Array.isArray(phonesData) ? phonesData.filter((p: any) => !p.isTelephone) : [];
@@ -265,9 +267,6 @@ export default function MechanicFormComponent({ id, isEdit, initialData, onSubmi
     setPhones(mobilePhones.length ? mobilePhones : [{ number: '', isWhatsapp: false }]);
     setTelephones(telPhones.length ? telPhones.map((t: any) => t.number) : ['']);
     
-    let emailsData = data.emails || [];
-    if (typeof emailsData === 'string') try { emailsData = JSON.parse(emailsData); } catch(e) { emailsData = []; }
-    setEmails(Array.isArray(emailsData) && emailsData.length ? emailsData : ['']);
     setAddress(data.address || '');
     setPincode(data.pincode || '');
     
@@ -421,8 +420,10 @@ export default function MechanicFormComponent({ id, isEdit, initialData, onSubmi
     if (operatingDays.length === 0) newErrors.operatingDays = 'Select at least one operating day';
     if (!is24Hours && (!startTime || !endTime)) newErrors.operatingHours = 'Operating hours are required';
     
+    if (!emails.some(e => e.trim())) newErrors.emails = 'At least one email address is required';
+    
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return newErrors;
   };
 
   const handleMapsUrlParse = (url: string) => {
@@ -438,10 +439,18 @@ export default function MechanicFormComponent({ id, isEdit, initialData, onSubmi
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const isValid = validate();
-    if (!isValid) {
-      toast.error('Please fix the highlighted errors before saving');
-      window.scrollTo(0, 0);
+    const formErrors = validate();
+    if (Object.keys(formErrors).length > 0) {
+      const firstErrorMsg = Object.values(formErrors)[0];
+      toast.error(`Please fix: ${firstErrorMsg}`);
+      
+      // Smooth scroll to the first error element
+      setTimeout(() => {
+        const firstErrorElement = document.querySelector('.border-red-500, .text-red-500');
+        if (firstErrorElement) {
+          firstErrorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
       return;
     }
     
@@ -467,7 +476,7 @@ export default function MechanicFormComponent({ id, isEdit, initialData, onSubmi
         websiteUrl: cleanString(websiteUrl),
         googlePlaceId: cleanString(googlePlaceId),
         phone: finalPhones,
-        emails: emails.filter(e => e.trim() !== ''),
+        emails: emails.filter(e => e.trim()),
         address,
         landmark: cleanString(landmark),
         pincode: cleanString(pincode),
@@ -552,7 +561,7 @@ export default function MechanicFormComponent({ id, isEdit, initialData, onSubmi
 
       <form onSubmit={handleSubmit} noValidate className="space-y-6">
         
-        {/* Basic Info */}
+        {/* Contact Info */}
         <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
           <h3 className="text-xl font-semibold mb-4 flex items-center gap-2 border-b border-border pb-2">
             <User className="text-primary" size={24} /> Basic Information
@@ -701,7 +710,7 @@ export default function MechanicFormComponent({ id, isEdit, initialData, onSubmi
                       newEmails[idx] = e.target.value;
                       setEmails(newEmails);
                     }} 
-                    className="flex-1 p-2 rounded border border-border bg-background outline-none focus:border-primary" 
+                    className={`flex-1 p-2 rounded border bg-background outline-none focus:border-primary ${errors.emails ? 'border-red-500 ring-1 ring-red-500' : 'border-border'}`} 
                   />
                   {emails.length > 1 && (
                     <button type="button" onClick={() => setEmails(emails.filter((_, i) => i !== idx))} className="text-red-500 hover:bg-red-50 dark:hover:bg-red-950 px-3 rounded transition-colors">
@@ -710,6 +719,7 @@ export default function MechanicFormComponent({ id, isEdit, initialData, onSubmi
                   )}
                 </div>
               ))}
+              {errors.emails && <p className="text-red-500 text-xs mt-1">{errors.emails}</p>}
               <button type="button" onClick={() => setEmails([...emails, ''])} className="text-primary text-sm font-medium flex items-center gap-1 hover:underline mt-1">
                 <Plus size={16} /> Add Another Email
               </button>

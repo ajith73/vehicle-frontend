@@ -23,6 +23,9 @@ export default function AdminLogin() {
       });
       
       localStorage.setItem('token', data.token);
+      if (data.refreshToken) {
+        localStorage.setItem('refreshToken', data.refreshToken);
+      }
       localStorage.setItem('role', data.role);
       localStorage.setItem('adminEmail', data.email || email);
       localStorage.setItem('adminName', data.email || email);

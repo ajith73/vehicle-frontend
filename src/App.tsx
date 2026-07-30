@@ -17,13 +17,19 @@ const MapCNPage = lazy(() => import('./pages/MapCNPage'));
 const FeedbackPage = lazy(() => import('./pages/FeedbackPage'));
 const DonationPage = lazy(() => import('./pages/DonationPage'));
 const SubmitMechanicPage = lazy(() => import('./pages/SubmitMechanicPage'));
+const EmergencyHubPage = lazy(() => import('./pages/EmergencyHubPage'));
 const ContactPage = lazy(() => import('./pages/ContactPage'));
 const AboutPage = lazy(() => import('./pages/AboutPage'));
 const TermsPage = lazy(() => import('./pages/TermsPage'));
 const PrivacyPage = lazy(() => import('./pages/PrivacyPage'));
+const VerifyStartPage = lazy(() => import('./pages/VerifyStartPage'));
+const MechanicDashboard = lazy(() => import('./pages/MechanicDashboard'));
+const MechanicProfile = lazy(() => import('./pages/MechanicProfile'));
+const VerifyFlowPage = lazy(() => import('./pages/VerifyFlowPage'));
 const AdminLogin = lazy(() => import('./pages/AdminLogin'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const AdminMechanics = lazy(() => import('./pages/AdminMechanics'));
+const AdminVerificationRequests = lazy(() => import('./pages/AdminVerificationRequests'));
 const AdminUsers = lazy(() => import('./pages/AdminUsers'));
 const MechanicForm = lazy(() => import('./pages/MechanicForm'));
 const AdminBulkUpload = lazy(() => import('./pages/AdminBulkUpload'));
@@ -33,6 +39,7 @@ const UpdateRequestForm = lazy(() => import('./pages/UpdateRequestForm'));
 const AdminFeedback = lazy(() => import('./pages/AdminFeedback'));
 const AdminDonations = lazy(() => import('./pages/AdminDonations'));
 const AdminSettings = lazy(() => import('./pages/AdminSettings'));
+const AdminReviews = lazy(() => import('./pages/AdminReviews'));
 
 function AnalyticsTracker() {
   const location = useLocation();
@@ -155,6 +162,7 @@ function App() {
               <Route path="/list" element={<ListPage />} />
               <Route path="/map" element={<MapPage />} />
               <Route path="/submit" element={<SubmitMechanicPage />} />
+              <Route path="/emergency" element={<EmergencyHubPage />} />
               <Route path="/mapcn" element={<MapCNPage />} />
               <Route path="/feedback" element={<FeedbackPage />} />
               <Route path="/donate" element={<DonationPage />} />
@@ -162,6 +170,10 @@ function App() {
               <Route path="/about" element={<AboutPage />} />
               <Route path="/terms" element={<TermsPage />} />
               <Route path="/privacy" element={<PrivacyPage />} />
+              <Route path="/verify-start" element={<VerifyStartPage />} />
+              <Route path="/mechanic/:id" element={<MechanicProfile />} />
+              <Route path="/mechanic-dashboard/:id" element={<MechanicDashboard />} />
+              <Route path="/verify-flow/:id" element={<VerifyFlowPage />} />
             </Route>
             
             {/* Admin Login (No Layout) */}
@@ -175,11 +187,13 @@ function App() {
               <Route path="mechanics/:id/edit" element={<MechanicForm />} />
               <Route path="mechanics/bulk-upload" element={<AdminBulkUpload />} />
               <Route path="mechanics/gmaps-import" element={<AdminGMapsImport />} />
+              <Route path="verifications" element={<AdminVerificationRequests />} />
               <Route path="update-requests" element={<AdminUpdateRequests />} />
               <Route path="update-requests/:id/edit" element={<UpdateRequestForm />} />
               <Route path="feedback" element={<AdminFeedback />} />
               <Route path="donations" element={<AdminDonations />} />
               <Route path="settings" element={<AdminSettings />} />
+              <Route path="reviews" element={<AdminReviews />} />
               <Route path="users" element={<AdminUsers />} />
             </Route>
 

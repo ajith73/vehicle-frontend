@@ -93,7 +93,12 @@ export function MechanicBottomSheet({
                 onClick={(e) => { e.stopPropagation(); setSelectedMechanicForDetails(selectedMechanic); setIsDetailsOpen(true); }}
               >
                 <img src={selectedMechanic.image || selectedMechanic.imageUrl} alt={selectedMechanic.businessName || selectedMechanic.name} className="w-full h-full object-cover bg-secondary group-hover/img:scale-110 transition-transform duration-500" onError={(e) => { (e.target as HTMLImageElement).src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#f1f5f9"/><text x="50" y="50" font-size="40" text-anchor="middle" dominant-baseline="central">🛠️</text></svg>')}` }} />
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px]">
+                {selectedMechanic.verificationLevel > 0 && (
+                  <div className="absolute top-0 left-0 bg-blue-600 text-white rounded-br-lg p-0.5 shadow-md flex items-center justify-center z-10" title={`Verified Level ${selectedMechanic.verificationLevel}`}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px] z-20">
                   <Eye className="w-6 h-6 text-white drop-shadow-md" />
                 </div>
               </div>
@@ -103,14 +108,30 @@ export function MechanicBottomSheet({
                 onClick={(e) => { e.stopPropagation(); setSelectedMechanicForDetails(selectedMechanic); setIsDetailsOpen(true); }}
               >
                 <Wrench className="w-8 h-8 text-muted-foreground/30" />
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px]">
+                {selectedMechanic.verificationLevel > 0 && (
+                  <div className="absolute top-0 left-0 bg-blue-600 text-white rounded-br-lg p-0.5 shadow-md flex items-center justify-center z-10" title={`Verified Level ${selectedMechanic.verificationLevel}`}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px] z-20">
                   <Eye className="w-6 h-6 text-white drop-shadow-md" />
                 </div>
               </div>
             )}
             
             <div className="flex-1 min-w-0 pr-10">
-              <h3 className="text-lg font-bold text-foreground mb-1 leading-tight truncate">{selectedMechanic.businessName || selectedMechanic.name}</h3>
+              <div className="flex flex-col min-w-0">
+                <h3 className="text-lg font-bold text-foreground mb-0.5 leading-tight truncate">
+                  {selectedMechanic.businessName || selectedMechanic.name}
+                </h3>
+                {(selectedMechanic.rating || selectedMechanic.rating > 0) ? (
+                  <div className="flex items-center gap-1 mb-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="text-yellow-500"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                    <span className="text-xs font-bold text-foreground">{selectedMechanic.rating}</span>
+                    <span className="text-[10px] text-muted-foreground">({selectedMechanic.reviewCount || 0})</span>
+                  </div>
+                ) : null}
+              </div>
               <p className="text-sm text-muted-foreground flex items-center gap-1.5 truncate">
                 <MapPin className="w-4 h-4 shrink-0" /> {selectedMechanic.landmark ? `${selectedMechanic.landmark}, ` : ''}{selectedMechanic.area}
               </p>
@@ -193,15 +214,35 @@ export function MechanicBottomSheet({
                       className="bg-background border border-border rounded-xl p-3 flex items-center gap-3 cursor-pointer hover:border-primary/50 transition-colors"
                     >
                       {m.image || m.imageUrl ? (
-                        <img src={m.image || m.imageUrl} alt={m.businessName} className="w-12 h-12 rounded-lg object-cover shrink-0" onError={(e) => { (e.target as HTMLImageElement).src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#f1f5f9"/><text x="50" y="50" font-size="50" text-anchor="middle" dominant-baseline="central">🛠️</text></svg>')}` }} />
+                        <div className="relative shrink-0">
+                          <img src={m.image || m.imageUrl} alt={m.businessName} className="w-12 h-12 rounded-lg object-cover" onError={(e) => { (e.target as HTMLImageElement).src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#f1f5f9"/><text x="50" y="50" font-size="50" text-anchor="middle" dominant-baseline="central">🛠️</text></svg>')}` }} />
+                          {m.verificationLevel > 0 && (
+                            <div className="absolute top-0 left-0 bg-blue-600 text-white rounded-br-lg p-0.5 shadow-md flex items-center justify-center" title={`Verified Level ${m.verificationLevel}`}>
+                              <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+                            </div>
+                          )}
+                        </div>
                       ) : (
-                        <div className="w-12 h-12 bg-secondary rounded-lg flex items-center justify-center shrink-0">
+                        <div className="w-12 h-12 bg-secondary rounded-lg flex items-center justify-center shrink-0 relative">
                           <Wrench className="w-5 h-5 text-muted-foreground" />
+                          {m.verificationLevel > 0 && (
+                            <div className="absolute top-0 left-0 bg-blue-600 text-white rounded-br-lg p-0.5 shadow-md flex items-center justify-center" title={`Verified Level ${m.verificationLevel}`}>
+                              <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+                            </div>
+                          )}
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
-                          <h5 className="font-bold text-sm text-foreground truncate">{m.businessName || m.name}</h5>
+                          <div className="flex flex-col min-w-0">
+                            <h5 className="font-bold text-sm text-foreground truncate">{m.businessName || m.name}</h5>
+                            {(m.rating || m.rating > 0) ? (
+                              <div className="flex items-center gap-1 mt-0.5">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="currentColor" className="text-yellow-500"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                                <span className="text-[10px] font-bold text-foreground">{m.rating}</span>
+                              </div>
+                            ) : null}
+                          </div>
                           <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${(m.currentStatus || 'Available') === 'Available' ? 'bg-green-500/10 text-green-600' : 'bg-amber-500/10 text-amber-700'}`}>
                             {m.currentStatus || 'Available'}
                           </span>

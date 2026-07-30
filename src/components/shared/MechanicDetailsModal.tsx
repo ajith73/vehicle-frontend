@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { X, Wrench, MapPin, Info, Star, Phone, MessageSquare, MessageCircle, Mail, Globe, Navigation } from 'lucide-react';
 import { getMechanicStatus, getDistanceFromLatLonInKm } from '../../utils/mechanicUtils';
+import { MechanicReviews } from './MechanicReviews';
 
 interface MechanicDetailsModalProps {
   isOpen: boolean;
@@ -89,6 +90,43 @@ export function MechanicDetailsModal({
             )}
           </div>
           
+          {selectedMechanicForDetails.verificationLevel > 0 && (
+            <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 mt-4 shadow-sm">
+              <div className="flex items-center gap-3 mb-2">
+                <span className="text-xl">🛡️</span>
+                <h4 className="font-bold text-primary text-base">
+                  {selectedMechanicForDetails.verificationLevel === 6 ? '👑 Premium Partner' : '⭐ RoadResQ Verified'}
+                </h4>
+              </div>
+              <p className="text-sm text-primary/80 mb-3 font-medium">This mechanic has been verified for authenticity.</p>
+              
+              {selectedMechanicForDetails.verificationChecklist && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                  {(() => {
+                    const checklist = typeof selectedMechanicForDetails.verificationChecklist === 'string'
+                      ? JSON.parse(selectedMechanicForDetails.verificationChecklist || '{}')
+                      : selectedMechanicForDetails.verificationChecklist;
+                      
+                    const items = [
+                      { key: 'phone', label: 'Phone & Business' },
+                      { key: 'location', label: 'Location & GPS' },
+                      { key: 'shopPhotos', label: 'Shop Photos' },
+                      { key: 'identity', label: 'Owner Identity' },
+                      { key: 'services', label: 'Services & Prices' },
+                    ];
+                    
+                    return items.map(item => checklist[item.key] ? (
+                      <div key={item.key} className="flex items-center gap-2 text-xs text-primary bg-background/60 px-2 py-1.5 rounded-md border border-primary/10">
+                        <svg className="w-3.5 h-3.5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
+                        <span className="font-semibold">{item.label}</span>
+                      </div>
+                    ) : null);
+                  })()}
+                </div>
+              )}
+            </div>
+          )}
+
           {selectedMechanicForDetails.mechanicType && (
             <div>
               <h4 className="mb-3 flex items-center gap-2 text-sm font-bold text-foreground">
@@ -262,6 +300,8 @@ export function MechanicDetailsModal({
               </div>
             </div>
           )}
+
+          <MechanicReviews mechanicId={selectedMechanicForDetails.id} />
         </div>
         
         <div className="shrink-0 p-4 border-t border-border/50 bg-muted/10 flex gap-2">

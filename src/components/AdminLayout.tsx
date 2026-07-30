@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Wrench, Users, LogOut, Menu, X, Sun, Moon, Edit3, UserCircle, CheckCircle, BellRing, MessageSquare, Heart, Settings, ChevronLeft, ChevronRight, ShieldAlert, ShieldCheck, Globe } from 'lucide-react';
+import { LayoutDashboard, Wrench, Users, LogOut, Menu, X, Sun, Moon, Edit3, UserCircle, CheckCircle, BellRing, MessageSquare, Heart, Settings, ChevronLeft, ChevronRight, ShieldAlert, ShieldCheck, Globe, Star } from 'lucide-react';
 import { apiClient } from '../api/apiClient';
 
 export default function AdminLayout() {
@@ -92,10 +92,12 @@ export default function AdminLayout() {
   const navItems = [
     { name: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
     { name: 'Mechanics', path: '/admin/mechanics', icon: Wrench },
+    { name: 'Verifications', path: '/admin/verifications', icon: ShieldCheck },
     { name: 'GMaps Import', path: '/admin/mechanics/gmaps-import', icon: Globe },
     { name: 'Updates', path: '/admin/update-requests', icon: BellRing },
     { name: 'Feedback', path: '/admin/feedback', icon: MessageSquare },
     { name: 'Donations', path: '/admin/donations', icon: Heart },
+    { name: 'Reviews', path: '/admin/reviews', icon: Star },
     { name: 'Users', path: '/admin/users', icon: Users },
     { name: 'Settings', path: '/admin/settings', icon: Settings },
   ];

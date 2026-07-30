@@ -8,20 +8,27 @@ import { ConfirmDialog } from '../components/ConfirmDialog';
 export default function AdminSettings() {
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [services, setServices] = useState<any[]>([]);
+  const [specificServices, setSpecificServices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'types' | 'specific'>('types');
 
   const [featuredVehicles, setFeaturedVehicles] = useState<any[]>([]);
   const [featuredServices, setFeaturedServices] = useState<any[]>([]);
+  const [featuredSpecificServices, setFeaturedSpecificServices] = useState<any[]>([]);
   const [savingFeatured, setSavingFeatured] = useState(false);
 
   const [newVehicle, setNewVehicle] = useState('');
   const [newService, setNewService] = useState('');
+  const [newSpecificService, setNewSpecificService] = useState('');
 
   const [editingVehicleId, setEditingVehicleId] = useState<number | null>(null);
   const [editingVehicleName, setEditingVehicleName] = useState('');
   
   const [editingServiceId, setEditingServiceId] = useState<number | null>(null);
   const [editingServiceName, setEditingServiceName] = useState('');
+
+  const [editingSpecificServiceId, setEditingSpecificServiceId] = useState<number | null>(null);
+  const [editingSpecificServiceName, setEditingSpecificServiceName] = useState('');
   
   const [confirmConfig, setConfirmConfig] = useState<{isOpen: boolean, title: string, message: string, type: 'danger'|'warning'|'info'|'success', onConfirm: () => void} | null>(null);
 
@@ -33,9 +40,14 @@ export default function AdminSettings() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [vData, sData] = await Promise.all([apiClient<any>(`/public/vehicles`), apiClient<any>(`/public/services`)]);
+      const [vData, sData, ssData] = await Promise.all([
+        apiClient<any>(`/public/vehicles`), 
+        apiClient<any>(`/public/services`),
+        apiClient<any>(`/public/specific-services`)
+      ]);
       setVehicles(vData);
       setServices(sData);
+      setSpecificServices(ssData);
       
       // Initialize featured selections
       setFeaturedVehicles(
@@ -45,6 +57,11 @@ export default function AdminSettings() {
       );
       setFeaturedServices(
         sData.filter((s: any) => s.isFeatured)
+             .sort((a: any, b: any) => a.orderIndex - b.orderIndex)
+             .map((s: any) => ({ value: s.id, label: s.name }))
+      );
+      setFeaturedSpecificServices(
+        ssData.filter((s: any) => s.isFeatured)
              .sort((a: any, b: any) => a.orderIndex - b.orderIndex)
              .map((s: any) => ({ value: s.id, label: s.name }))
       );
@@ -167,12 +184,67 @@ export default function AdminSettings() {
     }
   };
 
+  const handleAddSpecificService = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newSpecificService.trim()) return;
+    const loadingToast = toast.loading('Adding specific service...');
+    try {
+      await apiClient('/admin/specific-services', {
+        method: 'POST',
+        data: { name: newSpecificService }
+      });
+      toast.success('Specific service added', { id: loadingToast });
+      setNewSpecificService('');
+      fetchData();
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Failed to add specific service'), { id: loadingToast });
+    }
+  };
+
+  const handleDeleteSpecificService = async (id: number) => {
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Delete Specific Service?',
+      message: 'Are you sure you want to delete this specific service?',
+      type: 'danger',
+      onConfirm: async () => {
+        const loadingToast = toast.loading('Deleting specific service...');
+        try {
+          await apiClient(`/admin/specific-services/${id}`, {
+            method: 'DELETE'
+          });
+          toast.success('Specific service deleted', { id: loadingToast });
+          fetchData();
+        } catch (err) {
+          toast.error(getErrorMessage(err, 'Failed to delete specific service'), { id: loadingToast });
+        }
+      }
+    });
+  };
+
+  const handleUpdateSpecificService = async (id: number) => {
+    if (!editingSpecificServiceName.trim()) return;
+    const loadingToast = toast.loading('Updating specific service...');
+    try {
+      await apiClient(`/admin/specific-services/${id}`, {
+        method: 'PUT',
+        data: { name: editingSpecificServiceName }
+      });
+      toast.success('Specific service updated', { id: loadingToast });
+      setEditingSpecificServiceId(null);
+      fetchData();
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Failed to update specific service'), { id: loadingToast });
+    }
+  };
+
   const handleSaveFeatured = async () => {
     const loadingToast = toast.loading('Saving featured configuration...');
     try {
       setSavingFeatured(true);
       const vehicleIds = featuredVehicles.map(v => v.value);
       const serviceIds = featuredServices.map(s => s.value);
+      const specificServiceIds = featuredSpecificServices.map(s => s.value);
       
       await Promise.all([
         apiClient('/admin/vehicles/featured', {
@@ -182,6 +254,10 @@ export default function AdminSettings() {
         apiClient('/admin/services/featured', {
           method: 'PUT',
           data: { ids: serviceIds }
+        }),
+        apiClient('/admin/specific-services/featured', {
+          method: 'PUT',
+          data: { ids: specificServiceIds }
         })
       ]);
 
@@ -211,7 +287,24 @@ export default function AdminSettings() {
         </h1>
       </div>
 
-      {/* Featured Configuration Section */}
+      <div className="flex border-b border-border mb-6">
+        <button
+          className={`px-4 py-2 font-medium text-sm transition-colors ${activeTab === 'types' ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+          onClick={() => setActiveTab('types')}
+        >
+          Vehicle & Service Types
+        </button>
+        <button
+          className={`px-4 py-2 font-medium text-sm transition-colors ${activeTab === 'specific' ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+          onClick={() => setActiveTab('specific')}
+        >
+          Specific Services
+        </button>
+      </div>
+
+      {activeTab === 'types' && (
+        <>
+          {/* Featured Configuration Section */}
       <div className="bg-card border border-border rounded-xl p-6 shadow-sm mb-6">
         <div className="flex justify-between items-center mb-4">
           <div>
@@ -403,6 +496,76 @@ export default function AdminSettings() {
           </div>
         </div>
       </div>
+        </>
+      )}
+
+      {activeTab === 'specific' && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in">
+          {/* Specific Services Section */}
+          <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
+            <h2 className="text-xl font-semibold mb-4">Specific Services (e.g. Bike Puncture)</h2>
+            
+            <form onSubmit={handleAddSpecificService} className="flex gap-2 mb-6">
+              <input
+                type="text"
+                placeholder="E.g. Bike Puncture"
+                value={newSpecificService}
+                onChange={(e) => setNewSpecificService(e.target.value)}
+                className="flex-1 bg-background border border-border rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+              />
+              <button
+                type="submit"
+                disabled={!newSpecificService.trim()}
+                className="bg-primary text-primary-foreground p-2 rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
+              >
+                <Plus className="w-5 h-5" />
+              </button>
+            </form>
+
+            <div className="bg-background border border-border rounded-lg max-h-[600px] overflow-y-auto">
+              {specificServices.map((s) => (
+                <div key={s.id} className="flex items-center justify-between p-3 border-b border-border last:border-0 hover:bg-secondary/20 transition-colors">
+                  {editingSpecificServiceId === s.id ? (
+                    <div className="flex flex-1 items-center gap-2 mr-4">
+                      <input
+                        type="text"
+                        value={editingSpecificServiceName}
+                        onChange={(e) => setEditingSpecificServiceName(e.target.value)}
+                        className="flex-1 bg-background border border-border rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                        autoFocus
+                        onKeyDown={(e) => e.key === 'Enter' && handleUpdateSpecificService(s.id)}
+                      />
+                      <button onClick={() => handleUpdateSpecificService(s.id)} className="text-green-600 hover:bg-green-100 p-1 rounded-md transition-colors"><Check className="w-4 h-4" /></button>
+                      <button onClick={() => setEditingSpecificServiceId(null)} className="text-muted-foreground hover:bg-secondary p-1 rounded-md transition-colors"><X className="w-4 h-4" /></button>
+                    </div>
+                  ) : (
+                    <>
+                      <span className="font-medium text-sm flex-1">{s.name}</span>
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => { setEditingSpecificServiceId(s.id); setEditingSpecificServiceName(s.name); }}
+                          className="text-primary/80 hover:text-primary p-1 rounded-md hover:bg-primary/10 transition-colors"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteSpecificService(s.id)}
+                          className="text-destructive/80 hover:text-destructive p-1 rounded-md hover:bg-destructive/10 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ))}
+              {specificServices.length === 0 && (
+                <div className="p-4 text-center text-muted-foreground text-sm">No specific services found</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       <ConfirmDialog 
         isOpen={!!confirmConfig?.isOpen}
         title={confirmConfig?.title || ''}

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Activity, Fuel, Zap, Droplets, Settings, ArrowRight } from 'lucide-react';
+import { Activity, Fuel, Zap, Droplets, Settings, ArrowRight, ShieldAlert } from 'lucide-react';
 import ShareButtons from '../ShareButtons';
 
 export function InfoSections() {
@@ -10,25 +10,55 @@ export function InfoSections() {
     <>
       {/* Support Us Section */}
       <div className="mx-auto w-full max-w-7xl px-4 pt-2 pb-10 sm:px-8">
-        <div className="overflow-hidden rounded-3xl border border-rose-500/20 bg-gradient-to-br from-rose-500/10 via-card to-rose-500/5 shadow-sm">
+        <div className="overflow-hidden rounded-3xl border border-pink-500/30 bg-gradient-to-br from-pink-500/15 via-card to-pink-500/5 shadow-[0_0_20px_rgba(236,72,153,0.1)]">
           <div className="grid gap-6 px-5 py-6 sm:px-8 sm:py-8 lg:grid-cols-[1.3fr_0.7fr] lg:items-center">
             <div>
-              <p className="text-sm font-black uppercase tracking-[0.2em] text-rose-600 dark:text-rose-400">Support Us</p>
+              <p className="text-sm font-black uppercase tracking-[0.2em] text-pink-600 dark:text-pink-400">Support Us</p>
               <h3 className="mt-2 text-2xl font-black text-foreground sm:text-3xl">Help keep our platform running</h3>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
                 Your donations directly fund our server and domain maintenance costs. By contributing, you help us keep this vital emergency roadside assistance network completely free and available 24/7 for everyone who needs it.
               </p>
             </div>
-            <div className="flex flex-col gap-3 rounded-2xl border border-border bg-background/70 p-4 sm:p-5">
+            <div className="flex flex-col gap-3 rounded-2xl border border-pink-500/20 bg-background/80 p-4 sm:p-5 backdrop-blur">
               <p className="text-sm font-semibold text-foreground">Make a contribution</p>
               <p className="text-sm text-muted-foreground">
                 Any amount you provide goes a long way toward keeping our services online without interruptions.
               </p>
               <button
                 onClick={() => navigate('/donate')}
-                className="mt-2 inline-flex items-center justify-center rounded-2xl bg-rose-600 px-5 py-3 text-sm font-black text-white transition-colors hover:bg-rose-700"
+                className="mt-2 inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-pink-500 to-rose-500 px-5 py-3 text-sm font-black text-white transition-all hover:opacity-90 shadow-[0_0_15px_rgba(236,72,153,0.3)] hover:-translate-y-0.5"
               >
                 Donate Now
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Emergency Hub Section */}
+      <div className="mx-auto w-full max-w-7xl px-4 pt-2 pb-10 sm:px-8">
+        <div className="overflow-hidden rounded-3xl border border-orange-500/30 bg-gradient-to-br from-orange-500/15 via-card to-orange-500/5 shadow-[0_0_20px_rgba(249,115,22,0.1)]">
+          <div className="grid gap-6 px-5 py-6 sm:px-8 sm:py-8 lg:grid-cols-[1.3fr_0.7fr] lg:items-center">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <ShieldAlert className="w-5 h-5 text-orange-500" />
+                <p className="text-sm font-black uppercase tracking-[0.2em] text-orange-600 dark:text-orange-400">Emergency Hub</p>
+              </div>
+              <h3 className="text-2xl font-black text-foreground sm:text-3xl">Roadside Assistance & Emergency Numbers</h3>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
+                Find verified emergency contacts, national highway helplines, and 24/7 manufacturer roadside assistance (RSA) numbers for major car and bike brands across India.
+              </p>
+            </div>
+            <div className="flex flex-col gap-3 rounded-2xl border border-orange-500/20 bg-background/80 p-4 sm:p-5 backdrop-blur">
+              <p className="text-sm font-semibold text-foreground">Need urgent help?</p>
+              <p className="text-sm text-muted-foreground">
+                Quick access to police, ambulance, NHAI, and official service centers.
+              </p>
+              <button
+                onClick={() => navigate('/emergency')}
+                className="mt-2 inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 px-5 py-3 text-sm font-black text-white transition-all hover:opacity-90 shadow-[0_0_15px_rgba(249,115,22,0.3)] hover:-translate-y-0.5"
+              >
+                View Emergency Contacts
               </button>
             </div>
           </div>
@@ -102,6 +132,15 @@ export function InfoSections() {
                 If you are a mechanic, workshop, towing partner, or roadside service provider, you can submit your details here.
                 Search your current record first, or create a new request if you are not listed yet.
               </p>
+              <div className="mt-5 flex flex-col gap-1.5 p-4 bg-blue-50/50 dark:bg-blue-900/10 rounded-2xl border border-blue-200/50 dark:border-blue-800/30">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">🛡️</span>
+                  <h4 className="font-bold text-blue-900 dark:text-blue-100 text-sm sm:text-base">Get Verified Badge</h4>
+                </div>
+                <p className="text-sm text-blue-800 dark:text-blue-200">
+                  Build trust with users by getting the "Verified Shield". Verify your phone, location, shop photos, and identity to stand out and become a Premium Partner!
+                </p>
+              </div>
             </div>
             <div className="flex flex-col gap-3 rounded-2xl border border-border bg-background/70 p-4 sm:p-5">
               <p className="text-sm font-semibold text-foreground">What happens next?</p>
@@ -113,6 +152,12 @@ export function InfoSections() {
                 className="mt-2 inline-flex items-center justify-center rounded-2xl bg-primary px-5 py-3 text-sm font-black text-primary-foreground transition-colors hover:bg-primary/90"
               >
                 Create or Update Record
+              </button>
+              <button 
+                onClick={() => navigate('/verify-start')}
+                className="mt-1 inline-flex items-center justify-center rounded-2xl bg-blue-50 dark:bg-blue-900/30 px-5 py-3 text-sm font-black text-blue-700 dark:text-blue-300 transition-colors hover:bg-blue-100 dark:hover:bg-blue-900/50 border border-blue-200 dark:border-blue-800"
+              >
+                🛡️ Verify My Business
               </button>
             </div>
           </div>
@@ -173,7 +218,7 @@ export function InfoSections() {
             <p className="mb-8 text-muted-foreground max-w-2xl text-sm sm:text-base">
               Help us grow! Share RoadResQ with your network so they're never stranded on the road.
             </p>
-            <ShareButtons url="https://roadresq.in" title="RoadResQ - 24/7 Roadside Assistance in India" />
+            <ShareButtons url="https://roadresq.in" title="RoadResQ - 24/7 Roadside Assistance in Tamil Nadu" />
           </div>
         </div>
       </div>

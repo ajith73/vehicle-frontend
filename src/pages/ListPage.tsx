@@ -9,6 +9,7 @@ import { ListFiltersModal } from '../components/list/ListFiltersModal';
 import { MechanicListCard } from '../components/list/MechanicListCard';
 import { MechanicDetailsModal } from '../components/shared/MechanicDetailsModal';
 import { MechanicListSkeleton } from '../components/list/MechanicListSkeleton';
+import { SEO } from '../components/SEO';
 
 export default function ListPage() {
   const navigate = useNavigate();
@@ -224,6 +225,10 @@ export default function ListPage() {
 
   return (
     <div className="relative flex min-h-screen flex-col bg-background pb-20 sm:pb-0">
+      <SEO 
+        title="Find Mechanics Near You | RoadResQ"
+        description="Search and find top-rated vehicle mechanics, towing services, and roadside assistance nearby."
+      />
       <div className="sticky top-0 z-10 border-b border-border bg-card px-4 pt-6 pb-4 shadow-sm sm:px-8">
         <div className="mx-auto mb-4 flex w-full max-w-7xl items-center justify-between">
           <div className="flex items-center gap-3">

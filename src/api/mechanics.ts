@@ -8,6 +8,13 @@ export const updateMechanic = (id: number, data: any) => apiClient<{ message: st
 export const bulkUpdateMechanicsStatus = (ids: number[], status: string, remarks?: string) => apiClient<{ message: string }>('/admin/mechanics/bulk/status', { method: 'PUT', data: { ids, status, remarks } });
 export const deleteMechanic = (id: number) => apiClient<{ message: string }>((`/admin/mechanics/${id}`), { method: 'DELETE' });
 export const approveMechanic = (id: number) => apiClient<{ message: string }>((`/admin/mechanics/${id}/approve`), { method: 'POST' });
+export const updateVerification = (id: number, level: number, checklist: any) => apiClient<{ message: string, mechanic: Mechanic }>(`/admin/mechanics/${id}/verification`, { method: 'PUT', data: { verificationLevel: level, verificationChecklist: checklist } });
+
+
+export const getVerificationRequests = () => apiClient<any[]>('/admin/verifications');
+export const approveVerificationRequest = (id: number) => apiClient<{ message: string }>((`/admin/verifications/${id}/approve`), { method: 'POST' });
+export const rejectVerificationRequest = (id: number, remarks?: string) => apiClient<{ message: string }>((`/admin/verifications/${id}/reject`), { method: 'POST', data: { remarks } });
+export const deleteVerificationRequest = (id: number) => apiClient<{ message: string }>((`/admin/verifications/${id}`), { method: 'DELETE' });
 
 export const getUpdateRequests = () => apiClient<UpdateRequest[]>('/admin/update-requests');
 export const getUpdateRequestById = (id: number) => apiClient<UpdateRequest>(`/admin/update-requests/${id}`);

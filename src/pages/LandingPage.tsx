@@ -15,6 +15,7 @@ import { InfoSections } from '../components/landing/InfoSections';
 import { LocationPopup } from '../components/shared/LocationPopup';
 import { MechanicCardSkeleton } from '../components/landing/MechanicCardSkeleton';
 import { useTheme } from '../contexts/ThemeContext';
+import { SEO } from '../components/SEO';
 import toast from 'react-hot-toast';
 
 
@@ -166,6 +167,19 @@ export default function LandingPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-background relative pb-20 sm:pb-0">
+      <SEO 
+        schema={{
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          "name": "RoadResQ",
+          "url": "https://roadresq.in/",
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": "https://roadresq.in/list?search={search_term_string}",
+            "query-input": "required name=search_term_string"
+          }
+        }}
+      />
       <div className="relative flex flex-col items-center border-b border-border bg-card px-4 pt-6 pb-12 text-center shadow-sm sm:px-8">
         <div className="relative z-20 mb-6 flex w-full max-w-3xl flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2 shrink-0">
