@@ -175,6 +175,42 @@ export function MechanicDetailsModal({
             </div>
           </div>
 
+          {(() => {
+            const checklist = typeof selectedMechanicForDetails.verificationChecklist === 'string'
+              ? JSON.parse(selectedMechanicForDetails.verificationChecklist || '{}')
+              : (selectedMechanicForDetails.verificationChecklist || {});
+            
+            const servicesData = Object.entries(checklist).filter(([k]) => k.startsWith('Price -') || k.startsWith('Time -') || k === 'Specific Services' || k === 'Additional Service and Price' || k === 'Notes');
+
+            if (selectedMechanicForDetails.verificationLevel > 0 && servicesData.length > 0) {
+              return (
+                <div>
+                  <h4 className="mb-3 flex items-center gap-2 text-sm font-bold text-foreground">
+                    <Wrench size={16} className="text-primary" /> Service Pricing & Details
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {servicesData.map(([key, val]: any) => {
+                      const valStr = String(val);
+                      const items = valStr.includes(',') ? valStr.split(',').map(s => s.trim()).filter(Boolean) : [valStr];
+                      
+                      return (
+                        <div key={key} className="p-3 border border-border/30 rounded-xl bg-secondary/10 flex flex-col gap-2">
+                          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{key}</span>
+                          <div className="flex flex-col gap-1.5">
+                            {items.map((item, idx) => (
+                              <span key={idx} className="bg-background/80 px-2.5 py-1.5 rounded-lg font-medium text-xs text-foreground border border-border/50">{item}</span>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            }
+            return null;
+          })()}
+
           {(selectedMechanicForDetails.evSupport || selectedMechanicForDetails.is24Hours || selectedMechanicForDetails.homeService || selectedMechanicForDetails.roadsideAssistance || selectedMechanicForDetails.holidayWorking) && (
             <div>
               <h4 className="mb-3 flex items-center gap-2 text-sm font-bold text-foreground">

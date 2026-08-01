@@ -1,10 +1,9 @@
-import { useState, useEffect } from 'react';
-import { apiClient } from '../api/apiClient';
-import { CheckCircle, XCircle, Clock, Search, ShieldCheck, Eye, X, FileText, Phone, MapPin, Settings, Globe, ImageIcon, UserCircle, RefreshCw, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+import { CheckCircle, XCircle, Clock, Search, ShieldCheck, Eye, X, FileText, Phone, MapPin, Settings, Globe, ImageIcon, UserCircle, RefreshCw, Trash2, Building } from 'lucide-react';
 import toast from 'react-hot-toast';
-import * as api from '../api/mechanics';
 import type { Mechanic } from '../types';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { useVerificationRequests } from '../hooks/useVerificationRequests';
 
 interface VerificationRequestData {
   id: number;
@@ -19,12 +18,12 @@ interface VerificationRequestData {
 }
 
 export default function AdminVerificationRequests() {
-  const [requests, setRequests] = useState<VerificationRequestData[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { requests, loading, refetch, updateRequestStatus, deleteRequest } = useVerificationRequests();
   const [search, setSearch] = useState('');
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [viewModalData, setViewModalData] = useState<{ reqId: number, dataEntries: any[], proposedDetails: any, newUserId: any, mechanic?: Mechanic } | null>(null);
+  const [activeModalTab, setActiveModalTab] = useState<'profile' | 'business-docs' | 'common-info' | 'services' | 'account'>('profile');
   
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogConfig, setDialogConfig] = useState<{
@@ -57,22 +56,6 @@ export default function AdminVerificationRequests() {
     return String(value);
   };
 
-  const fetchRequests = async () => {
-    try {
-      const data = await api.getVerificationRequests();
-      setRequests(data);
-      setSelectedIds([]);
-    } catch (err) {
-      toast.error('Failed to load verification requests');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchRequests();
-  }, []);
-
   const confirmAction = (
     title: string, 
     message: string, 
@@ -88,21 +71,20 @@ export default function AdminVerificationRequests() {
   const handleApprove = async (id: number) => {
     const loadingToast = toast.loading('Approving request...');
     try {
-      await apiClient(`/admin/verifications/${id}/approve`, { method: 'POST' });
+      await updateRequestStatus(id, 'Approved');
       toast.success('Approved successfully', { id: loadingToast });
-      fetchRequests();
+      refetch();
     } catch (err: any) {
       toast.error(err.response?.data?.error || 'Failed to approve', { id: loadingToast });
     }
   };
 
   const handleReject = async (id: number, reason?: string) => {
-    if (!reason) return;
     const loadingToast = toast.loading('Rejecting request...');
     try {
-      await api.rejectVerificationRequest(id, reason);
+      await updateRequestStatus(id, 'Rejected', reason);
       toast.success('Rejected successfully', { id: loadingToast });
-      fetchRequests();
+      refetch();
     } catch (err: any) {
       toast.error(err.response?.data?.error || 'Failed to reject', { id: loadingToast });
     }
@@ -111,9 +93,9 @@ export default function AdminVerificationRequests() {
   const handleDelete = async (id: number) => {
     const loadingToast = toast.loading('Deleting request...');
     try {
-      await api.deleteVerificationRequest(id);
+      await deleteRequest(id);
       toast.success('Deleted successfully', { id: loadingToast });
-      fetchRequests();
+      refetch();
     } catch (err: any) {
       toast.error(err.response?.data?.error || 'Failed to delete', { id: loadingToast });
     }
@@ -122,9 +104,8 @@ export default function AdminVerificationRequests() {
   const handleBulkApprove = async () => {
     const loadingToast = toast.loading('Approving requests...');
     try {
-      await Promise.all(selectedIds.map(id => api.approveVerificationRequest(id)));
+      await Promise.all(selectedIds.map(id => updateRequestStatus(id, 'Approved')));
       toast.success('Approved successfully', { id: loadingToast });
-      fetchRequests();
     } catch (e) {
       toast.error('Failed to approve some requests', { id: loadingToast });
     }
@@ -134,9 +115,8 @@ export default function AdminVerificationRequests() {
     if (!reason) return;
     const loadingToast = toast.loading('Rejecting requests...');
     try {
-      await Promise.all(selectedIds.map(id => api.rejectVerificationRequest(id, reason)));
+      await Promise.all(selectedIds.map(id => updateRequestStatus(id, 'Rejected', reason)));
       toast.success('Rejected successfully', { id: loadingToast });
-      fetchRequests();
     } catch (e) {
       toast.error('Failed to reject some requests', { id: loadingToast });
     }
@@ -145,9 +125,8 @@ export default function AdminVerificationRequests() {
   const handleBulkDelete = async () => {
     const loadingToast = toast.loading('Deleting requests...');
     try {
-      await Promise.all(selectedIds.map(id => api.deleteVerificationRequest(id)));
+      await Promise.all(selectedIds.map(id => deleteRequest(id)));
       toast.success('Deleted successfully', { id: loadingToast });
-      fetchRequests();
     } catch (e) {
       toast.error('Failed to delete some requests', { id: loadingToast });
     }
@@ -213,11 +192,10 @@ export default function AdminVerificationRequests() {
             </select>
 
             <button 
-              onClick={fetchRequests}
-              className="p-2 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/80 transition-colors border border-border shrink-0"
-              title="Refresh"
+              onClick={refetch}
+              className="flex items-center gap-2 px-4 py-2 border border-border bg-card rounded-lg hover:bg-muted transition-colors font-medium"
             >
-              <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
+              <RefreshCw size={18} className={loading ? "animate-spin" : ""} /> Refresh
             </button>
 
             {selectedIds.length > 0 && userRole === 'Super Admin' && (
@@ -318,7 +296,10 @@ export default function AdminVerificationRequests() {
                       </td>
                       <td className="p-4 align-top">
                         <button 
-                          onClick={() => setViewModalData({ reqId: req.id, dataEntries, proposedDetails, newUserId, mechanic: req.Mechanic })}
+                          onClick={() => {
+                            setViewModalData({ reqId: req.id, dataEntries, proposedDetails, newUserId, mechanic: req.Mechanic });
+                            setActiveModalTab('profile');
+                          }}
                           className="flex items-center gap-2 text-primary hover:text-primary/80 bg-primary/10 px-3 py-1.5 rounded-lg transition-colors text-sm font-medium"
                         >
                           <Eye size={16} /> View Data
@@ -377,208 +358,363 @@ export default function AdminVerificationRequests() {
       </div>
 
       {/* View Data Modal */}
-      {viewModalData && (
+      {viewModalData && (() => {
+        const commonInfoKeys = ['Profile Photo Link', 'Location (GPS)', 'Emergency Contact', 'Languages Spoken'];
+        const commonInfo = viewModalData.dataEntries.filter(([k]: any) => commonInfoKeys.includes(k));
+        const servicesDataDocs = viewModalData.dataEntries.filter(([k]: any) => k.startsWith('Price -') || k.startsWith('Time -') || k === 'Specific Services' || k === 'Additional Service and Price' || k === 'Notes');
+        const businessDocs = viewModalData.dataEntries.filter(([k]: any) => !commonInfoKeys.includes(k) && !k.startsWith('Price -') && !k.startsWith('Time -') && k !== 'Specific Services' && k !== 'Additional Service and Price' && k !== 'Notes');
+        const data = viewModalData.proposedDetails || {};
+
+        return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
-          <div className="bg-card border border-border rounded-xl shadow-lg w-full max-w-2xl max-h-[80vh] flex flex-col animate-in fade-in zoom-in-95">
-            <div className="flex justify-between items-center p-4 border-b border-border">
-              <h2 className="text-lg font-bold">Submitted Documents & Info (Req #{viewModalData.reqId})</h2>
-              <button onClick={() => setViewModalData(null)} className="text-muted-foreground hover:text-foreground">
-                <X size={24} />
-              </button>
-            </div>
-            <div className="p-6 overflow-y-auto flex flex-col gap-6 text-sm">
-              <div className="flex flex-col gap-3">
-                <span className="font-bold text-foreground flex items-center gap-2 text-primary text-base">
-                  <FileText size={18} /> Uploaded Documents
-                </span>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {viewModalData.dataEntries.length === 0 ? (
-                    <span className="text-muted-foreground italic col-span-full bg-muted/20 p-4 rounded-xl border border-border/50">No document data provided</span>
-                  ) : (
-                  viewModalData.dataEntries.map(([key, val]: any) => (
-                    <div key={key} className="flex flex-col gap-1 p-4 bg-muted/20 border border-border/50 rounded-xl">
-                      <span className="font-medium text-muted-foreground text-xs uppercase tracking-wider">{key}</span>
-                      {val && typeof val === 'string' && val.startsWith('http') ? (
-                        <div className="mt-2">
-                          <a href={val} target="_blank" rel="noopener noreferrer" className="block w-full border border-border rounded-lg overflow-hidden hover:opacity-80 transition-opacity shadow-sm bg-muted relative group h-32">
-                            <img 
-                              src={val} 
-                              alt={key} 
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                e.currentTarget.style.display = 'none';
-                                e.currentTarget.parentElement?.querySelector('.fallback-icon')?.classList.remove('hidden');
-                              }}
-                            />
-                            <div className="fallback-icon hidden absolute inset-0 flex items-center justify-center text-muted-foreground">
-                              <FileText size={32} />
-                            </div>
-                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                              <span className="text-white font-medium flex items-center gap-2 bg-black/50 px-3 py-1.5 rounded-lg"><Eye size={16} /> View File</span>
-                            </div>
-                          </a>
-                        </div>
-                      ) : (
-                        <span className="text-foreground font-medium break-words mt-1">{String(val) || '-'}</span>
-                      )}
-                    </div>
-                  ))
-                )}
-                </div>
+          <div className="bg-card border border-border rounded-xl shadow-lg w-full max-w-4xl max-h-[80vh] flex flex-col md:flex-row animate-in fade-in zoom-in-95 overflow-hidden">
+            
+            {/* Sidebar Tabs */}
+            <div className="w-full md:w-64 bg-muted/10 border-r border-border shrink-0 flex flex-row md:flex-col overflow-x-auto md:overflow-x-visible">
+              <div className="p-4 border-b border-border hidden md:block">
+                <h2 className="text-lg font-bold">Request #{viewModalData.reqId}</h2>
               </div>
-              
-              {viewModalData.proposedDetails && Object.keys(viewModalData.proposedDetails).length > 0 && (
-                <div className="mt-4 pt-4 border-t border-border">
-                  <span className="font-bold text-foreground mb-3 flex items-center gap-2 text-primary text-base">
-                    <Eye size={18} /> Proposed Profile Updates
-                  </span>
-                  
-                  {(() => {
-                    const data = viewModalData.proposedDetails;
-                    return (
-                      <div className="flex flex-col gap-6">
-                        <div className="flex flex-col md:flex-row gap-6 items-start">
-                          {data.image && (
-                            <img
-                              src={data.image}
-                              alt={data.businessName || data.name || 'Mechanic'}
-                              className="w-full md:w-32 h-32 object-cover rounded-xl border border-border shadow-sm shrink-0"
-                            />
-                          )}
-                          {!data.image && (
-                            <div className="w-full md:w-32 h-32 rounded-xl border border-border bg-muted/20 flex items-center justify-center shrink-0">
-                              <ImageIcon className="h-8 w-8 text-muted-foreground/40" />
-                            </div>
-                          )}
+              <button
+                onClick={() => setActiveModalTab('profile')}
+                className={`flex items-center gap-3 px-6 py-4 font-bold text-sm transition-colors whitespace-nowrap md:whitespace-normal text-left ${
+                  activeModalTab === 'profile'
+                    ? 'bg-primary/10 text-primary border-b-2 md:border-b-0 md:border-l-4 border-primary' 
+                    : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground md:border-l-4 border-transparent'
+                }`}
+              >
+                <Building size={18} /> Profile
+              </button>
+              <button
+                onClick={() => setActiveModalTab('business-docs')}
+                className={`flex items-center gap-3 px-6 py-4 font-bold text-sm transition-colors whitespace-nowrap md:whitespace-normal text-left ${
+                  activeModalTab === 'business-docs'
+                    ? 'bg-primary/10 text-primary border-b-2 md:border-b-0 md:border-l-4 border-primary' 
+                    : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground md:border-l-4 border-transparent'
+                }`}
+              >
+                <FileText size={18} /> Business Docs
+              </button>
+              <button
+                onClick={() => setActiveModalTab('common-info')}
+                className={`flex items-center gap-3 px-6 py-4 font-bold text-sm transition-colors whitespace-nowrap md:whitespace-normal text-left ${
+                  activeModalTab === 'common-info'
+                    ? 'bg-primary/10 text-primary border-b-2 md:border-b-0 md:border-l-4 border-primary' 
+                    : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground md:border-l-4 border-transparent'
+                }`}
+              >
+                <ImageIcon size={18} /> Common Info
+              </button>
+              <button
+                onClick={() => setActiveModalTab('services')}
+                className={`flex items-center gap-3 px-6 py-4 font-bold text-sm transition-colors whitespace-nowrap md:whitespace-normal text-left ${
+                  activeModalTab === 'services'
+                    ? 'bg-primary/10 text-primary border-b-2 md:border-b-0 md:border-l-4 border-primary' 
+                    : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground md:border-l-4 border-transparent'
+                }`}
+              >
+                <Settings size={18} /> Services
+              </button>
+              {viewModalData.newUserId && (
+                <button
+                  onClick={() => setActiveModalTab('account')}
+                  className={`flex items-center gap-3 px-6 py-4 font-bold text-sm transition-colors whitespace-nowrap md:whitespace-normal text-left ${
+                    activeModalTab === 'account'
+                      ? 'bg-primary/10 text-primary border-b-2 md:border-b-0 md:border-l-4 border-primary' 
+                      : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground md:border-l-4 border-transparent'
+                  }`}
+                >
+                  <ShieldCheck size={18} /> Account Info
+                </button>
+              )}
+            </div>
 
-                          <div className="flex-1 space-y-2">
-                            <h3 className="text-xl font-bold text-foreground">{data.businessName || data.name || 'Mechanic Update'}</h3>
-                            {data.mechanicName && (
-                              <p className="text-muted-foreground font-medium flex items-center gap-2">
-                                <UserCircle size={16} /> Owner: {data.mechanicName}
-                              </p>
-                            )}
-                            <p className="inline-flex items-center gap-1 rounded bg-secondary px-2 py-1 text-xs font-bold text-secondary-foreground">
-                              {data.mechanicType || 'Mechanic Update'}
+            {/* Content Area */}
+            <div className="flex-1 flex flex-col min-w-0 max-h-[80vh]">
+              <div className="flex justify-between items-center p-4 border-b border-border bg-card">
+                <h2 className="text-lg font-bold md:hidden">Req #{viewModalData.reqId}</h2>
+                <div className="hidden md:block">
+                  <h3 className="font-bold text-foreground">
+                    {activeModalTab === 'profile' ? 'Profile Details' : 
+                     activeModalTab === 'business-docs' ? 'Business Documents' :
+                     activeModalTab === 'common-info' ? 'Common Info' :
+                     activeModalTab === 'services' ? 'Services & Operating Hours' :
+                     'Account Info'}
+                  </h3>
+                </div>
+                <button onClick={() => setViewModalData(null)} className="text-muted-foreground hover:text-foreground">
+                  <X size={24} />
+                </button>
+              </div>
+
+              <div className="p-6 overflow-y-auto flex-1 text-sm bg-card">
+                
+                {activeModalTab === 'profile' && (
+                  <div className="animate-in fade-in slide-in-from-right-4">
+                    <div className="flex flex-col gap-6">
+                      <div className="flex flex-col md:flex-row gap-6 items-start">
+                        {data.image && (
+                          <img
+                            src={data.image}
+                            alt={data.businessName || data.name || 'Mechanic'}
+                            className="w-full md:w-32 h-32 object-cover rounded-xl border border-border shadow-sm shrink-0"
+                          />
+                        )}
+                        {!data.image && (
+                          <div className="w-full md:w-32 h-32 rounded-xl border border-border bg-muted/20 flex items-center justify-center shrink-0">
+                            <ImageIcon className="h-8 w-8 text-muted-foreground/40" />
+                          </div>
+                        )}
+
+                        <div className="flex-1 space-y-2">
+                          <h3 className="text-xl font-bold text-foreground">{data.businessName || data.name || 'Mechanic Update'}</h3>
+                          {data.mechanicName && (
+                            <p className="text-muted-foreground font-medium flex items-center gap-2">
+                              <UserCircle size={16} /> Owner: {data.mechanicName}
                             </p>
-                            <p className="text-muted-foreground text-sm mt-1">{data.description || 'No description provided.'}</p>
+                          )}
+                          <p className="inline-flex items-center gap-1 rounded bg-secondary px-2 py-1 text-xs font-bold text-secondary-foreground">
+                            {data.mechanicType || 'Mechanic Update'}
+                          </p>
+                          <p className="text-muted-foreground text-sm mt-1">{data.description || 'No description provided.'}</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <div className="bg-muted/10 border border-border rounded-xl p-4 space-y-4">
+                          <h4 className="font-bold border-b border-border pb-2 flex items-center gap-2"><Phone size={16} className="text-primary" /> Contact & Web</h4>
+                          <div className="space-y-2 text-sm text-muted-foreground">
+                            {data.phone?.length > 0 ? data.phone.map((phone: any, index: number) => {
+                              const pVal = typeof phone === 'string' ? phone : (phone.number || '—');
+                              const isTel = typeof phone === 'object' && phone.isTelephone;
+                              const isWa = typeof phone === 'object' && phone.isWhatsapp;
+                              return (
+                                <p key={index}>
+                                  <span className="font-medium text-foreground">{isTel ? 'Tel:' : 'Phone:'}</span> {pVal}
+                                  {isWa && <span className="ml-1 text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-bold">WhatsApp</span>}
+                                </p>
+                              );
+                            }) : <p>No phone details provided.</p>}
+                            
+                            {data.emails?.length > 0 && data.emails.map((email: string, index: number) => (
+                              <p key={index}><span className="font-medium text-foreground">Email:</span> {email}</p>
+                            ))}
+                            {data.websiteUrl && (
+                              <a href={data.websiteUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1 mt-1">
+                                <Globe size={14} /> Visit Website
+                              </a>
+                            )}
+                          </div>
+
+                          <h4 className="font-bold border-b border-border pb-2 flex items-center gap-2 pt-2"><MapPin size={16} className="text-primary" /> Location</h4>
+                          <div className="space-y-2 text-sm text-muted-foreground">
+                            <p className="leading-relaxed">
+                              {formatValue(data.address)}<br />
+                              {data.landmark ? <>Landmark: {data.landmark}<br /></> : null}
+                              {data.pincode ? `Pincode: ${data.pincode}` : (data.area ? `Area: ${data.area}` : '')}<br />
+                              {formatValue(data.city)}, {formatValue(data.state)}
+                            </p>
+                            <div className="pt-1">
+                              <p className="text-[10px] text-muted-foreground font-mono bg-secondary px-2 py-1 rounded inline-block">
+                                Lat: {formatValue(data.latitude)} | Lng: {formatValue(data.longitude)}
+                              </p>
+                            </div>
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                          <div className="bg-muted/10 border border-border rounded-xl p-4 space-y-4">
-                            <h4 className="font-bold border-b border-border pb-2 flex items-center gap-2"><Phone size={16} className="text-primary" /> Contact & Web</h4>
-                            <div className="space-y-2 text-sm text-muted-foreground">
-                              {data.phone?.length > 0 ? data.phone.map((phone: any, index: number) => {
-                                const pVal = typeof phone === 'string' ? phone : (phone.number || '—');
-                                const isTel = typeof phone === 'object' && phone.isTelephone;
-                                const isWa = typeof phone === 'object' && phone.isWhatsapp;
-                                return (
-                                  <p key={index}>
-                                    <span className="font-medium text-foreground">{isTel ? 'Tel:' : 'Phone:'}</span> {pVal}
-                                    {isWa && <span className="ml-1 text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-bold">WhatsApp</span>}
-                                  </p>
-                                );
-                              }) : <p>No phone details provided.</p>}
-                              
-                              {data.emails?.length > 0 && data.emails.map((email: string, index: number) => (
-                                <p key={index}><span className="font-medium text-foreground">Email:</span> {email}</p>
-                              ))}
-                              {data.websiteUrl && (
-                                <a href={data.websiteUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1 mt-1">
-                                  <Globe size={14} /> Visit Website
-                                </a>
-                              )}
+                        <div className="bg-muted/10 border border-border rounded-xl p-4 space-y-4">
+                          <h4 className="font-bold border-b border-border pb-2 flex items-center gap-2"><Settings size={16} className="text-primary" /> Services & Features</h4>
+                          <div className="space-y-3">
+                            <div>
+                              <p className="font-semibold text-xs mb-1">Supported Vehicles</p>
+                              <div className="flex flex-wrap gap-1.5">
+                                {data.vehicleTypes?.length > 0
+                                  ? data.vehicleTypes.map((vehicle: string) => (
+                                      <span key={vehicle} className="px-2 py-0.5 bg-secondary text-secondary-foreground text-xs rounded font-medium">{vehicle}</span>
+                                    ))
+                                  : <span className="text-muted-foreground text-xs">N/A</span>}
+                              </div>
                             </div>
-
-                            <h4 className="font-bold border-b border-border pb-2 flex items-center gap-2 pt-2"><MapPin size={16} className="text-primary" /> Location</h4>
-                            <div className="space-y-2 text-sm text-muted-foreground">
-                              <p className="leading-relaxed">
-                                {formatValue(data.address)}<br />
-                                {data.landmark ? <>Landmark: {data.landmark}<br /></> : null}
-                                {data.pincode ? `Pincode: ${data.pincode}` : (data.area ? `Area: ${data.area}` : '')}<br />
-                                {formatValue(data.city)}, {formatValue(data.state)}
-                              </p>
-                              <div className="pt-1">
-                                <p className="text-[10px] text-muted-foreground font-mono bg-secondary px-2 py-1 rounded inline-block">
-                                  Lat: {formatValue(data.latitude)} | Lng: {formatValue(data.longitude)}
-                                </p>
+                            <div>
+                              <p className="font-semibold text-xs mb-1">Services Provided</p>
+                              <div className="flex flex-wrap gap-1.5">
+                                {data.serviceTypes?.length > 0
+                                  ? data.serviceTypes.map((service: string) => (
+                                      <span key={service} className="px-2 py-0.5 bg-secondary text-secondary-foreground text-xs rounded font-medium">{service}</span>
+                                    ))
+                                  : <span className="text-muted-foreground text-xs">N/A</span>}
+                              </div>
+                            </div>
+                            <div>
+                              <p className="font-semibold text-xs mb-1">Special Features</p>
+                              <div className="flex flex-wrap gap-2">
+                                {data.evSupport && <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded border border-blue-200">EV Support</span>}
+                                {data.homeService && <span className="text-[10px] font-bold text-purple-600 bg-purple-50 px-2 py-1 rounded border border-purple-200">Home Service</span>}
+                                {data.roadsideAssistance && <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-1 rounded border border-orange-200">Roadside Assistance</span>}
                               </div>
                             </div>
                           </div>
+                        </div>
 
-                          <div className="bg-muted/10 border border-border rounded-xl p-4 space-y-4">
-                            <h4 className="font-bold border-b border-border pb-2 flex items-center gap-2"><Settings size={16} className="text-primary" /> Services & Features</h4>
-                            <div className="space-y-3">
-                              <div>
-                                <p className="font-semibold text-xs mb-1">Supported Vehicles</p>
-                                <div className="flex flex-wrap gap-1.5">
-                                  {data.vehicleTypes?.length > 0
-                                    ? data.vehicleTypes.map((vehicle: string) => (
-                                        <span key={vehicle} className="px-2 py-0.5 bg-secondary text-secondary-foreground text-xs rounded font-medium">{vehicle}</span>
-                                      ))
-                                    : <span className="text-muted-foreground text-xs">N/A</span>}
-                                </div>
-                              </div>
-                              <div>
-                                <p className="font-semibold text-xs mb-1">Services Provided</p>
-                                <div className="flex flex-wrap gap-1.5">
-                                  {data.serviceTypes?.length > 0
-                                    ? data.serviceTypes.map((service: string) => (
-                                        <span key={service} className="px-2 py-0.5 bg-secondary text-secondary-foreground text-xs rounded font-medium">{service}</span>
-                                      ))
-                                    : <span className="text-muted-foreground text-xs">N/A</span>}
-                                </div>
-                              </div>
-                              <div>
-                                <p className="font-semibold text-xs mb-1">Special Features</p>
-                                <div className="flex flex-wrap gap-2">
-                                  {data.evSupport && <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded border border-blue-200">EV Support</span>}
-                                  {data.homeService && <span className="text-[10px] font-bold text-purple-600 bg-purple-50 px-2 py-1 rounded border border-purple-200">Home Service</span>}
-                                  {data.roadsideAssistance && <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-1 rounded border border-orange-200">Roadside Assistance</span>}
-                                </div>
-                              </div>
-                            </div>
-
-                            <h4 className="font-bold border-b border-border pb-2 flex items-center gap-2 pt-2"><Clock size={16} className="text-primary" /> Operating Hours</h4>
-                            <div className="space-y-2 text-sm text-muted-foreground">
-                              <p>
-                                <span className="font-semibold block text-foreground">Working Days:</span>
-                                {data.operatingDays?.join(', ') || 'N/A'}
-                              </p>
-                              <p>
-                                <span className="font-semibold block text-foreground">Timings:</span>
-                                {formatValue(data.operatingHours)}
-                              </p>
-                              <p>
-                                <span className="font-semibold block text-foreground">Coverage Radius:</span>
-                                {data.serviceRadius ? `${data.serviceRadius} km` : 'Not specified'}
-                              </p>
-                            </div>
+                        <div className="bg-muted/10 border border-border rounded-xl p-4 space-y-4">
+                          <h4 className="font-bold border-b border-border pb-2 flex items-center gap-2"><Clock size={16} className="text-primary" /> Operating Hours</h4>
+                          <div className="space-y-2 text-sm text-muted-foreground">
+                            <p>
+                              <span className="font-semibold block text-foreground">Working Days:</span>
+                              {data.operatingDays?.join(', ') || 'N/A'}
+                            </p>
+                            <p>
+                              <span className="font-semibold block text-foreground">Timings:</span>
+                              {formatValue(data.operatingHours)}
+                            </p>
+                            <p>
+                              <span className="font-semibold block text-foreground">Coverage Radius:</span>
+                              {data.serviceRadius ? `${data.serviceRadius} km` : 'Not specified'}
+                            </p>
                           </div>
                         </div>
                       </div>
-                    );
-                  })()}
-                </div>
-              )}
+                    </div>
+                  </div>
+                )}
 
-              {viewModalData.newUserId && (
-                <div className="mt-2 pt-2 border-t border-border">
-                  <span className="font-bold text-blue-500 flex items-center gap-2 text-base">
-                    <ShieldCheck size={16} /> Claiming Account ID: {viewModalData.newUserId}
-                  </span>
-                </div>
-              )}
-            </div>
-            <div className="p-4 border-t border-border flex justify-end bg-muted/20">
-              <button onClick={() => setViewModalData(null)} className="px-4 py-2 bg-muted text-foreground font-medium rounded-lg border border-border hover:bg-muted/80 transition-colors">
-                Close
-              </button>
+                {activeModalTab === 'business-docs' && (
+                  <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-right-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {businessDocs.length === 0 ? (
+                        <span className="text-muted-foreground italic col-span-full bg-muted/20 p-4 rounded-xl border border-border/50">No business documents provided</span>
+                      ) : (
+                        businessDocs.map(([key, val]: any) => (
+                          <div key={key} className="flex flex-col gap-1 p-4 bg-muted/20 border border-border/50 rounded-xl">
+                            <span className="font-medium text-muted-foreground text-xs uppercase tracking-wider">{key}</span>
+                            {val && typeof val === 'string' && val.startsWith('http') ? (
+                              <div className="mt-2">
+                                <a href={val} target="_blank" rel="noopener noreferrer" className="block w-full border border-border rounded-lg overflow-hidden hover:opacity-80 transition-opacity shadow-sm bg-muted relative group h-32">
+                                  <img 
+                                    src={val} 
+                                    alt={key} 
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = 'none';
+                                      e.currentTarget.parentElement?.querySelector('.fallback-icon')?.classList.remove('hidden');
+                                    }}
+                                  />
+                                  <div className="fallback-icon hidden absolute inset-0 flex items-center justify-center text-muted-foreground">
+                                    <FileText size={32} />
+                                  </div>
+                                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                    <span className="text-white font-medium flex items-center gap-2 bg-black/50 px-3 py-1.5 rounded-lg"><Eye size={16} /> View File</span>
+                                  </div>
+                                </a>
+                              </div>
+                            ) : (
+                              <span className="text-foreground font-medium break-words mt-1">{String(val) || '-'}</span>
+                            )}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {activeModalTab === 'common-info' && (
+                  <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-right-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {commonInfo.length === 0 ? (
+                        <span className="text-muted-foreground italic col-span-full bg-muted/20 p-4 rounded-xl border border-border/50">No common info provided</span>
+                      ) : (
+                        commonInfo.map(([key, val]: any) => (
+                          <div key={key} className="flex flex-col gap-1 p-4 bg-muted/20 border border-border/50 rounded-xl">
+                            <span className="font-medium text-muted-foreground text-xs uppercase tracking-wider">{key}</span>
+                            {key === 'Location (GPS)' && val && typeof val === 'string' && val.startsWith('http') ? (
+                              <div className="mt-2">
+                                <a href={val} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-primary/10 text-primary border border-primary/20 px-4 py-2 rounded-lg font-bold hover:bg-primary hover:text-primary-foreground transition-colors">
+                                  <MapPin size={18} /> Open in Maps
+                                </a>
+                              </div>
+                            ) : val && typeof val === 'string' && val.startsWith('http') ? (
+                              <div className="mt-2">
+                                <a href={val} target="_blank" rel="noopener noreferrer" className="block w-full border border-border rounded-lg overflow-hidden hover:opacity-80 transition-opacity shadow-sm bg-muted relative group h-32">
+                                  <img 
+                                    src={val} 
+                                    alt={key} 
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = 'none';
+                                      e.currentTarget.parentElement?.querySelector('.fallback-icon')?.classList.remove('hidden');
+                                    }}
+                                  />
+                                  <div className="fallback-icon hidden absolute inset-0 flex items-center justify-center text-muted-foreground">
+                                    <FileText size={32} />
+                                  </div>
+                                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                    <span className="text-white font-medium flex items-center gap-2 bg-black/50 px-3 py-1.5 rounded-lg"><Eye size={16} /> View File</span>
+                                  </div>
+                                </a>
+                              </div>
+                            ) : (
+                              <span className="text-foreground font-medium break-words mt-1">{String(val) || '-'}</span>
+                            )}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {activeModalTab === 'services' && (
+                  <div className="animate-in fade-in slide-in-from-right-4">
+                    <div className="grid grid-cols-1 gap-4">
+                      {servicesDataDocs.length > 0 ? (
+                        <div className="bg-muted/10 border border-border rounded-xl p-4 space-y-4">
+                          <h4 className="font-bold border-b border-border pb-2 flex items-center gap-2"><FileText size={16} className="text-primary" /> Service Pricing & Details</h4>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {servicesDataDocs.map(([key, val]: any) => (
+                              <div key={key} className="flex flex-col gap-1 p-3 bg-muted/20 border border-border/50 rounded-xl">
+                                <span className="font-medium text-muted-foreground text-xs uppercase tracking-wider">{key}</span>
+                                {key === 'Additional Service and Price' && typeof val === 'string' ? (
+                                  <div className="flex flex-col gap-1 mt-1">
+                                    {val.split(',').map((service, index) => (
+                                      <span key={index} className="text-foreground font-medium break-words bg-secondary/50 px-2 py-1 rounded text-sm">{service.trim()}</span>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <span className="text-foreground font-medium break-words mt-1">{String(val) || '-'}</span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground italic col-span-full bg-muted/20 p-4 rounded-xl border border-border/50">No service pricing details provided</span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {activeModalTab === 'account' && viewModalData.newUserId && (
+                  <div className="animate-in fade-in slide-in-from-right-4">
+                    <div className="bg-muted/10 border border-border rounded-xl p-6 flex flex-col items-center text-center">
+                      <ShieldCheck size={48} className="text-blue-500 mb-4" />
+                      <h3 className="text-xl font-bold mb-2">Claiming Account</h3>
+                      <p className="text-muted-foreground mb-4">This request aims to bind the following user ID as the owner.</p>
+                      <span className="text-xl font-mono bg-blue-500/10 text-blue-600 px-4 py-2 rounded-lg font-bold border border-blue-500/20">
+                        User ID: {viewModalData.newUserId}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+              </div>
+              <div className="p-4 border-t border-border flex justify-end bg-muted/10">
+                <button onClick={() => setViewModalData(null)} className="px-6 py-2 bg-primary text-primary-foreground font-bold rounded-lg hover:bg-primary/90 transition-colors">
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       <ConfirmDialog 
         isOpen={dialogOpen}

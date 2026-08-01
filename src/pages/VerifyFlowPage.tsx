@@ -7,97 +7,7 @@ import { apiClient } from '../api/apiClient';
 import type { Mechanic } from '../types';
 import toast from 'react-hot-toast';
 
-const MECHANIC_DOCS_CONFIG: Record<string, { mandatory: string[], optional: string[] }> = {
-  'Individual Mechanic': {
-    mandatory: ['Aadhaar / DL / Voter ID Link', 'Selfie Photo Link', 'Current Address'],
-    optional: ['Experience Certificate Link', 'Mechanic ID Card Link', 'Profile Photo Link']
-  },
-  'Workshop / Garage': {
-    mandatory: ['Owner ID Proof Link', 'Shop Photo (Front View) Link', 'Shop Address'],
-    optional: ['GST Certificate Link', 'Shop Registration Link', 'Trade License Link', 'Inside Shop Photos Link', 'Business Logo Link']
-  },
-  'Authorized Service Center': {
-    mandatory: ['Owner/Manager ID Link', 'Shop Front Photo Link', 'Official Brand Name'],
-    optional: ['Brand Authorization Certificate Link', 'GST Certificate Link', 'Business Registration Link', 'Trade License Link']
-  },
-  'Mobile Mechanic': {
-    mandatory: ['Aadhaar / Driving License Link', 'Selfie Link', 'Vehicle Photo Link', 'Vehicle Registration (RC) Link'],
-    optional: ['Experience Proof Link', 'Tool Kit Photos Link', 'Police Verification Certificate Link']
-  },
-  'Towing Company': {
-    mandatory: ['Company/Owner ID Link', 'Tow Truck Photo Link', 'RC Book of Tow Vehicle Link', 'Driving License Link'],
-    optional: ['Commercial Vehicle Permit Link', 'Insurance Certificate Link', 'GST Link', 'Fleet Photos Link']
-  },
-  'Fuel Delivery Partner': {
-    mandatory: ['Owner ID Link', 'Delivery Vehicle Photo Link', 'Vehicle RC Link'],
-    optional: ['Petroleum License Link', 'Business Registration Link', 'GST Link', 'Insurance Link']
-  }
-};
-
-const INDIAN_LANGUAGES = [
-  { value: 'Hindi', label: 'Hindi' },
-  { value: 'English', label: 'English' },
-  { value: 'Tamil', label: 'Tamil' },
-  { value: 'Telugu', label: 'Telugu' },
-  { value: 'Kannada', label: 'Kannada' },
-  { value: 'Malayalam', label: 'Malayalam' },
-  { value: 'Marathi', label: 'Marathi' },
-  { value: 'Bengali', label: 'Bengali' },
-  { value: 'Gujarati', label: 'Gujarati' },
-  { value: 'Punjabi', label: 'Punjabi' },
-  { value: 'Urdu', label: 'Urdu' }
-];
-
-const getSelectStyles = (hasError = false) => ({
-  control: (base: any, state: any) => ({
-    ...base,
-    minHeight: 42,
-    backgroundColor: 'hsl(var(--background))',
-    borderColor: hasError ? '#ef4444' : (state.isFocused ? 'hsl(var(--primary))' : 'hsl(var(--border))'),
-    boxShadow: hasError
-      ? '0 0 0 1px rgba(239, 68, 68, 0.5)'
-      : (state.isFocused ? '0 0 0 2px color-mix(in srgb, hsl(var(--primary)) 18%, transparent)' : 'none'),
-    '&:hover': {
-      borderColor: hasError ? '#ef4444' : (state.isFocused ? 'hsl(var(--primary))' : 'hsl(var(--border))')
-    }
-  }),
-  menu: (base: any) => ({
-    ...base,
-    backgroundColor: 'hsl(var(--card))',
-    color: 'hsl(var(--foreground))',
-    zIndex: 90
-  }),
-  option: (base: any, state: any) => ({
-    ...base,
-    backgroundColor: state.isFocused ? 'color-mix(in srgb, hsl(var(--primary)) 12%, hsl(var(--card)))' : 'hsl(var(--card))',
-    color: 'hsl(var(--foreground))'
-  }),
-  multiValue: (base: any) => ({
-    ...base,
-    backgroundColor: 'hsl(var(--primary))',
-    borderRadius: '4px'
-  }),
-  multiValueLabel: (base: any) => ({
-    ...base,
-    color: 'hsl(var(--primary-foreground))'
-  }),
-  multiValueRemove: (base: any) => ({
-    ...base,
-    color: 'hsl(var(--primary-foreground))',
-    ':hover': {
-      backgroundColor: 'hsl(var(--destructive))',
-      color: 'hsl(var(--destructive-foreground))'
-    }
-  }),
-  singleValue: (base: any) => ({
-    ...base,
-    color: 'hsl(var(--foreground))'
-  }),
-  input: (base: any) => ({
-    ...base,
-    color: 'hsl(var(--foreground))'
-  })
-});
+import { MECHANIC_DOCS_CONFIG, INDIAN_LANGUAGES, getSelectStyles } from '../config/verifyConfig';
 
 const COMMON_FIELDS = [
   'Profile Photo Link',
@@ -140,7 +50,7 @@ export default function VerifyFlowPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  const { accountEmail, accountPassword, initialStep } = location.state || {};
+  const { accountEmail, accountPassword, initialStep, singleEdit } = location.state || {};
   
   const [mechanic, setMechanic] = useState<Mechanic | null>(null);
   const [loading, setLoading] = useState(true);
@@ -181,15 +91,17 @@ export default function VerifyFlowPage() {
         if (mechanicData.pendingVerification) {
           const pv = mechanicData.pendingVerification;
           setVerificationId(pv.id);
-          const sData = pv.submittedData || {};
+          const sData = { ...(mechanicData.verificationChecklist || {}), ...(pv.submittedData || {}) };
           setSubmittedData(sData);
           if (sData.__mechanicDetails) {
             setMechanicDetailsPayload(sData.__mechanicDetails);
             Object.assign(mechanicData, sData.__mechanicDetails);
           }
-          if (pv.id) {
+          if (pv.id && !initialStep) {
             setCurrentStep(2);
           }
+        } else if (mechanicData.verificationChecklist) {
+          setSubmittedData(mechanicData.verificationChecklist);
         }
         
         setMechanic(mechanicData);
@@ -211,6 +123,78 @@ export default function VerifyFlowPage() {
 
   const handleFieldChange = (field: string, value: string) => {
     setSubmittedData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSingleEditSubmit = async () => {
+    const newErrors: Record<string, string> = {};
+
+    if (currentStep === 2) {
+      const missingMandatory = typeConfig.mandatory.filter((field: string) => !submittedData[field] || submittedData[field].trim() === '');
+      const missingOptional = selectedOptionalDocs.map((o: any) => o.value).filter((field: string) => !submittedData[field] || submittedData[field].trim() === '');
+      const missing = [...missingMandatory, ...missingOptional];
+      missing.forEach(m => newErrors[m] = 'Required');
+
+      const isValidUrl = (string: string) => { try { new URL(string.includes('://') ? string : `https://${string}`); return string.includes('.') && string.trim().length > 4; } catch (_) { return false; } };
+      const allFields = [...typeConfig.mandatory, ...selectedOptionalDocs.map((o: any) => o.value)];
+      allFields.forEach((field: string) => {
+        if (field.includes('Link')) {
+          const val = submittedData[field];
+          if (val && !isValidUrl(val.trim())) newErrors[field] = 'Invalid URL';
+        }
+      });
+    } else if (currentStep === 3) {
+      const missingCommon = COMMON_FIELDS.filter(f => !submittedData[f] || submittedData[f].trim() === '');
+      missingCommon.forEach(m => newErrors[m] = 'Required');
+      const isValidUrl = (string: string) => { try { new URL(string.includes('://') ? string : `https://${string}`); return string.includes('.') && string.trim().length > 4; } catch (_) { return false; } };
+      if (submittedData['Profile Photo Link'] && !isValidUrl(submittedData['Profile Photo Link'])) newErrors['Profile Photo Link'] = 'Invalid URL';
+      const emergencyContact = submittedData['Emergency Contact']?.trim() || '';
+      if (emergencyContact && !/^\d{10}$/.test(emergencyContact)) newErrors['Emergency Contact'] = 'Invalid phone';
+      const location = submittedData['Location (GPS)']?.trim() || '';
+      if (location && !/^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/.test(location) && !isValidUrl(location)) newErrors['Location (GPS)'] = 'Invalid GPS format or URL';
+    } else if (currentStep === 4) {
+      const val = submittedData['Specific Services'];
+      const selectedServices = Array.isArray(val) ? val : (val || '').split(', ').filter(Boolean);
+      if (selectedServices.length === 0) newErrors['Specific Services'] = 'Please select at least one service';
+      selectedServices.forEach(serviceName => {
+        const priceKey = `Price - ${serviceName}`;
+        if (!submittedData[priceKey] || submittedData[priceKey].trim() === '') newErrors[priceKey] = 'Price is required';
+      });
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      toast.error('Please fix the highlighted fields.');
+      return;
+    }
+    setErrors({});
+
+    setSubmitting(true);
+    try {
+      if (verificationId) {
+        await apiClient(`/public/mechanics/${id}/submit-verification/${verificationId}`, {
+          method: 'PUT',
+          data: { submittedData, isFinalSubmit: false }
+        });
+      } else {
+        await apiClient(`/public/mechanics/${id}/submit-verification`, {
+          method: 'POST',
+          data: { 
+            submittedData,
+            mechanicDetails: mechanicDetailsPayload,
+            accountInfo: (accountEmail && accountPassword) ? {
+              email: accountEmail,
+              password: accountPassword
+            } : undefined
+          }
+        });
+      }
+      toast.success('Updated successfully!');
+      navigate(`/mechanic-dashboard/${id}`);
+    } catch (err) {
+      toast.error('Failed to update.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleNext = async () => {
@@ -287,8 +271,8 @@ export default function VerifyFlowPage() {
       }
 
       const location = submittedData['Location (GPS)']?.trim() || '';
-      if (location && !/^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/.test(location)) {
-        newErrors['Location (GPS)'] = 'Invalid GPS format';
+      if (location && !/^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/.test(location) && !isValidUrl(location)) {
+        newErrors['Location (GPS)'] = 'Invalid GPS format or URL';
       }
 
       if (Object.keys(newErrors).length > 0) {
@@ -321,6 +305,10 @@ export default function VerifyFlowPage() {
     const val = submittedData['Specific Services'];
     const selectedServices = Array.isArray(val) ? val : (val || '').split(', ').filter(Boolean);
     const newErrors: Record<string, string> = {};
+
+    if (selectedServices.length === 0) {
+      newErrors['Specific Services'] = 'Please select at least one service';
+    }
 
     selectedServices.forEach(serviceName => {
       const priceKey = `Price - ${serviceName}`;
@@ -399,8 +387,9 @@ export default function VerifyFlowPage() {
 
         <div className="bg-card border border-border rounded-2xl p-6 sm:p-10 shadow-sm">
           {/* Progress Bar */}
-          <div className="mb-10">
-            <div className="flex items-center justify-between relative z-10">
+          {!singleEdit && (
+            <div className="mb-10">
+              <div className="flex items-center justify-between relative z-10">
               {[
                 { step: 1, label: 'Contact', icon: ShieldCheck },
                 { step: 2, label: 'Business Docs', icon: FileText },
@@ -419,6 +408,7 @@ export default function VerifyFlowPage() {
               </div>
             </div>
           </div>
+          )}
 
           <h2 className="text-2xl font-black mb-2">
             Verify {mechanic.businessName || mechanic.name}
@@ -432,23 +422,38 @@ export default function VerifyFlowPage() {
                 isEdit={true}
                 isModal={true}
                 initialData={mechanic}
-                submitButtonText="Proceed to Documents"
+                submitButtonText={singleEdit ? "Update Profile" : "Proceed to Documents"}
                 onSubmitOverride={async (payload) => {
                   setSubmitting(true);
                   try {
-                    const res = await apiClient<any>(`/public/mechanics/${id}/submit-verification`, {
-                      method: 'POST',
-                      data: { 
-                        mechanicDetails: payload,
-                        accountInfo: (accountEmail && accountPassword) ? {
-                          email: accountEmail,
-                          password: accountPassword
-                        } : undefined
-                      }
-                    });
-                    setVerificationId(res.verification.id);
-                    setMechanicDetailsPayload(payload);
-                    setCurrentStep(2);
+                    let newVerificationId = verificationId;
+                    if (verificationId) {
+                      await apiClient(`/public/mechanics/${id}/submit-verification/${verificationId}`, {
+                        method: 'PUT',
+                        data: { submittedData, mechanicDetails: payload }
+                      });
+                    } else {
+                      const res = await apiClient<any>(`/public/mechanics/${id}/submit-verification`, {
+                        method: 'POST',
+                        data: { 
+                          mechanicDetails: payload,
+                          accountInfo: (accountEmail && accountPassword) ? {
+                            email: accountEmail,
+                            password: accountPassword
+                          } : undefined
+                        }
+                      });
+                      newVerificationId = res.verification.id;
+                    }
+                    
+                    if (singleEdit) {
+                      toast.success('Profile updated successfully!');
+                      navigate(`/mechanic-dashboard/${id}`);
+                    } else {
+                      setVerificationId(newVerificationId);
+                      setMechanicDetailsPayload(payload);
+                      setCurrentStep(2);
+                    }
                   } catch (err) {
                     toast.error('Failed to save mechanic details.');
                   } finally {
@@ -489,17 +494,20 @@ export default function VerifyFlowPage() {
               </div>
 
               <div className="flex gap-4 pt-4">
+                {!singleEdit && (
+                  <button 
+                    onClick={() => setCurrentStep(1)}
+                    className="flex-1 py-4 border border-border text-foreground font-bold rounded-xl hover:bg-muted transition-colors"
+                  >
+                    Back
+                  </button>
+                )}
                 <button 
-                  onClick={() => setCurrentStep(1)}
-                  className="flex-1 py-4 border border-border text-foreground font-bold rounded-xl hover:bg-muted transition-colors"
+                  onClick={singleEdit ? handleSingleEditSubmit : handleNext}
+                  disabled={submitting}
+                  className={`${singleEdit ? 'flex-1 bg-primary text-primary-foreground hover:bg-primary/90' : 'flex-[2] bg-foreground text-background hover:bg-foreground/90'} py-4 font-bold rounded-xl flex items-center justify-center gap-2 transition-transform active:scale-[0.99] disabled:opacity-50`}
                 >
-                  Back
-                </button>
-                <button 
-                  onClick={handleNext}
-                  className="flex-[2] py-4 bg-foreground text-background font-bold rounded-xl hover:bg-foreground/90 flex items-center justify-center gap-2 transition-transform active:scale-[0.99]"
-                >
-                  Next Step <ChevronRight size={20} />
+                  {submitting ? <Loader2 className="w-6 h-6 animate-spin" /> : singleEdit ? 'Update Documents' : <>Next Step <ChevronRight size={20} /></>}
                 </button>
               </div>
             </div>
@@ -520,7 +528,7 @@ export default function VerifyFlowPage() {
                   if (field === 'Location (GPS)') {
                     return (
                       <div key={field}>
-                        <label className="block text-sm font-medium mb-1">{field}</label>
+                        <label className="block text-sm font-medium mb-1">{field} <span className="text-red-500">*</span></label>
                         <div className="relative">
                           <input 
                             type="text" 
@@ -539,7 +547,7 @@ export default function VerifyFlowPage() {
                                 toast.loading('Getting location...', { id: 'geo' });
                                 navigator.geolocation.getCurrentPosition(
                                   (pos) => {
-                                    handleFieldChange(field, `${pos.coords.latitude}, ${pos.coords.longitude}`);
+                                    handleFieldChange(field, `https://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}`);
                                     toast.success('Location acquired!', { id: 'geo' });
                                   },
                                   () => toast.error('Failed to get location', { id: 'geo' })
@@ -560,7 +568,7 @@ export default function VerifyFlowPage() {
                   if (field === 'Emergency Contact') {
                     return (
                       <div key={field}>
-                        <label className="block text-sm font-medium mb-1">{field}</label>
+                        <label className="block text-sm font-medium mb-1">{field} <span className="text-red-500">*</span></label>
                         <div className={`flex items-center rounded-xl bg-background border focus-within:ring-2 overflow-hidden transition-all ${errors[field] ? 'border-red-500 focus-within:border-red-500 focus-within:ring-red-500/20 ring-1 ring-red-500/50' : 'border-border focus-within:border-primary focus-within:ring-primary/20'}`}>
                           <span className={`px-4 font-medium border-r ${errors[field] ? 'text-red-500 border-red-500' : 'text-muted-foreground border-border'}`}>+91</span>
                           <input 
@@ -582,7 +590,7 @@ export default function VerifyFlowPage() {
                   if (field === 'Languages Spoken') {
                     return (
                       <div key={field}>
-                        <label className="block text-sm font-medium mb-1">{field}</label>
+                        <label className="block text-sm font-medium mb-1">{field} <span className="text-red-500">*</span></label>
                         <Select
                           isMulti
                           options={INDIAN_LANGUAGES}
@@ -598,23 +606,25 @@ export default function VerifyFlowPage() {
                       </div>
                     );
                   }
-                  return renderInput(field, false);
+                  return renderInput(field, true);
                 })}
               </div>
 
               <div className="flex gap-4 pt-4">
+                {!singleEdit && (
+                  <button 
+                    onClick={() => setCurrentStep(2)}
+                    className="flex-1 py-4 border border-border text-foreground font-bold rounded-xl hover:bg-muted transition-colors"
+                  >
+                    Back
+                  </button>
+                )}
                 <button 
-                  onClick={() => setCurrentStep(2)}
-                  className="flex-1 py-4 border border-border text-foreground font-bold rounded-xl hover:bg-muted transition-colors"
-                >
-                  Back
-                </button>
-                <button 
-                  onClick={handleNext}
+                  onClick={singleEdit ? handleSingleEditSubmit : handleNext}
                   disabled={submitting}
-                  className="flex-[2] py-4 bg-foreground text-background font-bold rounded-xl hover:bg-foreground/90 flex items-center justify-center gap-2 transition-transform active:scale-[0.99] disabled:opacity-50"
+                  className={`${singleEdit ? 'flex-1 bg-primary text-primary-foreground hover:bg-primary/90' : 'flex-[2] bg-foreground text-background hover:bg-foreground/90'} py-4 font-bold rounded-xl flex items-center justify-center gap-2 transition-transform active:scale-[0.99] disabled:opacity-50`}
                 >
-                  {submitting ? <Loader2 className="w-6 h-6 animate-spin" /> : <>Next Step <ChevronRight size={20} /></>}
+                  {submitting ? <Loader2 className="w-6 h-6 animate-spin" /> : singleEdit ? 'Update Info' : <>Next Step <ChevronRight size={20} /></>}
                 </button>
               </div>
             </div>
@@ -632,7 +642,7 @@ export default function VerifyFlowPage() {
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Specific Services</label>
+                  <label className="block text-sm font-medium mb-1">Specific Services <span className="text-red-500">*</span></label>
                   <Select
                     isMulti
                     options={specificServicesList}
@@ -641,10 +651,14 @@ export default function VerifyFlowPage() {
                       const arr = Array.isArray(val) ? val : (val || '').split(', ').filter(Boolean);
                       return arr.includes(s.value);
                     })}
-                    onChange={(selected: any) => handleFieldChange('Specific Services', (selected || []).map((s: any) => s.value).join(', '))}
-                    styles={getSelectStyles()}
+                    onChange={(selected: any) => {
+                      handleFieldChange('Specific Services', (selected || []).map((s: any) => s.value).join(', '));
+                      if (errors['Specific Services']) setErrors(prev => ({...prev, 'Specific Services': ''}));
+                    }}
+                    styles={getSelectStyles(!!errors['Specific Services'])}
                     placeholder="Select specific services..."
                   />
+                  {errors['Specific Services'] && <p className="text-red-500 text-xs mt-1">{errors['Specific Services']}</p>}
                 </div>
                 
                 {/* Dynamic Price Inputs for Selected Services */}
@@ -694,19 +708,20 @@ export default function VerifyFlowPage() {
               </div>
 
               <div className="flex gap-4 pt-4">
+                {!singleEdit && (
+                  <button 
+                    onClick={() => setCurrentStep(3)}
+                    className="flex-1 py-4 border border-border text-foreground font-bold rounded-xl hover:bg-muted transition-colors"
+                  >
+                    Back
+                  </button>
+                )}
                 <button 
-                  onClick={() => setCurrentStep(3)}
-                  className="flex-1 py-4 border border-border text-foreground font-bold rounded-xl hover:bg-muted transition-colors"
-                >
-                  Back
-                </button>
-                <button 
-                  onClick={handleSubmit}
+                  onClick={singleEdit ? handleSingleEditSubmit : handleSubmit}
                   disabled={submitting}
-                  className="flex-[2] py-4 bg-primary text-primary-foreground font-bold rounded-xl hover:bg-primary/90 flex items-center justify-center gap-2 transition-transform active:scale-[0.99] disabled:opacity-50"
+                  className={`${singleEdit ? 'flex-1' : 'flex-[2]'} py-4 bg-primary text-primary-foreground font-bold rounded-xl hover:bg-primary/90 flex items-center justify-center gap-2 transition-transform active:scale-[0.99] disabled:opacity-50`}
                 >
-                  {submitting ? <Loader2 className="w-6 h-6 animate-spin" /> : <ShieldCheck size={24} />}
-                  {submitting ? 'Submitting...' : 'Submit Verification'}
+                  {submitting ? <Loader2 className="w-6 h-6 animate-spin" /> : (singleEdit ? 'Update Services' : <><ShieldCheck size={24} /> Submit Verification</>)}
                 </button>
               </div>
             </div>

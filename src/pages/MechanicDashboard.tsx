@@ -39,7 +39,7 @@ export default function MechanicDashboard() {
 
   const handleEdit = (step: number) => {
     navigate(`/verify-flow/${id}`, {
-      state: { accountEmail, accountPassword, initialStep: step }
+      state: { accountEmail, accountPassword, initialStep: step, singleEdit: true }
     });
   };
 
@@ -93,12 +93,12 @@ export default function MechanicDashboard() {
         </div>
 
         {/* Global Status Banner */}
-        {mechanic.status === 'Approved' ? (
-          <div className="bg-green-500/10 border border-green-500/20 text-green-700 dark:text-green-400 p-4 rounded-xl mb-8 flex items-start gap-3">
-            <div className="w-2 h-2 rounded-full bg-green-500 mt-2 shrink-0" />
+        {mechanic.pendingVerification?.status === 'Pending' ? (
+          <div className="bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 p-4 rounded-xl mb-8 flex items-start gap-3">
+            <div className="w-2 h-2 rounded-full bg-amber-500 mt-2 shrink-0 animate-pulse" />
             <div>
-              <h4 className="font-bold">Fully Verified & Approved</h4>
-              <p className="text-sm mt-1">Your business is approved and visible to customers on the platform.</p>
+              <h4 className="font-bold">Verification Pending</h4>
+              <p className="text-sm mt-1">Your recent edits are currently under review by our team. You can still make changes if needed.</p>
             </div>
           </div>
         ) : mechanic.status === 'Rejected' || mechanic.pendingVerification?.status === 'Rejected' ? (
@@ -111,21 +111,29 @@ export default function MechanicDashboard() {
               </p>
             </div>
           </div>
-        ) : mechanic.status === 'Pending' ? (
-          <div className="bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 p-4 rounded-xl mb-8 flex items-start gap-3">
-            <div className="w-2 h-2 rounded-full bg-amber-500 mt-2 shrink-0 animate-pulse" />
+        ) : mechanic.status === 'Approved' && (mechanic.verificationLevel ?? 0) >= 1 ? (
+          <div className="bg-green-500/10 border border-green-500/20 text-green-700 dark:text-green-400 p-4 rounded-xl mb-8 flex items-start gap-3">
+            <div className="w-2 h-2 rounded-full bg-green-500 mt-2 shrink-0" />
             <div>
-              <h4 className="font-bold">Verification Pending</h4>
-              <p className="text-sm mt-1">Your recent edits are currently under review by our team. You can still make changes if needed.</p>
+              <h4 className="font-bold">Fully Verified & Approved</h4>
+              <p className="text-sm mt-1">Your business is approved and visible to customers on the platform.</p>
             </div>
           </div>
-        ) : null}
+        ) : (
+          <div className="bg-blue-500/10 border border-blue-500/20 text-blue-700 dark:text-blue-400 p-4 rounded-xl mb-8 flex items-start gap-3">
+            <div className="w-2 h-2 rounded-full bg-blue-500 mt-2 shrink-0" />
+            <div>
+              <h4 className="font-bold">Complete Your Profile</h4>
+              <p className="text-sm mt-1">Your business is listed, but not fully verified. Please complete your verification to earn the verified badge.</p>
+            </div>
+          </div>
+        )}
 
         <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm flex flex-col md:flex-row">
           {/* Sidebar Tabs */}
           <div className="w-full md:w-64 bg-muted/10 border-r border-border shrink-0 flex flex-row md:flex-col overflow-x-auto md:overflow-x-visible">
             {[
-              { id: 'contact', label: 'Contact', icon: Building, step: 1 },
+              { id: 'contact', label: 'Profile', icon: Building, step: 1 },
               { id: 'business-docs', label: 'Business Docs', icon: FileText, step: 2 },
               { id: 'common-info', label: 'Common Info', icon: ImageIcon, step: 3 },
               { id: 'services', label: 'Services', icon: Settings, step: 4 }
@@ -148,112 +156,136 @@ export default function MechanicDashboard() {
           {/* Content Area */}
           <div className="flex-1 p-6 sm:p-8 min-w-0">
 
-            {/* Contact Tab */}
+            {/* Profile Tab */}
             {activeTab === 'contact' && (
               <div className="animate-in fade-in slide-in-from-right-4">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-bold">Contact & Profile</h2>
-                  <button onClick={() => handleEdit(1)} className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg font-bold text-sm hover:bg-primary/90 transition-colors">
-                    <Edit size={16} /> Edit Contact
-                  </button>
+                <div className="flex items-center justify-between mb-8">
+                  <h2 className="text-2xl font-bold flex items-center gap-2">
+                    <Building className="text-primary" /> Profile Details
+                  </h2>
+                  <div className="flex items-center gap-4">
+                    <span className={`px-3 py-1.5 rounded-lg text-sm font-bold ${
+                      displayData.status === 'Approved' ? 'bg-green-100 text-green-700 border border-green-200' :
+                      displayData.status === 'Pending' ? 'bg-yellow-100 text-yellow-700 border border-yellow-200' :
+                      'bg-red-100 text-red-700 border border-red-200'
+                    }`}>
+                      {displayData.status === 'Approved' ? 'Admin Approved' : displayData.status === 'Pending' ? 'Admin Approval Pending' : 'Admin Rejected'}
+                    </span>
+                    <button onClick={() => handleEdit(1)} className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg font-bold text-sm hover:bg-primary/90 transition-colors">
+                      <Edit size={16} /> Edit Profile
+                    </button>
+                  </div>
                 </div>
                 
-                <div className="space-y-8">
-                  {/* Basic Info */}
-                  <div>
-                    <h3 className="text-lg font-bold mb-4 border-b border-border pb-2">Basic Information</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-1">
-                        <span className="text-xs font-bold text-muted-foreground uppercase">Business Name</span>
-                        <p className="font-medium text-foreground">{displayData.businessName || displayData.name}</p>
+                <div className="space-y-8 flex-1">
+                  
+                  {/* Header Section */}
+                  <div className="flex flex-col md:flex-row gap-6 items-start">
+                    {displayData.image && (
+                      <img src={displayData.image} alt={displayData.businessName || displayData.name} className="w-full md:w-48 h-48 object-cover rounded-xl border border-border shadow-sm shrink-0" />
+                    )}
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-center gap-3">
+                        <h3 className="text-2xl font-bold text-foreground">{displayData.businessName || displayData.name}</h3>
                       </div>
-                      <div className="space-y-1">
-                        <span className="text-xs font-bold text-muted-foreground uppercase">Mechanic / Owner Name</span>
-                        <p className="font-medium text-foreground">{displayData.mechanicName || 'Not specified'}</p>
-                      </div>
-                      <div className="space-y-1">
-                        <span className="text-xs font-bold text-muted-foreground uppercase">Business Type</span>
-                        <p className="font-medium text-foreground">{displayData.mechanicType || 'Not specified'}</p>
-                      </div>
-                      <div className="space-y-1 md:col-span-2">
-                        <span className="text-xs font-bold text-muted-foreground uppercase">Description</span>
-                        <p className="font-medium text-foreground">{displayData.description || 'No description provided.'}</p>
-                      </div>
+                      {displayData.mechanicName && <p className="text-muted-foreground font-medium flex items-center gap-2">Owner: {displayData.mechanicName}</p>}
+                      {displayData.mechanicType && <p className="inline-flex items-center gap-1 rounded bg-secondary px-2 py-1 text-xs font-bold text-secondary-foreground">{displayData.mechanicType}</p>}
+                      <p className="text-muted-foreground mt-2">{displayData.description || 'No description provided.'}</p>
                     </div>
                   </div>
 
-                  {/* Contact Info */}
-                  <div>
-                    <h3 className="text-lg font-bold mb-4 border-b border-border pb-2">Contact Details</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <div className="space-y-1">
-                        <span className="text-xs font-bold text-muted-foreground uppercase">Primary Phone</span>
-                        <p className="font-medium text-foreground">
-                          {Array.isArray(displayData.phone) 
-                            ? (typeof displayData.phone[0] === 'object' ? displayData.phone[0].number : displayData.phone[0])
-                            : (typeof displayData.phone === 'object' ? displayData.phone?.number : displayData.phone) || 'Not specified'}
-                        </p>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Contact & Location Section */}
+                    <div className="bg-muted/10 border border-border rounded-xl p-5 space-y-6">
+                      <h4 className="font-bold text-lg border-b border-border pb-2 flex items-center gap-2"><Settings size={18} className="text-primary"/> Contact & Web</h4>
+                      <div className="space-y-3">
+                        {displayData.phone && Array.isArray(displayData.phone) ? (
+                          displayData.phone.map((p: any, i: number) => (
+                            <p key={i} className="text-sm text-muted-foreground flex items-center gap-2">
+                              <span className="font-medium text-foreground">{p.isTelephone ? 'Tel:' : 'Phone:'}</span> {p.number || p} 
+                              {p.isWhatsapp && <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-bold">WhatsApp</span>}
+                            </p>
+                          ))
+                        ) : (
+                          <p className="text-sm text-muted-foreground"><span className="font-medium text-foreground">Phone:</span> {displayData.phone || 'N/A'}</p>
+                        )}
+                        {accountEmail || (displayData.emails && displayData.emails[0]) ? (
+                           <p className="text-sm text-muted-foreground"><span className="font-medium text-foreground">Email:</span> {accountEmail || (displayData.emails && displayData.emails[0])}</p>
+                        ) : null}
+                        {displayData.websiteUrl && (
+                          <a href={displayData.websiteUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline flex items-center gap-1">
+                            <ExternalLink size={14} /> Visit Website
+                          </a>
+                        )}
                       </div>
-                      <div className="space-y-1">
-                        <span className="text-xs font-bold text-muted-foreground uppercase">Email Address</span>
-                        <p className="font-medium text-foreground">{accountEmail || (displayData.emails && displayData.emails[0]) || 'Not provided'}</p>
-                      </div>
-                      <div className="space-y-1">
-                        <span className="text-xs font-bold text-muted-foreground uppercase">Website</span>
-                        <p className="font-medium text-foreground">
-                          {displayData.websiteUrl ? (
-                            <a href={displayData.websiteUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{displayData.websiteUrl}</a>
-                          ) : 'Not specified'}
+
+                      <h4 className="font-bold text-lg border-b border-border pb-2 flex items-center gap-2 mt-6"><MapPin size={18} className="text-primary"/> Location</h4>
+                      <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          {[displayData.address, displayData.landmark].filter(Boolean).join(', ')}<br />
+                          {[displayData.area, displayData.city, displayData.state, displayData.pincode].filter(Boolean).join(', ')}
                         </p>
+                        {displayData.latitude && displayData.longitude && (
+                          <div className="pt-2">
+                            <p className="text-xs text-muted-foreground font-mono bg-secondary px-2 py-1 rounded inline-block">
+                              Lat: {displayData.latitude} | Lng: {displayData.longitude}
+                            </p>
+                            <br/>
+                            <a href={`https://www.google.com/maps?q=${displayData.latitude},${displayData.longitude}`} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline mt-1 flex items-center gap-1 w-fit">
+                              <Navigation size={12} /> Open in Google Maps
+                            </a>
+                          </div>
+                        )}
                       </div>
                     </div>
-                  </div>
 
-                  {/* Location Info */}
-                  <div>
-                    <h3 className="text-lg font-bold mb-4 border-b border-border pb-2">Location</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-1 md:col-span-2">
-                        <span className="text-xs font-bold text-muted-foreground uppercase">Full Address</span>
-                        <p className="font-medium text-foreground">
-                          {[displayData.address, displayData.landmark, displayData.city, displayData.state, displayData.pincode].filter(Boolean).join(', ') || 'Not specified'}
-                        </p>
-                      </div>
-                      <div className="space-y-1">
-                        <span className="text-xs font-bold text-muted-foreground uppercase">Service Radius</span>
-                        <p className="font-medium text-foreground">{displayData.serviceRadius ? `${displayData.serviceRadius} km` : 'Not specified'}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Operations & Features */}
-                  <div>
-                    <h3 className="text-lg font-bold mb-4 border-b border-border pb-2">Operations & Features</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-1">
-                        <span className="text-xs font-bold text-muted-foreground uppercase">Operating Days</span>
-                        <p className="font-medium text-foreground">
-                          {Array.isArray(displayData.operatingDays) ? displayData.operatingDays.join(', ') : (displayData.operatingDays || 'Not specified')}
-                        </p>
-                      </div>
-                      <div className="space-y-1">
-                        <span className="text-xs font-bold text-muted-foreground uppercase">Operating Hours</span>
-                        <p className="font-medium text-foreground">
-                          {displayData.startTime && displayData.endTime ? `${displayData.startTime} - ${displayData.endTime}` : (displayData.operatingHours || 'Not specified')}
-                        </p>
-                      </div>
-                      <div className="space-y-1 md:col-span-2">
-                        <span className="text-xs font-bold text-muted-foreground uppercase">Special Features</span>
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          {displayData.evSupport && <span className="bg-green-500/10 text-green-600 px-3 py-1 rounded-full text-sm font-bold">EV Support</span>}
-                          {displayData.homeService && <span className="bg-blue-500/10 text-blue-600 px-3 py-1 rounded-full text-sm font-bold">Home Service</span>}
-                          {displayData.roadsideAssistance && <span className="bg-amber-500/10 text-amber-600 px-3 py-1 rounded-full text-sm font-bold">Roadside Assistance</span>}
-                          {displayData.is24Hours && <span className="bg-purple-500/10 text-purple-600 px-3 py-1 rounded-full text-sm font-bold">24/7 Service</span>}
-                          {displayData.holidayWorking && <span className="bg-pink-500/10 text-pink-600 px-3 py-1 rounded-full text-sm font-bold">Open on Holidays</span>}
-                          {!displayData.evSupport && !displayData.homeService && !displayData.roadsideAssistance && !displayData.is24Hours && !displayData.holidayWorking && (
-                            <span className="text-muted-foreground italic text-sm">No special features specified</span>
-                          )}
+                    {/* Services & Operating Info Section */}
+                    <div className="bg-muted/10 border border-border rounded-xl p-5 space-y-6">
+                      <h4 className="font-bold text-lg border-b border-border pb-2 flex items-center gap-2"><Settings size={18} className="text-primary"/> Services & Features</h4>
+                      <div className="space-y-4">
+                        <div>
+                          <p className="font-semibold text-sm mb-2">Supported Vehicles</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {displayData.vehicleTypes?.map((v: string) => (
+                              <span key={v} className="px-2 py-1 bg-secondary text-secondary-foreground text-xs rounded font-medium">{v}</span>
+                            )) || <span className="text-muted-foreground text-xs">N/A</span>}
+                          </div>
                         </div>
+                        <div>
+                          <p className="font-semibold text-sm mb-2">Services Provided</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {displayData.serviceTypes?.map((s: string) => (
+                              <span key={s} className="px-2 py-1 bg-secondary text-secondary-foreground text-xs rounded font-medium">{s}</span>
+                            )) || <span className="text-muted-foreground text-xs">N/A</span>}
+                          </div>
+                        </div>
+                        <div>
+                          <p className="font-semibold text-sm mb-2">Special Features</p>
+                          <div className="flex flex-wrap gap-2">
+                            {displayData.evSupport && <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded border border-blue-200">EV Support</span>}
+                            {displayData.homeService && <span className="text-xs font-bold text-purple-600 bg-purple-50 px-2 py-1 rounded border border-purple-200">Home Service</span>}
+                            {displayData.roadsideAssistance && <span className="text-xs font-bold text-orange-600 bg-orange-50 px-2 py-1 rounded border border-orange-200">Roadside Assistance</span>}
+                          </div>
+                        </div>
+                      </div>
+
+                      <h4 className="font-bold text-lg border-b border-border pb-2 flex items-center gap-2 mt-6"><Settings size={18} className="text-primary"/> Operating Hours</h4>
+                      <div className="space-y-3">
+                        <p className="text-sm">
+                          <span className="font-semibold block mb-1">Working Days:</span>
+                          <span className="text-muted-foreground">{displayData.operatingDays?.join(', ') || 'N/A'}</span>
+                        </p>
+                        <p className="text-sm">
+                          <span className="font-semibold block mb-1">Timings:</span>
+                          <span className="text-muted-foreground">
+                            {displayData.is24Hours ? '24 Hours Open' : (displayData.operatingHours || (displayData.startTime && displayData.endTime ? `${displayData.startTime} - ${displayData.endTime}` : 'N/A'))}
+                          </span>
+                        </p>
+                        {displayData.holidayWorking && (
+                          <p className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded border border-green-200 inline-block mt-1">
+                            Open on Holidays
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -278,39 +310,39 @@ export default function MechanicDashboard() {
                     <p className="text-muted-foreground text-sm mt-1">Upload your ID proofs and business licenses to get verified.</p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {businessDocs.map(([key, val]: any) => (
-                      <div key={key} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border border-border rounded-xl bg-card hover:border-primary/50 transition-colors group">
-                        <div className="flex items-center gap-4 mb-4 sm:mb-0">
+                      <div key={key} className="flex flex-col p-5 border border-border rounded-xl bg-card hover:border-primary/50 transition-colors group h-full">
+                        <div className="flex items-center gap-3 mb-4">
                           <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0 group-hover:scale-110 transition-transform">
                             <FileText size={20} />
                           </div>
                           <div>
-                            <p className="font-bold text-sm text-foreground">{String(key).replace(' Link', '')}</p>
-                            <p className="text-xs text-muted-foreground mt-0.5 max-w-[200px] sm:max-w-[300px] truncate">
-                              {val && typeof val === 'string' && val.startsWith('http') ? val : 'Uploaded Document'}
-                            </p>
+                            <p className="font-bold text-sm text-foreground line-clamp-2">{String(key).replace(' Link', '')}</p>
                           </div>
                         </div>
-                        {val && typeof val === 'string' && val.startsWith('http') ? (
-                          <div className="shrink-0 flex items-center justify-end">
-                            {/\.(jpg|jpeg|png|gif|webp)$/i.test(val) || val.toLowerCase().includes('image') ? (
-                              <a href={val} target="_blank" rel="noopener noreferrer" className="block relative group overflow-hidden rounded-lg border border-border mt-3 sm:mt-0">
-                                <img src={val} alt={key} className="h-24 w-32 object-cover transition-transform group-hover:scale-105" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1">
-                                  <ExternalLink size={18} className="text-white" />
-                                  <span className="text-[10px] text-white font-bold uppercase tracking-wider">Preview</span>
-                                </div>
-                              </a>
-                            ) : (
-                              <a href={val} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-lg text-sm font-bold hover:bg-primary hover:text-primary-foreground transition-all w-fit">
-                                Open Document <ExternalLink size={14} />
-                              </a>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-foreground text-sm font-medium bg-muted px-4 py-2 rounded-lg w-fit shrink-0">{String(val)}</span>
-                        )}
+                        
+                        <div className="mt-auto pt-2 border-t border-border flex items-center justify-center">
+                          {val && typeof val === 'string' && val.startsWith('http') ? (
+                            <>
+                              {/\.(jpg|jpeg|png|gif|webp)$/i.test(val) || val.toLowerCase().includes('image') ? (
+                                <a href={val} target="_blank" rel="noopener noreferrer" className="block relative w-full group/img overflow-hidden rounded-lg border border-border">
+                                  <img src={val} alt={key} className="w-full h-32 object-cover transition-transform group-hover/img:scale-105" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1">
+                                    <ExternalLink size={18} className="text-white" />
+                                    <span className="text-[10px] text-white font-bold uppercase tracking-wider">Preview</span>
+                                  </div>
+                                </a>
+                              ) : (
+                                <a href={val} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 bg-primary/10 text-primary w-full py-3 rounded-lg text-sm font-bold hover:bg-primary hover:text-primary-foreground transition-all">
+                                  Open Document <ExternalLink size={16} />
+                                </a>
+                              )}
+                            </>
+                          ) : (
+                            <span className="text-foreground text-sm font-medium bg-muted px-4 py-2 rounded-lg w-full text-center truncate">{String(val)}</span>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -397,12 +429,23 @@ export default function MechanicDashboard() {
                       <span className="text-muted-foreground italic block">No pricing submitted</span>
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {servicesData.map(([key, val]: any) => (
-                          <div key={key} className="p-3 border border-border rounded-xl bg-muted/50">
-                            <span className="block text-xs font-bold text-muted-foreground uppercase mb-1">{key}</span>
-                            <span className="block font-medium">{String(val)}</span>
-                          </div>
-                        ))}
+                        {servicesData.map(([key, val]: any) => {
+                          const valStr = String(val);
+                          const items = valStr.includes(',') ? valStr.split(',').map(s => s.trim()).filter(Boolean) : [valStr];
+                          
+                          return (
+                            <div key={key} className="p-4 border border-border rounded-xl bg-muted/50 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                              <span className="text-sm font-bold text-muted-foreground uppercase pt-2" title={key}>{key}</span>
+                              <div className="flex flex-col gap-2 w-full sm:w-auto">
+                                {items.map((item, idx) => (
+                                  <span key={idx} className="font-black bg-background px-4 py-2 rounded-lg border border-border shadow-sm text-right whitespace-normal sm:whitespace-nowrap break-words text-sm">
+                                    {item}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </div>

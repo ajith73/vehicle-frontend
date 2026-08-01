@@ -1,17 +1,16 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle, XCircle, AlertCircle, Eye, Edit3, X, Search, ArrowUpDown, RefreshCw, Trash2, UserCircle, Phone, MapPin, Settings, Clock, Globe, Image as ImageIcon } from 'lucide-react';
-import * as api from '../api/mechanics';
 import type { UpdateRequest } from '../types';
 import { Pagination } from '../components/Pagination';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { useUpdateRequests } from '../hooks/useUpdateRequests';
 
 const ITEMS_PER_PAGE = 10;
 
 export default function AdminUpdateRequests() {
-  const [requests, setRequests] = useState<UpdateRequest[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { requests, loading, refetch, approveRequest, rejectRequest, bulkApprove, bulkReject, deleteRequest } = useUpdateRequests();
   const [viewUpdateData, setViewUpdateData] = useState<UpdateRequest | null>(null);
   const [isComparing, setIsComparing] = useState(false);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
@@ -23,14 +22,13 @@ export default function AdminUpdateRequests() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
-  
+
   let filteredRequests = requests.filter(req => statusFilter === 'All' || req.status === statusFilter);
 
   if (searchQuery) {
     const q = searchQuery.toLowerCase();
     filteredRequests = filteredRequests.filter(req => 
       req.Mechanic?.name?.toLowerCase().includes(q) ||
-      getRequestTitle(req).toLowerCase().includes(q) ||
       (req.mechanicId ? req.mechanicId.toString().includes(q) : false) ||
       req.requesterDisplayName?.toLowerCase().includes(q) ||
       req.Requestor?.email?.toLowerCase().includes(q) ||
@@ -50,21 +48,6 @@ export default function AdminUpdateRequests() {
     currentPage * ITEMS_PER_PAGE
   );
 
-  const fetchRequests = useCallback(async () => {
-    try {
-      setLoading(true);
-      const data = await api.getUpdateRequests();
-      setRequests(data);
-    } catch (err) {
-      console.error('Failed to fetch update requests', err);
-    }
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    fetchRequests();
-  }, [fetchRequests]);
-
   const handleAction = async (id: number, action: 'approve' | 'reject') => {
     const isReject = action === 'reject';
     setConfirmConfig({
@@ -77,12 +60,11 @@ export default function AdminUpdateRequests() {
       onConfirm: async (remarks?: string) => {
         try {
           if (action === 'approve') {
-            await api.approveUpdateRequest(id);
+            await approveRequest(id);
           } else {
-            await api.rejectUpdateRequest(id, remarks);
+            await rejectRequest(id, remarks);
           }
           toast.success(`Successfully ${action}d request`);
-          fetchRequests();
         } catch (err) {
           toast.error('Error communicating with server');
         }
@@ -102,17 +84,17 @@ export default function AdminUpdateRequests() {
       requireInput: isReject,
       inputPlaceholder: isReject ? 'Enter reason for rejection...' : undefined,
       onConfirm: async (remarks?: string) => {
+        const loadingToast = toast.loading(`Processing ${selectedIds.length} requests...`);
         try {
           if (action === 'approve') {
-            await Promise.all(selectedIds.map(id => api.approveUpdateRequest(id)));
+            await bulkApprove(selectedIds);
           } else {
-            await Promise.all(selectedIds.map(id => api.rejectUpdateRequest(id, remarks)));
+            await bulkReject(selectedIds, remarks);
           }
-          toast.success(`Successfully ${action}d ${selectedIds.length} request(s)`);
+          toast.success(`Successfully ${action}d requests`, { id: loadingToast });
           setSelectedIds([]);
-          fetchRequests();
         } catch (err) {
-          toast.error('Error during bulk action');
+          toast.error('Error processing bulk action', { id: loadingToast });
         }
       }
     });
@@ -133,16 +115,15 @@ export default function AdminUpdateRequests() {
   const handleDelete = async (id: number) => {
     setConfirmConfig({
       isOpen: true,
-      title: 'Delete Request',
-      message: 'Are you sure you want to permanently delete this update request?',
+      title: 'Delete Request?',
+      message: 'Are you sure you want to delete this update request permanently?',
       type: 'danger',
       onConfirm: async () => {
         try {
-          await api.deleteUpdateRequest(id);
-          toast.success('Update request deleted successfully');
-          fetchRequests();
+          await deleteRequest(id);
+          toast.success('Request deleted');
         } catch (err) {
-          toast.error('Failed to delete request');
+          toast.error('Error deleting request');
         }
       }
     });
@@ -286,13 +267,12 @@ export default function AdminUpdateRequests() {
               <ArrowUpDown size={16} />
               <span>{sortOrder === 'newest' ? 'Newest' : 'Oldest'}</span>
             </button>
-            <button 
-              onClick={fetchRequests}
-              className="flex items-center justify-center px-3 py-2 border border-border rounded-lg bg-background hover:bg-muted text-muted-foreground"
-              title="Refresh Data"
-            >
-              <RefreshCw size={16} />
-            </button>
+              <button 
+                onClick={refetch}
+                className="flex items-center gap-2 px-4 py-2 border border-border bg-card rounded-lg hover:bg-muted transition-colors font-medium"
+              >
+                <RefreshCw size={18} className={loading ? "animate-spin" : ""} /> Refresh
+              </button>
           </div>
         </div>
       </div>

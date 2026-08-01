@@ -420,7 +420,8 @@ export default function MechanicFormComponent({ id, isEdit, initialData, onSubmi
     if (operatingDays.length === 0) newErrors.operatingDays = 'Select at least one operating day';
     if (!is24Hours && (!startTime || !endTime)) newErrors.operatingHours = 'Operating hours are required';
     
-    if (!emails.some(e => e.trim())) newErrors.emails = 'At least one email address is required';
+    // Email is no longer mandatory
+    // if (!emails.some(e => e.trim())) newErrors.emails = 'At least one email address is required';
     
     setErrors(newErrors);
     return newErrors;
