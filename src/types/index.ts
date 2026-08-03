@@ -102,3 +102,9 @@ export interface ActivityLog {
   createdAt: string;
   User?: { email: string };
 }
+export interface DetailedCityStat {
+  name: string;
+  total: number;
+  vehicleTypes: Record<string, number>;
+  serviceTypes: Record<string, number>;
+}

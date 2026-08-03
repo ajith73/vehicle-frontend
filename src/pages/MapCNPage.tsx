@@ -5,6 +5,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { X, Phone, MessageCircle, MapPin, Navigation, ChevronLeft, LocateFixed, Mail, Globe, Settings2, MessageSquare, Wrench, Heart, Eye, AlertTriangle, Search } from 'lucide-react';
 import { apiClient } from '../api/apiClient';
 import { useLocationContext } from '../contexts/LocationContext';
+import { useDataContext } from '../contexts/DataContext';
 import toast from 'react-hot-toast';
 import { buildMechanicSearchParams, parseMechanicFilterParam, type MechanicSort } from '../utils/mechanicSearch';
 import Select, { type StylesConfig } from 'react-select';
@@ -241,6 +242,14 @@ export default function MapPage() {
   const [showControls, setShowControls] = useState(false);
   const [radius, setRadius] = useState<number>(Number.isFinite(radiusParam) ? radiusParam : 5);
   const [routeOption, setRouteOption] = useState<'Fastest' | 'Shortest' | 'Avoid Toll'>('Fastest');
+  const { 
+    vehicles, 
+    services, 
+    isLoadingData,
+    cachedMapMechanics,
+    cachedMapMechanicsParams,
+    setCachedMapMechanicsData
+  } = useDataContext();
   const [sortBy, setSortBy] = useState<'Nearest' | 'Available'>(sortParam === 'Available' ? 'Available' : 'Nearest');
 
   // Feedback Modal State
@@ -357,35 +366,36 @@ export default function MapPage() {
   }, [radiusParam, sortParam, search, searchParams]);
 
   useEffect(() => {
-    const fetchOptions = async () => {
-      try {
-        const [vehicleData, serviceData] = await Promise.all([
-          apiClient<any>('/public/vehicles'),
-          apiClient<any>('/public/services')
-        ]);
-        setVehicleOptions(vehicleData.map((item: any) => item.name));
-        setServiceOptions(serviceData.map((item: any) => item.name));
-      } catch (err) {
-        console.error('Failed to load map filter options', err);
-      }
-    };
-
-    fetchOptions();
-  }, [radiusParam, sortParam]);
+    if (!isLoadingData) {
+      setVehicleOptions(vehicles.map((item: any) => item.name));
+      setServiceOptions(services.map((item: any) => item.name));
+    }
+  }, [vehicles, services, isLoadingData]);
 
   useEffect(() => {
     const fetchMechanics = async () => {
-      setMechanicsLoading(true);
       try {
         const params = buildMechanicSearchParams({
           vehicle: vehicleParams,
           service: serviceParams,
           search
         });
-        let data = await apiClient<any>(`/public/mechanics?${params.toString()}`);
+        
+        const paramsString = params.toString();
+
+        let rawData: any[] = [];
+        
+        // Check if we can use cached data
+        if (cachedMapMechanics && cachedMapMechanicsParams === paramsString) {
+          rawData = cachedMapMechanics;
+        } else {
+          setMechanicsLoading(true);
+          rawData = await apiClient<any>(`/public/mechanics?${paramsString}`);
+          setCachedMapMechanicsData(rawData, paramsString);
+        }
 
         // Add status and distance
-        data = data.map((m: any) => ({
+        const data = rawData.map((m: any) => ({
           ...m,
           currentStatus: getMechanicStatus(m),
           distance: userLocation ? getDistanceFromLatLonInKm(userLocation[0], userLocation[1], m.latitude, m.longitude) : 999999

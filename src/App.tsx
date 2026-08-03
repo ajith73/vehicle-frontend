@@ -70,9 +70,7 @@ function App() {
     const { theme, toggleTheme } = useTheme();
     
     return (
-      <DataProvider>
-        <LocationProvider>
-          <div className="min-h-[100dvh] flex flex-col bg-background text-foreground selection:bg-primary/20 pb-[72px] sm:pb-0">
+      <div className="min-h-[100dvh] flex flex-col bg-background text-foreground selection:bg-primary/20 pb-[72px] sm:pb-0">
           <header className="hidden sm:block sticky top-0 z-50 p-4 border-b border-border bg-background/80 backdrop-blur-md shadow-sm">
             <div className="max-w-7xl mx-auto flex justify-between items-center w-full">
               <Link to="/" className="flex items-center gap-2 text-xl font-black text-primary hover:scale-105 transition-transform">
@@ -144,14 +142,14 @@ function App() {
             </div>
           </nav>
         </div>
-        </LocationProvider>
-      </DataProvider>
     );
   };
 
   return (
     <ThemeProvider>
-      <Router>
+      <DataProvider>
+        <LocationProvider>
+          <Router>
         <AnalyticsTracker />
         <Toaster position="top-right" containerStyle={{ zIndex: 99999 }} toastOptions={{ className: 'dark:bg-card dark:text-foreground dark:border dark:border-border' }} />
         <Suspense fallback={<RouteLoader />}>
@@ -201,7 +199,9 @@ function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
-      </Router>
+          </Router>
+        </LocationProvider>
+      </DataProvider>
     </ThemeProvider>
   );
 }

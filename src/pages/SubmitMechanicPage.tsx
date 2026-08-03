@@ -11,6 +11,7 @@ import { submitMechanicRegistration } from '../api/mechanics';
 import MechanicFormComponent from '../components/MechanicFormComponent';
 import type { Mechanic } from '../types';
 import { State } from 'country-state-city';
+import { useDataContext } from '../contexts/DataContext';
 
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
@@ -212,26 +213,22 @@ export default function SubmitMechanicPage() {
   const [cityOptions, setCityOptions] = useState<SelectOption[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const { vehicles, services, isLoadingData } = useDataContext();
 
   const modalTitle = useMemo(
     () => (selectedMechanic ? 'Update your mechanic record' : 'Create a mechanic update request'),
     [selectedMechanic]
   );
 
-  useEffect(() => {    const loadOptions = async () => {
-      try {
-        const [vehicleData, serviceData] = await Promise.all([
-          apiClient<any>('/public/vehicles'),
-          apiClient<any>('/public/services')
-        ]);
-        setVehicleOptions(toOptionList(vehicleData));
-        setServiceOptions(toOptionList(serviceData));
-      } catch (loadError) {
-        console.error('Failed to load mechanic submission options', loadError);
-      }
-    };
+  useEffect(() => {
+    if (!isLoadingData) {
+      setVehicleOptions(toOptionList(vehicles));
+      setServiceOptions(toOptionList(services));
+    }
+  }, [vehicles, services, isLoadingData]);
 
-    const loadStates = async () => {
+  useEffect(() => {
+    const loadStates = () => {
       try {
         setStateOptions(
           State.getStatesOfCountry('IN').map((state) => ({
@@ -244,7 +241,6 @@ export default function SubmitMechanicPage() {
       }
     };
 
-    loadOptions();
     loadStates();
   }, []);
 

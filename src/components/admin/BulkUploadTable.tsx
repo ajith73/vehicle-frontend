@@ -1,4 +1,5 @@
-import { AlertCircle, CheckCircle, Edit, Eye, Trash2 } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { AlertCircle, CheckCircle, Edit, Eye, Trash2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import type { RowData } from '../../utils/bulkUploadUtils';
 
 interface BulkUploadTableProps {
@@ -24,21 +25,41 @@ export default function BulkUploadTable({
   onEditRow,
   onDeleteRow
 }: BulkUploadTableProps) {
-  let filteredData = data;
-  if (searchQuery) {
-    const q = searchQuery.toLowerCase();
-    filteredData = filteredData.filter(r => 
-      (r.businessName && String(r.businessName).toLowerCase().includes(q)) || 
-      (r.mechanicName && String(r.mechanicName).toLowerCase().includes(q)) || 
-      (r.city && String(r.city).toLowerCase().includes(q)) || 
-      (r.phone && String(r.phone).includes(q))
-    );
-  }
-  if (filterStatus === 'Valid') filteredData = filteredData.filter(r => !r.error);
-  if (filterStatus === 'Errors') filteredData = filteredData.filter(r => r.error);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  let filteredData = useMemo(() => {
+    let result = data;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(r => 
+        (r.businessName && String(r.businessName).toLowerCase().includes(q)) || 
+        (r.mechanicName && String(r.mechanicName).toLowerCase().includes(q)) || 
+        (r.city && String(r.city).toLowerCase().includes(q)) || 
+        (r.phone && String(r.phone).includes(q))
+      );
+    }
+    if (filterStatus === 'Valid') result = result.filter(r => !r.error);
+    if (filterStatus === 'Errors') result = result.filter(r => r.error);
+    return result;
+  }, [data, searchQuery, filterStatus]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(1);
+    }
+  }, [totalPages, currentPage]);
+
+  const paginatedData = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredData.slice(start, start + itemsPerPage);
+  }, [filteredData, currentPage, itemsPerPage]);
 
   return (
-    <div className="overflow-x-auto">
+    <>
+      <div className="overflow-x-auto">
       <table className="w-full text-left border-collapse whitespace-nowrap">
         <thead>
           <tr className="bg-muted border-b border-border">
@@ -58,7 +79,7 @@ export default function BulkUploadTable({
           </tr>
         </thead>
         <tbody className="divide-y divide-border">
-          {filteredData.map((row) => (
+          {paginatedData.map((row) => (
             <tr key={row.id} className={`hover:bg-muted/50 ${row.error ? 'bg-red-50/10 dark:bg-red-950/20' : ''}`}>
               <td className="p-4">
                 <input 
@@ -119,5 +140,71 @@ export default function BulkUploadTable({
         </tbody>
       </table>
     </div>
+      
+      {/* Pagination Controls */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-t border-border bg-card">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span>Show</span>
+          <select 
+            value={itemsPerPage} 
+            onChange={e => {
+              setItemsPerPage(Number(e.target.value));
+              setCurrentPage(1);
+            }}
+            className="px-2 py-1 border border-border rounded bg-background"
+          >
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+            <option value={500}>500</option>
+          </select>
+          <span>entries</span>
+          <span className="ml-2">
+            Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredData.length)} of {filteredData.length} entries
+          </span>
+        </div>
+
+        <div className="flex items-center gap-1">
+          <button 
+            onClick={() => setCurrentPage(1)} 
+            disabled={currentPage === 1}
+            className="p-1 rounded hover:bg-secondary disabled:opacity-50"
+            title="First Page"
+          >
+            <ChevronsLeft size={18} />
+          </button>
+          <button 
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
+            disabled={currentPage === 1}
+            className="p-1 rounded hover:bg-secondary disabled:opacity-50"
+            title="Previous Page"
+          >
+            <ChevronLeft size={18} />
+          </button>
+          
+          <span className="text-sm font-medium px-3 py-1 bg-secondary rounded">
+            Page {currentPage} of {totalPages}
+          </span>
+          
+          <button 
+            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} 
+            disabled={currentPage === totalPages}
+            className="p-1 rounded hover:bg-secondary disabled:opacity-50"
+            title="Next Page"
+          >
+            <ChevronRight size={18} />
+          </button>
+          <button 
+            onClick={() => setCurrentPage(totalPages)} 
+            disabled={currentPage === totalPages}
+            className="p-1 rounded hover:bg-secondary disabled:opacity-50"
+            title="Last Page"
+          >
+            <ChevronsRight size={18} />
+          </button>
+        </div>
+      </div>
+    </>
   );
 }

@@ -3,16 +3,19 @@ import { useNavigate } from 'react-router-dom';
 import { PieChart, Pie, Cell, BarChart, Bar, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { 
   LayoutDashboard, Wrench, CheckCircle, Clock, Edit3, 
-  MessageSquare, Heart, Activity, Shield, AlertCircle, MapPin, TrendingUp
+  MessageSquare, Heart, Activity, Shield, AlertCircle, MapPin, TrendingUp,
+  Map, LayoutGrid
 } from 'lucide-react';
 import * as authApi from '../api/auth';
-import type { User } from '../types';
+import type { User, DetailedCityStat } from '../types';
+import { CityStatsModal } from '../components/admin/CityStatsModal';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const [stats, setStats] = useState<any>(null);
   const [profile, setProfile] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isCityModalOpen, setIsCityModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -184,7 +187,7 @@ export default function AdminDashboard() {
             <div className="h-64">
               {stats?.mechanicsByCity?.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={stats.mechanicsByCity} layout="vertical" margin={{ top: 10, right: 10, left: 30, bottom: 0 }}>
+                  <BarChart data={stats.mechanicsByCity.slice(0, 7)} layout="vertical" margin={{ top: 10, right: 10, left: 30, bottom: 0 }}>
                     <XAxis type="number" hide />
                     <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
                     <Tooltip 
@@ -198,6 +201,61 @@ export default function AdminDashboard() {
                 <div className="flex items-center justify-center h-full text-muted-foreground">Not enough data</div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* City Breakdown Detailed Cards */}
+      {canView('Mechanics') && stats?.detailedCityStats?.length > 0 && (
+        <div className="bg-card border border-border rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow mb-8">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+              <LayoutGrid className="w-5 h-5 text-teal-500" /> City Services & Vehicles Breakdown
+            </h3>
+            <button 
+              onClick={() => setIsCityModalOpen(true)}
+              className="text-sm font-bold text-primary hover:underline"
+            >
+              View All Cities
+            </button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+            {stats.detailedCityStats.slice(0, 5).map((city: DetailedCityStat) => (
+              <div key={city.name} className="bg-muted/30 rounded-xl border border-border p-4 flex flex-col">
+                <div className="flex justify-between items-center mb-4">
+                  <span className="font-semibold text-foreground truncate mr-2" title={city.name}>{city.name}</span>
+                  <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">{city.total}</span>
+                </div>
+                
+                <div className="space-y-3 text-sm flex-1">
+                  <div>
+                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Top Vehicles</span>
+                    <div className="mt-1 space-y-1">
+                      {Object.entries(city.vehicleTypes).sort((a,b)=>b[1]-a[1]).slice(0, 3).map(([k, v]) => (
+                        <div key={k} className="flex justify-between">
+                          <span className="text-foreground truncate">{k}</span>
+                          <span className="text-muted-foreground">{v}</span>
+                        </div>
+                      ))}
+                      {Object.keys(city.vehicleTypes).length === 0 && <div className="text-muted-foreground text-xs italic">No data</div>}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Top Services</span>
+                    <div className="mt-1 space-y-1">
+                      {Object.entries(city.serviceTypes).sort((a,b)=>b[1]-a[1]).slice(0, 3).map(([k, v]) => (
+                        <div key={k} className="flex justify-between">
+                          <span className="text-foreground truncate">{k}</span>
+                          <span className="text-muted-foreground">{v}</span>
+                        </div>
+                      ))}
+                      {Object.keys(city.serviceTypes).length === 0 && <div className="text-muted-foreground text-xs italic">No data</div>}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -277,6 +335,12 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
+      
+      <CityStatsModal 
+        isOpen={isCityModalOpen} 
+        onClose={() => setIsCityModalOpen(false)} 
+        cityStats={stats?.detailedCityStats || []} 
+      />
     </div>
   );
 }

@@ -5,6 +5,7 @@ import Select from 'react-select';
 import { User, Phone, MapPin, Wrench, CalendarClock, Plus, Trash2, Save, X, Info, Image, Globe, Map, Loader2 } from 'lucide-react';
 import { State, City } from 'country-state-city';
 import { apiClient } from '../api/apiClient';
+import { useDataContext } from '../contexts/DataContext';
 
 // Default options fetched from backend
 // DEFAULT_VEHICLES and DEFAULT_SERVICES are populated dynamically
@@ -85,20 +86,14 @@ export default function MechanicFormComponent({ id, isEdit, initialData, onSubmi
   // Dynamic dropdowns
   const [vehicleOptions, setVehicleOptions] = useState<{value: string, label: string}[]>([]);
   const [serviceOptions, setServiceOptions] = useState<{value: string, label: string}[]>([]);
+  const { vehicles, services, isLoadingData } = useDataContext();
 
   useEffect(() => {
-    // Fetch dynamic options
-    const fetchOptions = async () => {
-      try {
-        const [vData, sData] = await Promise.all([apiClient<any>(`/public/vehicles`), apiClient<any>(`/public/services`)]);
-        setVehicleOptions(vData.map((v: any) => ({ value: v.name, label: v.name })));
-        setServiceOptions(sData.map((s: any) => ({ value: s.name, label: s.name })));
-      } catch (err) {
-        console.error('Failed to load settings options', err);
-      }
-    };
-    fetchOptions();
-  }, []);
+    if (!isLoadingData) {
+      setVehicleOptions(vehicles.map((v: any) => ({ value: v.name, label: v.name })));
+      setServiceOptions(services.map((s: any) => ({ value: s.name, label: s.name })));
+    }
+  }, [vehicles, services, isLoadingData]);
 
   useEffect(() => {
     const loadStates = async () => {

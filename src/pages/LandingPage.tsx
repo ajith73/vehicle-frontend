@@ -18,7 +18,6 @@ import { useTheme } from '../contexts/ThemeContext';
 import { SEO } from '../components/SEO';
 import toast from 'react-hot-toast';
 
-
 const getGreeting = () => {
   const hour = new Date().getHours();
   if (hour < 12) return 'Good Morning';
@@ -42,7 +41,14 @@ export default function LandingPage() {
   } = useLocationContext();
 
   const [localSearch, setLocalSearch] = useState('');
-  const { vehicles, services, isLoadingData } = useDataContext();
+  const { 
+    vehicles, 
+    services, 
+    isLoadingData,
+    cachedLandingMechanics,
+    cachedLandingMechanicsParams,
+    setCachedLandingMechanicsData 
+  } = useDataContext();
   const [nearbyMechanics, setNearbyMechanics] = useState<any[]>([]);
   const [isLoadingOptions, setIsLoadingOptions] = useState(true);
   const [showLocationPopup, setShowLocationPopup] = useState(false);
@@ -51,7 +57,7 @@ export default function LandingPage() {
   const [isLocationMessageExpanded, setIsLocationMessageExpanded] = useState(true);
   const [centerSearchSuggestions, setCenterSearchSuggestions] = useState<PlaceSuggestion[]>([]);
   const searchDropdownRef = useRef<HTMLDivElement>(null);
-  const [isFetchingMechanics, setIsFetchingMechanics] = useState(false);
+  const [isFetchingMechanics, setIsFetchingMechanics] = useState(true);
   const [fetchError, setFetchError] = useState(false);
   const { theme, toggleTheme } = useTheme();
 
@@ -119,7 +125,16 @@ export default function LandingPage() {
       setFetchError(false);
       try {
         const searchParam = locationName === 'Current Location' ? '' : locationName;
-        const data = await apiClient<any>(`/public/mechanics?vehicleType=${selectedVehicle}&serviceType=${selectedService}&search=${encodeURIComponent(searchParam)}`);
+        const paramsString = `vehicleType=${selectedVehicle}&serviceType=${selectedService}&search=${encodeURIComponent(searchParam)}`;
+        
+        let data: any[] = [];
+        
+        if (cachedLandingMechanics && cachedLandingMechanicsParams === paramsString) {
+          data = cachedLandingMechanics;
+        } else {
+          data = await apiClient<any>(`/public/mechanics?${paramsString}`);
+          setCachedLandingMechanicsData(data, paramsString);
+        }
 
         let filtered = data.map((mechanic: any) => ({
           ...mechanic,
@@ -347,22 +362,31 @@ export default function LandingPage() {
           <button onClick={() => navigate('/list')} className="text-sm font-bold text-primary hover:underline">See All</button>
         </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-          {popularServices.map((service) => {
-            const Icon = getServiceIcon(service.name);
-            return (
-              <button
-                key={service.id || service.name}
-                onClick={() => navigate(`/list?service=${encodeURIComponent(service.name)}`)}
-                className="flex cursor-pointer flex-col items-center gap-2 rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:border-primary/50 hover:bg-secondary/30 focus:outline-none focus:ring-2 focus:ring-primary"
-                aria-label={`Search mechanics for ${service.name}`}
-              >
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-                  <Icon className="h-6 w-6" />
-                </div>
-                <span className="text-center text-sm font-bold">{service.name}</span>
-              </button>
-            );
-          })}
+          {isLoadingData ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="flex h-[106px] flex-col items-center justify-center gap-2 rounded-2xl border border-border bg-card p-4 shadow-sm animate-pulse">
+                <div className="h-12 w-12 rounded-full bg-secondary/80"></div>
+                <div className="h-4 w-20 rounded bg-secondary/80 mt-1"></div>
+              </div>
+            ))
+          ) : (
+            popularServices.map((service) => {
+              const Icon = getServiceIcon(service.name);
+              return (
+                <button
+                  key={service.id || service.name}
+                  onClick={() => navigate(`/list?service=${encodeURIComponent(service.name)}`)}
+                  className="flex cursor-pointer flex-col items-center gap-2 rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:border-primary/50 hover:bg-secondary/30 focus:outline-none focus:ring-2 focus:ring-primary"
+                  aria-label={`Search mechanics for ${service.name}`}
+                >
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <Icon className="h-6 w-6" />
+                  </div>
+                  <span className="text-center text-sm font-bold">{service.name}</span>
+                </button>
+              );
+            })
+          )}
         </div>
       </div>
 
@@ -374,7 +398,7 @@ export default function LandingPage() {
           <button onClick={() => navigate(`/map?vehicle=${selectedVehicle}&service=${selectedService}`)} className="text-sm font-bold text-primary hover:underline">View Map</button>
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
-          {isFetchingMechanics ? (
+          {isFetchingMechanics || isLoading ? (
             Array.from({ length: 3 }).map((_, i) => <MechanicCardSkeleton key={i} />)
           ) : fetchError ? (
             <div className="col-span-full rounded-2xl border border-red-500/20 bg-red-500/5 px-6 py-8 text-center">
@@ -451,8 +475,6 @@ export default function LandingPage() {
           }}
         />
       )}
-
-
       
       <footer className="py-6 text-center text-sm font-semibold text-muted-foreground mt-4 border-t border-border/50">
         © 2026 RoadResQ. All Rights Reserved.

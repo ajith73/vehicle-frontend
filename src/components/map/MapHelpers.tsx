@@ -5,7 +5,7 @@ import L from 'leaflet';
 export function ChangeView({ center }: { center: [number, number] }) {
   const map = useMap();
   useEffect(() => {
-    map.setView(center, map.getZoom());
+    map.flyTo(center, map.getZoom(), { animate: true, duration: 1.5 });
   }, [center[0], center[1], map]);
   return null;
 }

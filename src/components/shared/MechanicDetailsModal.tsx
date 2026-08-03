@@ -37,6 +37,7 @@ export function MechanicDetailsModal({
         className="bg-card w-full max-w-lg rounded-[24px] shadow-2xl border border-border overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 max-h-[90vh]"
         onClick={e => e.stopPropagation()}
       >
+        {/* Hero Image Header */}
         <div className="relative h-48 sm:h-56 shrink-0 bg-secondary/50">
           {selectedMechanicForDetails.image || selectedMechanicForDetails.imageUrl ? (
             <img src={selectedMechanicForDetails.image || selectedMechanicForDetails.imageUrl} alt="Mechanic" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#f1f5f9"/><text x="50" y="50" font-size="50" text-anchor="middle" dominant-baseline="central">🛠️</text></svg>')}` }} />
@@ -45,29 +46,24 @@ export function MechanicDetailsModal({
               <Wrench className="w-16 h-16 text-muted-foreground/30" />
             </div>
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
           <button 
             onClick={onClose}
-            className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-black/50 text-white/80 hover:text-white hover:bg-black/70 backdrop-blur-md transition-colors shadow-lg"
+            className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-black/50 text-white/80 hover:text-white hover:bg-black/70 backdrop-blur-md transition-colors shadow-lg z-10"
           >
             <X className="w-5 h-5" />
           </button>
-          
-          <div className="absolute bottom-5 left-5 right-5">
-            <div className="flex justify-between items-end gap-3">
-              <div className="min-w-0">
-                <h3 className="font-black text-2xl text-white truncate leading-tight drop-shadow-md">
-                  {selectedMechanicForDetails.businessName || selectedMechanicForDetails.name}
-                </h3>
-                <p className="text-white/80 text-sm flex items-center gap-1.5 mt-1 font-medium drop-shadow-md">
-                  <MapPin size={14} className="text-primary" /> {selectedMechanicForDetails.landmark ? `${selectedMechanicForDetails.landmark}, ` : ''}{selectedMechanicForDetails.area}
-                </p>
-              </div>
-            </div>
-          </div>
         </div>
         
         <div className="flex-1 p-6 space-y-6 overflow-y-auto">
+          {/* Title and Location */}
+          <div className="border-b border-border/50 pb-4">
+            <h3 className="font-black text-2xl text-foreground leading-tight">
+              {selectedMechanicForDetails.businessName || selectedMechanicForDetails.name}
+            </h3>
+            <p className="text-muted-foreground text-sm flex items-center gap-1.5 mt-2 font-medium">
+              <MapPin size={14} className="text-primary" /> {selectedMechanicForDetails.landmark ? `${selectedMechanicForDetails.landmark}, ` : ''}{selectedMechanicForDetails.area}
+            </p>
+          </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-secondary/30 p-4 rounded-2xl border border-border/50">
               <span className="text-[10px] font-black text-muted-foreground uppercase tracking-wider block mb-1.5">Current Status</span>
@@ -336,6 +332,8 @@ export function MechanicDetailsModal({
               </div>
             </div>
           )}
+
+
 
           <MechanicReviews mechanicId={selectedMechanicForDetails.id} />
         </div>

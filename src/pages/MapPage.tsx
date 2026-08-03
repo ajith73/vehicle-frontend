@@ -63,7 +63,14 @@ export default function MapPage() {
   // Feedback Modal State
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   
-  const { vehicles, services } = useDataContext();
+  const { 
+    vehicles, 
+    services, 
+    isLoadingData,
+    cachedMapMechanics,
+    cachedMapMechanicsParams,
+    setCachedMapMechanicsData
+  } = useDataContext();
   const [pendingVehicles, setPendingVehicles] = useState<string[]>(vehicleParams);
   const [pendingServices, setPendingServices] = useState<string[]>(serviceParams);
 
@@ -129,7 +136,6 @@ export default function MapPage() {
 
   useEffect(() => {
     const fetchMechanics = async () => {
-      setMechanicsLoading(true);
       try {
         const params = buildMechanicSearchParams({
           vehicle: vehicleParams,
@@ -141,10 +147,20 @@ export default function MapPage() {
           availability: availability,
           limit: 1000
         });
-        let data = await apiClient<any>(`/public/mechanics?${params.toString()}`);
+        
+        const paramsString = params.toString();
+        let rawData: any[] = [];
+        
+        if (cachedMapMechanics && cachedMapMechanicsParams === paramsString) {
+          rawData = cachedMapMechanics;
+        } else {
+          setMechanicsLoading(true);
+          rawData = await apiClient<any>(`/public/mechanics?${paramsString}`);
+          setCachedMapMechanicsData(rawData, paramsString);
+        }
         
         // Ensure distance is populated if not provided by backend (fallback)
-        data = data.map((m: any) => ({
+        const data = rawData.map((m: any) => ({
           ...m,
           currentStatus: getMechanicStatus(m),
           distance: m.dist !== undefined ? m.dist : (userLocation ? getDistanceFromLatLonInKm(userLocation[0], userLocation[1], m.latitude, m.longitude) : 999999)
@@ -211,10 +227,9 @@ export default function MapPage() {
   };
 
   const locateUser = () => {
+    requestLocation();
     if (userLocation && mapInstance) {
-      mapInstance.setView(userLocation, 14);
-    } else {
-      requestLocation();
+      mapInstance.flyTo(userLocation, 14, { animate: true });
     }
   };
 

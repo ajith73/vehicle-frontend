@@ -4,6 +4,7 @@ import { Filter, Search, AlertTriangle, Wrench, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { apiClient, apiClientWithHeaders } from '../api/apiClient';
 import { useLocationContext } from '../contexts/LocationContext';
+import { useDataContext } from '../contexts/DataContext';
 import { buildMechanicSearchParams, parseMechanicFilterParam, type MechanicSort } from '../utils/mechanicSearch';
 import { ListFiltersModal } from '../components/list/ListFiltersModal';
 import { MechanicListCard } from '../components/list/MechanicListCard';
@@ -41,6 +42,16 @@ export default function ListPage() {
   const [totalCount, setTotalCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
+  const { 
+    vehicles, 
+    services, 
+    isLoadingData,
+    cachedMechanics,
+    cachedMechanicsTotalCount,
+    cachedMechanicsParams,
+    setCachedMechanicsData
+  } = useDataContext();
+
   const observerTarget = useRef<HTMLDivElement>(null);
 
   const {
@@ -60,21 +71,11 @@ export default function ListPage() {
   }, [searchParam, searchParams, radiusParam, sortParam]);
 
   useEffect(() => {
-    const fetchOptions = async () => {
-      try {
-        const [vehicleData, serviceData] = await Promise.all([
-          apiClient<any>('/public/vehicles'),
-          apiClient<any>('/public/services')
-        ]);
-        setVehicleOptions(vehicleData.map((vehicle: any) => vehicle.name));
-        setServiceOptions(serviceData.map((service: any) => service.name));
-      } catch (err) {
-        console.error('Failed to load settings options', err);
-      }
-    };
-
-    fetchOptions();
-  }, []);
+    if (!isLoadingData) {
+      setVehicleOptions(vehicles.map((v: any) => v.name));
+      setServiceOptions(services.map((s: any) => s.name));
+    }
+  }, [vehicles, services, isLoadingData]);
 
   useEffect(() => {
     if (locationMessage) {
@@ -123,9 +124,6 @@ export default function ListPage() {
 
   useEffect(() => {
     const fetchMechanics = async () => {
-      if (page === 1) setLoading(true);
-      else setIsLoadingMore(true);
-
       try {
         const params = buildMechanicSearchParams({
           search: searchParam,
@@ -138,19 +136,39 @@ export default function ListPage() {
           page,
           limit
         });
+        
+        const paramsString = params.toString();
+
+        // Check if we can use cached data for the first page
+        if (page === 1 && cachedMechanics && cachedMechanicsParams === paramsString) {
+          setMechanics(cachedMechanics);
+          setTotalCount(cachedMechanicsTotalCount);
+          setHasMore(cachedMechanics.length >= limit);
+          setLoading(false);
+          return;
+        }
+
+        if (page === 1) setLoading(true);
+        else setIsLoadingMore(true);
+
         setError(null);
 
-        const { data, headers } = await apiClientWithHeaders<any>(`/public/mechanics?${params.toString()}`);
+        const { data, headers } = await apiClientWithHeaders<any>(`/public/mechanics?${paramsString}`);
 
+        let newTotalCount = totalCount;
         if (headers && headers['x-total-count']) {
-          setTotalCount(parseInt(headers['x-total-count'], 10));
+          newTotalCount = parseInt(headers['x-total-count'], 10);
+          setTotalCount(newTotalCount);
         } else if (page === 1) {
           // Fallback if header is missing
-          setTotalCount(data.length);
+          newTotalCount = data.length;
+          setTotalCount(newTotalCount);
         }
 
         if (page === 1) {
           setMechanics(data);
+          // Cache the initial load
+          setCachedMechanicsData(data, newTotalCount, paramsString);
         } else {
           setMechanics(prev => [...prev, ...data]);
         }
