@@ -362,12 +362,12 @@ export default function AdminVerificationRequests() {
         const commonInfoKeys = ['Profile Photo Link', 'Location (GPS)', 'Emergency Contact', 'Languages Spoken'];
         const commonInfo = viewModalData.dataEntries.filter(([k]: any) => commonInfoKeys.includes(k));
         const servicesDataDocs = viewModalData.dataEntries.filter(([k]: any) => k.startsWith('Price -') || k.startsWith('Time -') || k === 'Specific Services' || k === 'Additional Service and Price' || k === 'Notes');
-        const businessDocs = viewModalData.dataEntries.filter(([k]: any) => !commonInfoKeys.includes(k) && !k.startsWith('Price -') && !k.startsWith('Time -') && k !== 'Specific Services' && k !== 'Additional Service and Price' && k !== 'Notes');
+        const businessDocs = viewModalData.dataEntries.filter(([k, val]: any) => typeof val !== 'boolean' && !commonInfoKeys.includes(k) && !k.startsWith('Price -') && !k.startsWith('Time -') && k !== 'Specific Services' && k !== 'Additional Service and Price' && k !== 'Notes');
         const data = viewModalData.proposedDetails || {};
 
         return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
-          <div className="bg-card border border-border rounded-xl shadow-lg w-full max-w-4xl max-h-[80vh] flex flex-col md:flex-row animate-in fade-in zoom-in-95 overflow-hidden">
+          <div className="bg-card border border-border rounded-xl shadow-lg w-full max-w-4xl min-h-[60vh] max-h-[80vh] flex flex-col md:flex-row animate-in fade-in zoom-in-95 overflow-hidden">
             
             {/* Sidebar Tabs */}
             <div className="w-full md:w-64 bg-muted/10 border-r border-border shrink-0 flex flex-row md:flex-col overflow-x-auto md:overflow-x-visible">

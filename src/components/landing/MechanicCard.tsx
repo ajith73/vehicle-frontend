@@ -27,10 +27,16 @@ export function MechanicCard({ mechanic, userLocation, navigateToMechanic }: Mec
             : '🛠️'}
             
           {mechanic.verificationLevel > 0 && (
-            <div className="absolute top-0 left-0 bg-blue-600 text-white rounded-br-lg p-0.5 shadow-md flex items-center justify-center" title={`Verified Level ${mechanic.verificationLevel}`}>
+            <div className="absolute top-0 left-0 bg-blue-600 text-white rounded-br-lg p-0.5 shadow-md flex items-center justify-center z-10" title={`Verified Level ${mechanic.verificationLevel}`}>
               <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
             </div>
           )}
+          {(mechanic.rating || mechanic.rating > 0) ? (
+            <div className="absolute bottom-0 right-0 bg-black/80 backdrop-blur-sm text-white rounded-tl-lg px-1.5 py-0.5 shadow-md flex items-center gap-0.5 z-10">
+              <span className="text-[10px] font-bold leading-none">{mechanic.rating}</span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="currentColor" className="text-yellow-400"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            </div>
+          ) : null}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
@@ -38,13 +44,6 @@ export function MechanicCard({ mechanic, userLocation, navigateToMechanic }: Mec
               <h4 className="truncate font-bold text-foreground">
                 {mechanic.businessName || mechanic.name}
               </h4>
-              {(mechanic.rating || mechanic.rating > 0) ? (
-                <div className="flex items-center gap-1 mt-0.5">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="text-yellow-500"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                  <span className="text-xs font-bold text-foreground">{mechanic.rating}</span>
-                  <span className="text-[10px] text-muted-foreground">({mechanic.reviewCount || 0})</span>
-                </div>
-              ) : null}
             </div>
             <span className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-bold ${status === 'Available' ? 'bg-green-500/10 text-green-600' : 'bg-amber-500/10 text-amber-700'}`}>
               {status}

@@ -98,6 +98,12 @@ export function MechanicBottomSheet({
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
                   </div>
                 )}
+                {(selectedMechanic.rating || selectedMechanic.rating > 0) ? (
+                  <div className="absolute bottom-0 right-0 bg-black/80 backdrop-blur-sm text-white rounded-tl-xl px-1.5 py-0.5 shadow-md flex items-center gap-0.5 z-10">
+                    <span className="text-[10px] font-bold leading-none">{selectedMechanic.rating}</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="currentColor" className="text-yellow-400"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                  </div>
+                ) : null}
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px] z-20">
                   <Eye className="w-6 h-6 text-white drop-shadow-md" />
                 </div>
@@ -113,6 +119,12 @@ export function MechanicBottomSheet({
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
                   </div>
                 )}
+                {(selectedMechanic.rating || selectedMechanic.rating > 0) ? (
+                  <div className="absolute bottom-0 right-0 bg-black/80 backdrop-blur-sm text-white rounded-tl-xl px-1.5 py-0.5 shadow-md flex items-center gap-0.5 z-10">
+                    <span className="text-[10px] font-bold leading-none">{selectedMechanic.rating}</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="currentColor" className="text-yellow-400"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                  </div>
+                ) : null}
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px] z-20">
                   <Eye className="w-6 h-6 text-white drop-shadow-md" />
                 </div>
@@ -124,13 +136,6 @@ export function MechanicBottomSheet({
                 <h3 className="text-lg font-bold text-foreground mb-0.5 leading-tight truncate">
                   {selectedMechanic.businessName || selectedMechanic.name}
                 </h3>
-                {(selectedMechanic.rating || selectedMechanic.rating > 0) ? (
-                  <div className="flex items-center gap-1 mb-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="text-yellow-500"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                    <span className="text-xs font-bold text-foreground">{selectedMechanic.rating}</span>
-                    <span className="text-[10px] text-muted-foreground">({selectedMechanic.reviewCount || 0})</span>
-                  </div>
-                ) : null}
               </div>
               <p className="text-sm text-muted-foreground flex items-center gap-1.5 truncate">
                 <MapPin className="w-4 h-4 shrink-0" /> {selectedMechanic.landmark ? `${selectedMechanic.landmark}, ` : ''}{selectedMechanic.area}

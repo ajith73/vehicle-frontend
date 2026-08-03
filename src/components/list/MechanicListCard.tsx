@@ -28,6 +28,12 @@ export function MechanicListCard({ mechanic, onOpenDetails, onNavigate }: Mechan
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
               </div>
             )}
+            {(mechanic.rating || mechanic.rating > 0) ? (
+              <div className="absolute bottom-0 right-0 bg-black/80 backdrop-blur-sm text-white rounded-tl-xl px-2 py-1 shadow-md flex items-center gap-1 z-10">
+                <span className="text-xs font-bold leading-none">{mechanic.rating}</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="text-yellow-400"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              </div>
+            ) : null}
             <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 backdrop-blur-[2px] transition-opacity duration-300 group-hover/img:opacity-100 z-20">
               <Eye className="h-8 w-8 text-white drop-shadow-md" />
             </div>
@@ -46,6 +52,12 @@ export function MechanicListCard({ mechanic, onOpenDetails, onNavigate }: Mechan
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
               </div>
             )}
+            {(mechanic.rating || mechanic.rating > 0) ? (
+              <div className="absolute bottom-0 right-0 bg-black/80 backdrop-blur-sm text-white rounded-tl-xl px-2 py-1 shadow-md flex items-center gap-1 z-10">
+                <span className="text-xs font-bold leading-none">{mechanic.rating}</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="text-yellow-400"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              </div>
+            ) : null}
             <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 backdrop-blur-[2px] transition-opacity duration-300 group-hover/img:opacity-100 z-20">
               <Eye className="h-8 w-8 text-white drop-shadow-md" />
             </div>
@@ -58,13 +70,6 @@ export function MechanicListCard({ mechanic, onOpenDetails, onNavigate }: Mechan
                 <h4 className="truncate text-lg font-bold leading-tight text-foreground transition-colors group-hover:text-primary">
                   {mechanic.businessName || mechanic.name}
                 </h4>
-                {(mechanic.rating || mechanic.rating > 0) ? (
-                  <div className="flex items-center gap-1 mt-0.5">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="text-yellow-500"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                    <span className="text-xs font-bold text-foreground">{mechanic.rating}</span>
-                    <span className="text-[10px] text-muted-foreground">({mechanic.reviewCount || 0})</span>
-                  </div>
-                ) : null}
               </div>
               {mechanic.dist !== null && mechanic.dist !== undefined && (
                 <span className="shrink-0 rounded-lg bg-primary/10 px-2.5 py-1 text-xs font-black text-primary">

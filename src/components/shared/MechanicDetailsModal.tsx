@@ -37,7 +37,6 @@ export function MechanicDetailsModal({
         className="bg-card w-full max-w-lg rounded-[24px] shadow-2xl border border-border overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 max-h-[90vh]"
         onClick={e => e.stopPropagation()}
       >
-        {/* Hero Image Header */}
         <div className="relative h-48 sm:h-56 shrink-0 bg-secondary/50">
           {selectedMechanicForDetails.image || selectedMechanicForDetails.imageUrl ? (
             <img src={selectedMechanicForDetails.image || selectedMechanicForDetails.imageUrl} alt="Mechanic" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#f1f5f9"/><text x="50" y="50" font-size="50" text-anchor="middle" dominant-baseline="central">🛠️</text></svg>')}` }} />
@@ -46,6 +45,13 @@ export function MechanicDetailsModal({
               <Wrench className="w-16 h-16 text-muted-foreground/30" />
             </div>
           )}
+          {(selectedMechanicForDetails.rating || selectedMechanicForDetails.rating > 0) ? (
+            <div className="absolute bottom-0 right-0 bg-black/80 backdrop-blur-sm text-white rounded-tl-2xl px-3 py-1.5 shadow-lg flex items-center gap-1.5 z-10">
+              <span className="text-sm font-bold leading-none">{selectedMechanicForDetails.rating}</span>
+              <Star className="w-4 h-4 text-yellow-400 fill-current" />
+              <span className="text-xs font-medium text-white/80">({selectedMechanicForDetails.reviewCount || 0})</span>
+            </div>
+          ) : null}
           <button 
             onClick={onClose}
             className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-black/50 text-white/80 hover:text-white hover:bg-black/70 backdrop-blur-md transition-colors shadow-lg z-10"
@@ -86,6 +92,95 @@ export function MechanicDetailsModal({
             )}
           </div>
           
+          {((selectedMechanicForDetails.phone?.length > 0) || (selectedMechanicForDetails.emails?.length > 0) || selectedMechanicForDetails.websiteUrl) && (
+            <div className="mt-4">
+              <h4 className="mb-4 flex items-center gap-2 text-sm font-bold text-foreground">
+                <Phone size={16} className="text-primary" /> Contact Information
+              </h4>
+              <div className="flex flex-col gap-4 rounded-xl border border-border/30 bg-secondary/10 p-4 shadow-sm">
+                {(() => {
+                  let phoneCount = 0;
+                  let telCount = 0;
+                  return selectedMechanicForDetails.phone?.map((p: any, idx: number) => {
+                    let label = '';
+                    if (p.isTelephone) {
+                      telCount++;
+                      label = telCount === 1 ? 'Primary Landline' : telCount === 2 ? 'Secondary Landline' : `Secondary Landline ${telCount - 1}`;
+                    } else {
+                      phoneCount++;
+                      label = phoneCount === 1 ? 'Primary Contact' : phoneCount === 2 ? 'Secondary Contact' : `Secondary Contact ${phoneCount - 1}`;
+                    }
+                    return (
+                      <React.Fragment key={idx}>
+                        <div className="flex flex-col gap-3">
+                          <span className="text-sm font-bold text-foreground flex items-center gap-1.5">
+                            <span className="text-muted-foreground">👤</span> {label}
+                          </span>
+                          <div className="flex flex-wrap gap-2.5">
+                            <a href={`tel:${p.number}`} className="flex flex-1 sm:flex-none items-center justify-center gap-2 rounded-xl bg-blue-500/10 px-4 py-2.5 text-sm font-bold text-blue-600 transition-all hover:bg-blue-500 hover:text-white shadow-sm hover:shadow-blue-500/25 active:scale-95" title="Call">
+                              <Phone size={16} /> Call
+                            </a>
+                            {p.isWhatsapp && (
+                              <a href={`https://wa.me/91${p.number}`} target="_blank" rel="noreferrer" className="flex flex-1 sm:flex-none items-center justify-center gap-2 rounded-xl bg-green-500/10 px-4 py-2.5 text-sm font-bold text-green-600 transition-all hover:bg-green-500 hover:text-white shadow-sm hover:shadow-green-500/25 active:scale-95" title="WhatsApp">
+                                <MessageCircle size={16} /> WhatsApp
+                              </a>
+                            )}
+                            {!p.isTelephone && (
+                              <a href={`sms:${p.number}`} className="flex flex-1 sm:flex-none items-center justify-center gap-2 rounded-xl bg-purple-500/10 px-4 py-2.5 text-sm font-bold text-purple-600 transition-all hover:bg-purple-500 hover:text-white shadow-sm hover:shadow-purple-500/25 active:scale-95" title="SMS">
+                                <MessageSquare size={16} /> SMS
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                        {idx < selectedMechanicForDetails.phone.length - 1 && <hr className="border-border/50" />}
+                      </React.Fragment>
+                    );
+                  });
+                })()}
+
+                {selectedMechanicForDetails.phone?.length > 0 && selectedMechanicForDetails.emails?.length > 0 && (
+                  <hr className="border-border/50" />
+                )}
+                
+                {selectedMechanicForDetails.emails?.map((email: string, idx: number) => {
+                  const label = idx === 0 ? 'Primary Email' : idx === 1 ? 'Secondary Email' : `Secondary Email ${idx}`;
+                  return (
+                    <React.Fragment key={`email-${idx}`}>
+                      <div className="flex flex-col gap-3">
+                        <span className="text-sm font-bold text-foreground flex items-center gap-1.5">
+                          <span className="text-muted-foreground">✉️</span> {label}
+                        </span>
+                        <div className="flex flex-wrap gap-2.5">
+                          <a href={`mailto:${email}`} className="flex flex-1 sm:flex-none items-center justify-center gap-2 rounded-xl bg-orange-500/10 px-4 py-2.5 text-sm font-bold text-orange-600 transition-all hover:bg-orange-500 hover:text-white shadow-sm hover:shadow-orange-500/25 active:scale-95" title="Email">
+                            <Mail size={16} /> Send Email
+                          </a>
+                        </div>
+                      </div>
+                      {idx < selectedMechanicForDetails.emails.length - 1 && <hr className="border-border/50" />}
+                    </React.Fragment>
+                  );
+                })}
+
+                {(selectedMechanicForDetails.phone?.length > 0 || selectedMechanicForDetails.emails?.length > 0) && selectedMechanicForDetails.websiteUrl && (
+                  <hr className="border-border/50" />
+                )}
+                
+                {selectedMechanicForDetails.websiteUrl && (
+                  <div className="flex flex-col gap-3">
+                    <span className="text-sm font-bold text-foreground flex items-center gap-1.5">
+                      <span className="text-muted-foreground">🌐</span> Website
+                    </span>
+                    <div className="flex flex-wrap gap-2.5">
+                      <a href={selectedMechanicForDetails.websiteUrl.startsWith('http') ? selectedMechanicForDetails.websiteUrl : `https://${selectedMechanicForDetails.websiteUrl}`} target="_blank" rel="noreferrer" className="flex flex-1 sm:flex-none items-center justify-center gap-2 rounded-xl bg-teal-500/10 px-4 py-2.5 text-sm font-bold text-teal-600 transition-all hover:bg-teal-500 hover:text-white shadow-sm hover:shadow-teal-500/25 active:scale-95" title="Website">
+                        <Globe size={16} /> Visit Website
+                      </a>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {selectedMechanicForDetails.verificationLevel > 0 && (
             <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 mt-4 shadow-sm">
               <div className="flex items-center gap-3 mb-2">
@@ -176,31 +271,55 @@ export function MechanicDetailsModal({
               ? JSON.parse(selectedMechanicForDetails.verificationChecklist || '{}')
               : (selectedMechanicForDetails.verificationChecklist || {});
             
-            const servicesData = Object.entries(checklist).filter(([k]) => k.startsWith('Price -') || k.startsWith('Time -') || k === 'Specific Services' || k === 'Additional Service and Price' || k === 'Notes');
-
-            if (selectedMechanicForDetails.verificationLevel > 0 && servicesData.length > 0) {
+            const priceEntries = Object.entries(checklist).filter(([k]) => k.startsWith('Price -'));
+            const additionalServices = checklist['Additional Service and Price'];
+            const notes = checklist['Notes'];
+            
+            if (selectedMechanicForDetails.verificationLevel > 0 && (priceEntries.length > 0 || additionalServices || notes)) {
               return (
-                <div>
-                  <h4 className="mb-3 flex items-center gap-2 text-sm font-bold text-foreground">
-                    <Wrench size={16} className="text-primary" /> Service Pricing & Details
-                  </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {servicesData.map(([key, val]: any) => {
-                      const valStr = String(val);
-                      const items = valStr.includes(',') ? valStr.split(',').map(s => s.trim()).filter(Boolean) : [valStr];
-                      
-                      return (
-                        <div key={key} className="p-3 border border-border/30 rounded-xl bg-secondary/10 flex flex-col gap-2">
-                          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{key}</span>
-                          <div className="flex flex-col gap-1.5">
-                            {items.map((item, idx) => (
-                              <span key={idx} className="bg-background/80 px-2.5 py-1.5 rounded-lg font-medium text-xs text-foreground border border-border/50">{item}</span>
+                <div className="space-y-4">
+                  {(priceEntries.length > 0 || additionalServices) && (
+                    <div>
+                      <h4 className="mb-3 flex items-center gap-2 text-sm font-bold text-foreground">
+                        <Wrench size={16} className="text-primary" /> Service Pricing & Details
+                      </h4>
+                      <div className="bg-secondary/10 border border-border/30 rounded-xl p-4 flex flex-col gap-3">
+                        {priceEntries.length > 0 && (
+                          <div className="flex flex-col gap-2">
+                            {priceEntries.map(([key, val]: any) => (
+                              <div key={key} className="flex justify-between items-center bg-background/80 px-3 py-2 rounded-lg border border-border/50">
+                                <span className="text-sm font-semibold text-foreground">{key.replace(/^Price\s*-\s*/, '')}</span>
+                                <span className="text-sm font-bold text-primary">{val}</span>
+                              </div>
                             ))}
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                        )}
+                        {additionalServices && (
+                          <div className={priceEntries.length > 0 ? "pt-3 border-t border-border/50" : ""}>
+                            <h5 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Additional Services</h5>
+                            <div className="flex flex-col gap-2">
+                              {String(additionalServices).split(/[,\n]/).map(s => s.trim()).filter(Boolean).map((item, idx) => (
+                                <div key={idx} className="flex justify-between items-center bg-background/80 px-3 py-2 rounded-lg border border-border/50">
+                                  <span className="text-sm font-semibold text-foreground">{item.split('-')[0]?.trim() || item}</span>
+                                  {item.includes('-') && <span className="text-sm font-bold text-primary">{item.split('-').slice(1).join('-').trim()}</span>}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  {notes && (
+                    <div>
+                      <h4 className="mb-3 flex items-center gap-2 text-sm font-bold text-foreground">
+                        <Info size={16} className="text-blue-500" /> Additional Notes
+                      </h4>
+                      <div className="bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900 rounded-xl p-4 text-sm leading-relaxed text-blue-800 dark:text-blue-300">
+                        {String(notes)}
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             }
@@ -222,94 +341,6 @@ export function MechanicDetailsModal({
             </div>
           )}
 
-          {((selectedMechanicForDetails.phone?.length > 0) || (selectedMechanicForDetails.emails?.length > 0) || selectedMechanicForDetails.websiteUrl) && (
-            <div>
-              <h4 className="mb-4 flex items-center gap-2 text-sm font-bold text-foreground">
-                <Phone size={16} className="text-primary" /> Contact Information
-              </h4>
-              <div className="flex flex-col gap-4 rounded-xl border border-border/30 bg-secondary/10 p-4 shadow-sm">
-                {(() => {
-                  let phoneCount = 0;
-                  let telCount = 0;
-                  return selectedMechanicForDetails.phone?.map((p: any, idx: number) => {
-                    let label = '';
-                    if (p.isTelephone) {
-                      telCount++;
-                      label = telCount === 1 ? 'Primary Landline' : telCount === 2 ? 'Secondary Landline' : `Secondary Landline ${telCount - 1}`;
-                    } else {
-                      phoneCount++;
-                      label = phoneCount === 1 ? 'Primary Contact' : phoneCount === 2 ? 'Secondary Contact' : `Secondary Contact ${phoneCount - 1}`;
-                    }
-                    return (
-                      <React.Fragment key={idx}>
-                        <div className="flex flex-col gap-3">
-                          <span className="text-sm font-bold text-foreground flex items-center gap-1.5">
-                            <span className="text-muted-foreground">👤</span> {label}
-                          </span>
-                          <div className="flex flex-wrap gap-2.5">
-                            <a href={`tel:${p.number}`} className="flex flex-1 sm:flex-none items-center justify-center gap-2 rounded-xl bg-blue-500/10 px-4 py-2.5 text-sm font-bold text-blue-600 transition-all hover:bg-blue-500 hover:text-white shadow-sm hover:shadow-blue-500/25 active:scale-95" title="Call">
-                              <Phone size={16} /> Call
-                            </a>
-                            {p.isWhatsapp && (
-                              <a href={`https://wa.me/91${p.number}`} target="_blank" rel="noreferrer" className="flex flex-1 sm:flex-none items-center justify-center gap-2 rounded-xl bg-green-500/10 px-4 py-2.5 text-sm font-bold text-green-600 transition-all hover:bg-green-500 hover:text-white shadow-sm hover:shadow-green-500/25 active:scale-95" title="WhatsApp">
-                                <MessageCircle size={16} /> WhatsApp
-                              </a>
-                            )}
-                            {!p.isTelephone && (
-                              <a href={`sms:${p.number}`} className="flex flex-1 sm:flex-none items-center justify-center gap-2 rounded-xl bg-purple-500/10 px-4 py-2.5 text-sm font-bold text-purple-600 transition-all hover:bg-purple-500 hover:text-white shadow-sm hover:shadow-purple-500/25 active:scale-95" title="SMS">
-                                <MessageSquare size={16} /> SMS
-                              </a>
-                            )}
-                          </div>
-                        </div>
-                        {idx < selectedMechanicForDetails.phone.length - 1 && <hr className="border-border/50" />}
-                      </React.Fragment>
-                    );
-                  });
-                })()}
-
-                {selectedMechanicForDetails.phone?.length > 0 && selectedMechanicForDetails.emails?.length > 0 && (
-                  <hr className="border-border/50" />
-                )}
-                
-                {selectedMechanicForDetails.emails?.map((email: string, idx: number) => {
-                  const label = idx === 0 ? 'Primary Email' : idx === 1 ? 'Secondary Email' : `Secondary Email ${idx}`;
-                  return (
-                    <React.Fragment key={`email-${idx}`}>
-                      <div className="flex flex-col gap-3">
-                        <span className="text-sm font-bold text-foreground flex items-center gap-1.5">
-                          <span className="text-muted-foreground">✉️</span> {label}
-                        </span>
-                        <div className="flex flex-wrap gap-2.5">
-                          <a href={`mailto:${email}`} className="flex flex-1 sm:flex-none items-center justify-center gap-2 rounded-xl bg-orange-500/10 px-4 py-2.5 text-sm font-bold text-orange-600 transition-all hover:bg-orange-500 hover:text-white shadow-sm hover:shadow-orange-500/25 active:scale-95" title="Email">
-                            <Mail size={16} /> Send Email
-                          </a>
-                        </div>
-                      </div>
-                      {idx < selectedMechanicForDetails.emails.length - 1 && <hr className="border-border/50" />}
-                    </React.Fragment>
-                  );
-                })}
-
-                {(selectedMechanicForDetails.phone?.length > 0 || selectedMechanicForDetails.emails?.length > 0) && selectedMechanicForDetails.websiteUrl && (
-                  <hr className="border-border/50" />
-                )}
-                
-                {selectedMechanicForDetails.websiteUrl && (
-                  <div className="flex flex-col gap-3">
-                    <span className="text-sm font-bold text-foreground flex items-center gap-1.5">
-                      <span className="text-muted-foreground">🌐</span> Website
-                    </span>
-                    <div className="flex flex-wrap gap-2.5">
-                      <a href={selectedMechanicForDetails.websiteUrl.startsWith('http') ? selectedMechanicForDetails.websiteUrl : `https://${selectedMechanicForDetails.websiteUrl}`} target="_blank" rel="noreferrer" className="flex flex-1 sm:flex-none items-center justify-center gap-2 rounded-xl bg-teal-500/10 px-4 py-2.5 text-sm font-bold text-teal-600 transition-all hover:bg-teal-500 hover:text-white shadow-sm hover:shadow-teal-500/25 active:scale-95" title="Website">
-                        <Globe size={16} /> Visit Website
-                      </a>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
           
           {selectedMechanicForDetails.vehicleTypes && selectedMechanicForDetails.vehicleTypes.length > 0 && (
             <div>

@@ -200,7 +200,7 @@ const ClaimMechanicFlow: React.FC<ClaimMechanicFlowProps> = ({
             disabled={otpState === 'login' ? !password || isContinuing : (!password || !confirmPassword || password !== confirmPassword || !isStrongPassword(password) || isContinuing)}
             className="w-full py-4 mt-4 bg-foreground text-background font-bold rounded-xl hover:bg-foreground/90 transition-transform active:scale-[0.99] disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            {isContinuing ? 'Loading...' : 'Continue to Verification Form'}
+            {isContinuing ? 'Loading...' : (otpState === 'login' ? 'Log In to Continue' : 'Continue to Verification Form')}
           </button>
         </div>
       )}

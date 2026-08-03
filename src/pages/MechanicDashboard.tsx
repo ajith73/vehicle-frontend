@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { Building, Settings, FileText, Image as ImageIcon, Edit, LogOut, ArrowLeft, ExternalLink, MapPin, Navigation } from 'lucide-react';
+import { Building, Settings, FileText, Image as ImageIcon, Edit, LogOut, ArrowLeft, ExternalLink, MapPin, Navigation, Check, X, Clock, Info } from 'lucide-react';
 import { apiClient } from '../api/apiClient';
 import type { Mechanic } from '../types';
 import toast from 'react-hot-toast';
@@ -67,7 +67,9 @@ export default function MechanicDashboard() {
   
   const commonInfo = allDocs.filter(([k]) => commonInfoKeys.includes(k));
   const servicesData = allDocs.filter(([k]) => k.startsWith('Price -') || k.startsWith('Time -') || k === 'Specific Services' || k === 'Additional Service and Price' || k === 'Notes');
-  const businessDocs = allDocs.filter(([k]) => !commonInfoKeys.includes(k) && !k.startsWith('Price -') && !k.startsWith('Time -') && k !== 'Specific Services' && k !== 'Additional Service and Price' && k !== 'Notes');
+  
+  const verificationChecklistItems = allDocs.filter(([k, val]) => typeof val === 'boolean');
+  const businessDocs = allDocs.filter(([k, val]) => typeof val !== 'boolean' && !commonInfoKeys.includes(k) && !k.startsWith('Price -') && !k.startsWith('Time -') && k !== 'Specific Services' && k !== 'Additional Service and Price' && k !== 'Notes');
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -129,6 +131,27 @@ export default function MechanicDashboard() {
           </div>
         )}
 
+        {/* Verification Checklist */}
+        {verificationChecklistItems.length > 0 && (
+          <div className="bg-card border border-border rounded-xl p-6 mb-8 shadow-sm">
+            <h3 className="text-lg font-bold mb-3">Verification Checklist</h3>
+            <div className="flex items-start gap-2 mb-5 text-sm text-blue-800 dark:text-blue-200 bg-blue-50/50 dark:bg-blue-900/10 p-3 rounded-lg border border-blue-100 dark:border-blue-900/30">
+              <Info size={16} className="text-blue-500 shrink-0 mt-0.5" />
+              <p>
+                <strong>Note:</strong> This checklist is maintained by our administration team. Items will be marked as verified once your submitted documents are processed. You do not need to take any additional action here.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              {verificationChecklistItems.map(([key, val]) => (
+                <div key={key} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${val ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800' : 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800'}`}>
+                  {val ? <Check size={16} /> : <Clock size={16} />}
+                  <span className="text-sm font-bold capitalize">{String(key)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm flex flex-col md:flex-row">
           {/* Sidebar Tabs */}
           <div className="w-full md:w-64 bg-muted/10 border-r border-border shrink-0 flex flex-row md:flex-col overflow-x-auto md:overflow-x-visible">
@@ -181,8 +204,8 @@ export default function MechanicDashboard() {
                   
                   {/* Header Section */}
                   <div className="flex flex-col md:flex-row gap-6 items-start">
-                    {displayData.image && (
-                      <img src={displayData.image} alt={displayData.businessName || displayData.name} className="w-full md:w-48 h-48 object-cover rounded-xl border border-border shadow-sm shrink-0" />
+                    {(displayData.image || displayData.imageUrl) && (
+                      <img src={displayData.image || displayData.imageUrl} alt={displayData.businessName || displayData.name} className="w-full md:w-48 h-48 object-cover rounded-xl border border-border shadow-sm shrink-0" onError={(e) => { (e.target as HTMLImageElement).src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#f1f5f9"/><text x="50" y="50" font-size="50" text-anchor="middle" dominant-baseline="central">🛠️</text></svg>')}` }} />
                     )}
                     <div className="flex-1 space-y-2">
                       <div className="flex items-center gap-3">
@@ -323,24 +346,35 @@ export default function MechanicDashboard() {
                         </div>
                         
                         <div className="mt-auto pt-2 border-t border-border flex items-center justify-center">
-                          {val && typeof val === 'string' && val.startsWith('http') ? (
+                          {val && typeof val === 'string' && (val.startsWith('http') || val.startsWith('/') || val.includes('.')) ? (
                             <>
                               {/\.(jpg|jpeg|png|gif|webp)$/i.test(val) || val.toLowerCase().includes('image') ? (
-                                <a href={val} target="_blank" rel="noopener noreferrer" className="block relative w-full group/img overflow-hidden rounded-lg border border-border">
-                                  <img src={val} alt={key} className="w-full h-32 object-cover transition-transform group-hover/img:scale-105" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                                <a href={val.startsWith('/') ? `${import.meta.env.VITE_API_URL?.replace('/api', '') || ''}${val}` : (val.startsWith('http') ? val : `https://${val}`)} target="_blank" rel="noopener noreferrer" className="block relative w-full group/img overflow-hidden rounded-lg border border-border">
+                                  <img src={val.startsWith('/') ? `${import.meta.env.VITE_API_URL?.replace('/api', '') || ''}${val}` : (val.startsWith('http') ? val : `https://${val}`)} alt={key} className="w-full h-32 object-cover transition-transform group-hover/img:scale-105" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1">
                                     <ExternalLink size={18} className="text-white" />
                                     <span className="text-[10px] text-white font-bold uppercase tracking-wider">Preview</span>
                                   </div>
                                 </a>
                               ) : (
-                                <a href={val} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 bg-primary/10 text-primary w-full py-3 rounded-lg text-sm font-bold hover:bg-primary hover:text-primary-foreground transition-all">
-                                  Open Document <ExternalLink size={16} />
+                                <a href={val.startsWith('/') ? `${import.meta.env.VITE_API_URL?.replace('/api', '') || ''}${val}` : (val.startsWith('http') ? val : `https://${val}`)} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 bg-primary/10 text-primary w-full py-3 rounded-lg text-sm font-bold hover:bg-primary hover:text-primary-foreground transition-all">
+                                  View <ExternalLink size={16} />
                                 </a>
                               )}
                             </>
+                          ) : key === 'Shop Address' || String(key).toLowerCase().includes('address') ? (
+                            <div className="flex flex-col w-full gap-2">
+                              <span className="text-sm font-medium px-4 py-2 rounded-lg w-full text-center bg-muted text-foreground whitespace-normal break-words">
+                                {String(val)}
+                              </span>
+                              <a href={`https://www.google.com/maps?q=${encodeURIComponent(String(val))}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 bg-blue-500/10 text-blue-700 dark:text-blue-400 w-full py-2 rounded-lg text-sm font-bold hover:bg-blue-500 hover:text-white transition-all">
+                                <Navigation size={14} /> Navigate on Maps
+                              </a>
+                            </div>
                           ) : (
-                            <span className="text-foreground text-sm font-medium bg-muted px-4 py-2 rounded-lg w-full text-center truncate">{String(val)}</span>
+                            <span className={`text-sm font-medium px-4 py-2 rounded-lg w-full text-center truncate ${val === true ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : val === false ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : 'bg-muted text-foreground'}`}>
+                              {val === true ? 'Verified ✅' : val === false ? 'Not Verified ❌' : String(val)}
+                            </span>
                           )}
                         </div>
                       </div>

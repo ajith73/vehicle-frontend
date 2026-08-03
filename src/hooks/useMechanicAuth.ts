@@ -26,7 +26,7 @@ export const useMechanicAuth = (selectedMechanic: Mechanic | null) => {
     try {
       const res = await apiClient<{exists: boolean}>('/public/check-email', {
         method: 'POST',
-        data: { email }
+        data: { email, mechanicId: selectedMechanic?.id }
       });
       if (res.exists) {
         setOtpState('login');
@@ -36,7 +36,7 @@ export const useMechanicAuth = (selectedMechanic: Mechanic | null) => {
         setOtp(['', '', '', '', '', '']);
         await apiClient('/public/send-otp', {
           method: 'POST',
-          data: { email }
+          data: { email, mechanicId: selectedMechanic?.id }
         });
         setTimer(60); 
         toast.success(`OTP sent to ${email}`);

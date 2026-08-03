@@ -87,12 +87,14 @@ export default function VerifyFlowPage() {
           }
         }
         
+        let sData = mechanicData.verificationChecklist || {};
+        
         // Resume from pending verification
         if (mechanicData.pendingVerification) {
           const pv = mechanicData.pendingVerification;
           setVerificationId(pv.id);
-          const sData = { ...(mechanicData.verificationChecklist || {}), ...(pv.submittedData || {}) };
-          setSubmittedData(sData);
+          sData = { ...(mechanicData.verificationChecklist || {}), ...(pv.submittedData || {}) };
+          
           if (sData.__mechanicDetails) {
             setMechanicDetailsPayload(sData.__mechanicDetails);
             Object.assign(mechanicData, sData.__mechanicDetails);
@@ -100,9 +102,13 @@ export default function VerifyFlowPage() {
           if (pv.id && !initialStep) {
             setCurrentStep(2);
           }
-        } else if (mechanicData.verificationChecklist) {
-          setSubmittedData(mechanicData.verificationChecklist);
         }
+        setSubmittedData(sData);
+
+        // Pre-fill selected optional docs based on existing data
+        const typeConfig = MECHANIC_DOCS_CONFIG[mechanicData.mechanicType || 'Workshop / Garage'] || MECHANIC_DOCS_CONFIG['Workshop / Garage'];
+        const preSelected = (typeConfig.optional || []).filter((doc: string) => sData[doc]).map((doc: string) => ({ value: doc, label: doc }));
+        if (preSelected.length > 0) setSelectedOptionalDocs(preSelected);
         
         setMechanic(mechanicData);
         setSpecificServicesList(servicesData.map((s: any) => ({ value: s.name, label: s.name })));
@@ -143,10 +149,11 @@ export default function VerifyFlowPage() {
         }
       });
     } else if (currentStep === 3) {
-      const missingCommon = COMMON_FIELDS.filter(f => !submittedData[f] || submittedData[f].trim() === '');
+      const renderedCommonFields = COMMON_FIELDS.filter(f => !typeConfig.mandatory.includes(f) && !typeConfig.optional.includes(f));
+      const missingCommon = renderedCommonFields.filter(f => !submittedData[f] || submittedData[f].trim() === '');
       missingCommon.forEach(m => newErrors[m] = 'Required');
       const isValidUrl = (string: string) => { try { new URL(string.includes('://') ? string : `https://${string}`); return string.includes('.') && string.trim().length > 4; } catch (_) { return false; } };
-      if (submittedData['Profile Photo Link'] && !isValidUrl(submittedData['Profile Photo Link'])) newErrors['Profile Photo Link'] = 'Invalid URL';
+      if (renderedCommonFields.includes('Profile Photo Link') && submittedData['Profile Photo Link'] && !isValidUrl(submittedData['Profile Photo Link'])) newErrors['Profile Photo Link'] = 'Invalid URL';
       const emergencyContact = submittedData['Emergency Contact']?.trim() || '';
       if (emergencyContact && !/^\d{10}$/.test(emergencyContact)) newErrors['Emergency Contact'] = 'Invalid phone';
       const location = submittedData['Location (GPS)']?.trim() || '';
@@ -249,7 +256,8 @@ export default function VerifyFlowPage() {
       }
     } else if (currentStep === 3) {
       const newErrors: Record<string, string> = {};
-      const missingCommon = COMMON_FIELDS.filter(f => !submittedData[f] || submittedData[f].trim() === '');
+      const renderedCommonFields = COMMON_FIELDS.filter(f => !typeConfig.mandatory.includes(f) && !typeConfig.optional.includes(f));
+      const missingCommon = renderedCommonFields.filter(f => !submittedData[f] || submittedData[f].trim() === '');
       missingCommon.forEach(m => newErrors[m] = 'Required');
 
       const isValidUrl = (string: string) => {
@@ -261,7 +269,7 @@ export default function VerifyFlowPage() {
         }
       };
 
-      if (submittedData['Profile Photo Link'] && !isValidUrl(submittedData['Profile Photo Link'])) {
+      if (renderedCommonFields.includes('Profile Photo Link') && submittedData['Profile Photo Link'] && !isValidUrl(submittedData['Profile Photo Link'])) {
         newErrors['Profile Photo Link'] = 'Invalid URL';
       }
 
@@ -369,7 +377,7 @@ export default function VerifyFlowPage() {
           handleFieldChange(field, e.target.value);
           if (errors[field]) setErrors(prev => ({...prev, [field]: ''}));
         }}
-        className={`w-full p-3 rounded-xl border bg-background focus:ring-2 outline-none transition-all ${errors[field] ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20 ring-1 ring-red-500/50' : (mandatory && !submittedData[field]) ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' : 'border-border focus:border-primary focus:ring-primary/20'}`}
+        className={`w-full p-3 rounded-xl border bg-background focus:ring-2 outline-none transition-all ${errors[field] ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20 ring-1 ring-red-500/50' : 'border-border focus:border-primary focus:ring-primary/20'}`}
       />
       {errors[field] && <p className="text-red-500 text-xs mt-1">{errors[field]}</p>}
     </div>
