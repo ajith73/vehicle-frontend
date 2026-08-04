@@ -50,12 +50,14 @@ export default function VerifyFlowPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  const { accountEmail, accountPassword, initialStep, singleEdit } = location.state || {};
+  const { accountEmail, accountPassword, initialStep, singleEdit: singleEditRoute } = location.state || {};
   
   const [mechanic, setMechanic] = useState<Mechanic | null>(null);
   const [loading, setLoading] = useState(true);
   
   const [currentStep, setCurrentStep] = useState(initialStep || 1);
+  const [isSingleEdit, setIsSingleEdit] = useState(!!singleEditRoute);
+  const [selectedMechanicType, setSelectedMechanicType] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
 
@@ -76,7 +78,7 @@ export default function VerifyFlowPage() {
     const fetchMechanic = async () => {
       try {
         const [mechanicData, servicesData] = await Promise.all([
-          apiClient<any>(`/public/mechanics/${id}`),
+          apiClient<any>(`/public/mechanics/${id}?t=${Date.now()}`),
           apiClient<any>('/public/specific-services')
         ]);
         // Ensure the verified account email is pre-filled into the form
@@ -356,7 +358,7 @@ export default function VerifyFlowPage() {
         });
       }
       toast.success('Verification request submitted successfully!');
-      navigate('/');
+      navigate(`/mechanic-dashboard/${id}`);
     } catch (err) {
       toast.error('Failed to submit verification request.');
     } finally {
@@ -395,11 +397,11 @@ export default function VerifyFlowPage() {
 
         <div className="bg-card border border-border rounded-2xl p-6 sm:p-10 shadow-sm">
           {/* Progress Bar */}
-          {!singleEdit && (
+          {!isSingleEdit && (
             <div className="mb-10">
               <div className="flex items-center justify-between relative z-10">
               {[
-                { step: 1, label: 'Contact', icon: ShieldCheck },
+                { step: 1, label: 'Profile', icon: ShieldCheck },
                 { step: 2, label: 'Business Docs', icon: FileText },
                 { step: 3, label: 'Common Info', icon: Info },
                 { step: 4, label: 'Services', icon: Settings }
@@ -430,7 +432,8 @@ export default function VerifyFlowPage() {
                 isEdit={true}
                 isModal={true}
                 initialData={mechanic}
-                submitButtonText={singleEdit ? "Update Profile" : "Proceed to Documents"}
+                onMechanicTypeChange={setSelectedMechanicType}
+                submitButtonText={isSingleEdit ? (selectedMechanicType && selectedMechanicType !== mechanic?.mechanicType ? "Proceed to Documents" : "Update Profile") : "Proceed to Documents"}
                 onSubmitOverride={async (payload) => {
                   setSubmitting(true);
                   try {
@@ -454,12 +457,30 @@ export default function VerifyFlowPage() {
                       newVerificationId = res.verification.id;
                     }
                     
-                    if (singleEdit) {
+                    const typeChanged = selectedMechanicType && selectedMechanicType !== mechanic?.mechanicType;
+
+                    if (isSingleEdit && !typeChanged) {
                       toast.success('Profile updated successfully!');
                       navigate(`/mechanic-dashboard/${id}`);
                     } else {
+                      if (typeChanged) {
+                        const oldTypeConfig = MECHANIC_DOCS_CONFIG[mechanic?.mechanicType || 'Workshop / Garage'] || MECHANIC_DOCS_CONFIG['Workshop / Garage'];
+                        const newTypeConfig = MECHANIC_DOCS_CONFIG[payload.mechanicType] || MECHANIC_DOCS_CONFIG['Workshop / Garage'];
+                        
+                        const oldFields = [...oldTypeConfig.mandatory, ...oldTypeConfig.optional];
+                        const newFields = [...newTypeConfig.mandatory, ...newTypeConfig.optional];
+                        const fieldsToRemove = oldFields.filter(f => !newFields.includes(f));
+                        
+                        const updatedData = { ...submittedData };
+                        fieldsToRemove.forEach(f => delete updatedData[f]);
+                        setSubmittedData(updatedData);
+                        
+                        setIsSingleEdit(false);
+                      }
+
                       setVerificationId(newVerificationId);
                       setMechanicDetailsPayload(payload);
+                      setMechanic(prev => prev ? { ...prev, ...payload } : payload);
                       setCurrentStep(2);
                     }
                   } catch (err) {
@@ -502,7 +523,7 @@ export default function VerifyFlowPage() {
               </div>
 
               <div className="flex gap-4 pt-4">
-                {!singleEdit && (
+                {!isSingleEdit && (
                   <button 
                     onClick={() => setCurrentStep(1)}
                     className="flex-1 py-4 border border-border text-foreground font-bold rounded-xl hover:bg-muted transition-colors"
@@ -511,11 +532,11 @@ export default function VerifyFlowPage() {
                   </button>
                 )}
                 <button 
-                  onClick={singleEdit ? handleSingleEditSubmit : handleNext}
+                  onClick={isSingleEdit ? handleSingleEditSubmit : handleNext}
                   disabled={submitting}
-                  className={`${singleEdit ? 'flex-1 bg-primary text-primary-foreground hover:bg-primary/90' : 'flex-[2] bg-foreground text-background hover:bg-foreground/90'} py-4 font-bold rounded-xl flex items-center justify-center gap-2 transition-transform active:scale-[0.99] disabled:opacity-50`}
+                  className={`${isSingleEdit ? 'flex-1 bg-primary text-primary-foreground hover:bg-primary/90' : 'flex-[2] bg-foreground text-background hover:bg-foreground/90'} py-4 font-bold rounded-xl flex items-center justify-center gap-2 transition-transform active:scale-[0.99] disabled:opacity-50`}
                 >
-                  {submitting ? <Loader2 className="w-6 h-6 animate-spin" /> : singleEdit ? 'Update Documents' : <>Next Step <ChevronRight size={20} /></>}
+                  {submitting ? <Loader2 className="w-6 h-6 animate-spin" /> : isSingleEdit ? 'Update Documents' : <>Next Step <ChevronRight size={20} /></>}
                 </button>
               </div>
             </div>
@@ -619,7 +640,7 @@ export default function VerifyFlowPage() {
               </div>
 
               <div className="flex gap-4 pt-4">
-                {!singleEdit && (
+                {!isSingleEdit && (
                   <button 
                     onClick={() => setCurrentStep(2)}
                     className="flex-1 py-4 border border-border text-foreground font-bold rounded-xl hover:bg-muted transition-colors"
@@ -628,11 +649,11 @@ export default function VerifyFlowPage() {
                   </button>
                 )}
                 <button 
-                  onClick={singleEdit ? handleSingleEditSubmit : handleNext}
+                  onClick={isSingleEdit ? handleSingleEditSubmit : handleNext}
                   disabled={submitting}
-                  className={`${singleEdit ? 'flex-1 bg-primary text-primary-foreground hover:bg-primary/90' : 'flex-[2] bg-foreground text-background hover:bg-foreground/90'} py-4 font-bold rounded-xl flex items-center justify-center gap-2 transition-transform active:scale-[0.99] disabled:opacity-50`}
+                  className={`${isSingleEdit ? 'flex-1 bg-primary text-primary-foreground hover:bg-primary/90' : 'flex-[2] bg-foreground text-background hover:bg-foreground/90'} py-4 font-bold rounded-xl flex items-center justify-center gap-2 transition-transform active:scale-[0.99] disabled:opacity-50`}
                 >
-                  {submitting ? <Loader2 className="w-6 h-6 animate-spin" /> : singleEdit ? 'Update Info' : <>Next Step <ChevronRight size={20} /></>}
+                  {submitting ? <Loader2 className="w-6 h-6 animate-spin" /> : isSingleEdit ? 'Update Info' : <>Next Step <ChevronRight size={20} /></>}
                 </button>
               </div>
             </div>
@@ -716,7 +737,7 @@ export default function VerifyFlowPage() {
               </div>
 
               <div className="flex gap-4 pt-4">
-                {!singleEdit && (
+                {!isSingleEdit && (
                   <button 
                     onClick={() => setCurrentStep(3)}
                     className="flex-1 py-4 border border-border text-foreground font-bold rounded-xl hover:bg-muted transition-colors"
@@ -725,11 +746,11 @@ export default function VerifyFlowPage() {
                   </button>
                 )}
                 <button 
-                  onClick={singleEdit ? handleSingleEditSubmit : handleSubmit}
+                  onClick={isSingleEdit ? handleSingleEditSubmit : handleSubmit}
                   disabled={submitting}
-                  className={`${singleEdit ? 'flex-1' : 'flex-[2]'} py-4 bg-primary text-primary-foreground font-bold rounded-xl hover:bg-primary/90 flex items-center justify-center gap-2 transition-transform active:scale-[0.99] disabled:opacity-50`}
+                  className={`${isSingleEdit ? 'flex-1' : 'flex-[2]'} py-4 bg-primary text-primary-foreground font-bold rounded-xl hover:bg-primary/90 flex items-center justify-center gap-2 transition-transform active:scale-[0.99] disabled:opacity-50`}
                 >
-                  {submitting ? <Loader2 className="w-6 h-6 animate-spin" /> : (singleEdit ? 'Update Services' : <><ShieldCheck size={24} /> Submit Verification</>)}
+                  {submitting ? <Loader2 className="w-6 h-6 animate-spin" /> : (isSingleEdit ? 'Update Services' : <><ShieldCheck size={24} /> Submit Verification</>)}
                 </button>
               </div>
             </div>

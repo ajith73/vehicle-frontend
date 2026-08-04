@@ -37,7 +37,7 @@ export function MechanicDetailsModal({
         className="bg-card w-full max-w-lg rounded-[24px] shadow-2xl border border-border overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 max-h-[90vh]"
         onClick={e => e.stopPropagation()}
       >
-        <div className="relative h-48 sm:h-56 shrink-0 bg-secondary/50">
+        <div className="relative h-32 sm:h-40 shrink-0 bg-secondary/50">
           {selectedMechanicForDetails.image || selectedMechanicForDetails.imageUrl ? (
             <img src={selectedMechanicForDetails.image || selectedMechanicForDetails.imageUrl} alt="Mechanic" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#f1f5f9"/><text x="50" y="50" font-size="50" text-anchor="middle" dominant-baseline="central">🛠️</text></svg>')}` }} />
           ) : (
@@ -47,9 +47,16 @@ export function MechanicDetailsModal({
           )}
           {(selectedMechanicForDetails.rating || selectedMechanicForDetails.rating > 0) ? (
             <div className="absolute bottom-0 right-0 bg-black/80 backdrop-blur-sm text-white rounded-tl-2xl px-3 py-1.5 shadow-lg flex items-center gap-1.5 z-10">
-              <span className="text-sm font-bold leading-none">{selectedMechanicForDetails.rating}</span>
-              <Star className="w-4 h-4 text-yellow-400 fill-current" />
-              <span className="text-xs font-medium text-white/80">({selectedMechanicForDetails.reviewCount || 0})</span>
+              <span className="text-sm font-bold leading-none mr-0.5">{selectedMechanicForDetails.rating}</span>
+              <div className="flex items-center">
+                {[...Array(5)].map((_, i) => (
+                  <Star 
+                    key={i} 
+                    className={`w-3.5 h-3.5 ${i < Math.round(selectedMechanicForDetails.rating) ? 'text-yellow-400 fill-current' : 'text-gray-400/50 fill-current'}`} 
+                  />
+                ))}
+              </div>
+              <span className="text-xs font-medium text-white/80 ml-0.5">({selectedMechanicForDetails.reviewCount || 0})</span>
             </div>
           ) : null}
           <button 

@@ -21,11 +21,13 @@ export default function MechanicDashboard() {
   useEffect(() => {
     const fetchMechanic = async () => {
       try {
-        const data = await apiClient<any>(`/public/mechanics/${id}`);
+        const data = await apiClient<any>(`/public/mechanics/${id}?t=${Date.now()}`);
         setMechanic(data);
         
         if (data.pendingVerification && data.pendingVerification.submittedData) {
           setPendingData(data.pendingVerification.submittedData);
+        } else {
+          setPendingData({});
         }
       } catch (err) {
         toast.error('Failed to load dashboard data.');
@@ -145,7 +147,17 @@ export default function MechanicDashboard() {
               {verificationChecklistItems.map(([key, val]) => (
                 <div key={key} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${val ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800' : 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800'}`}>
                   {val ? <Check size={16} /> : <Clock size={16} />}
-                  <span className="text-sm font-bold capitalize">{String(key)}</span>
+                  <span className="text-sm font-bold capitalize">
+                    {{
+                      phone: 'Phone & Business Name',
+                      location: 'Location & GPS',
+                      shopPhotos: 'Shop Photos',
+                      identity: 'Owner Identity',
+                      services: 'Services & Price List',
+                      mobile: 'Mobile',
+                      email: 'Email'
+                    }[String(key)] || String(key).replace(/([A-Z])/g, ' $1').trim()}
+                  </span>
                 </div>
               ))}
             </div>
@@ -364,7 +376,7 @@ export default function MechanicDashboard() {
                             </>
                           ) : key === 'Shop Address' || String(key).toLowerCase().includes('address') ? (
                             <div className="flex flex-col w-full gap-2">
-                              <span className="text-sm font-medium px-4 py-2 rounded-lg w-full text-center bg-muted text-foreground whitespace-normal break-words">
+                              <span className="text-sm text-muted-foreground whitespace-normal break-words leading-relaxed mb-1">
                                 {String(val)}
                               </span>
                               <a href={`https://www.google.com/maps?q=${encodeURIComponent(String(val))}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 bg-blue-500/10 text-blue-700 dark:text-blue-400 w-full py-2 rounded-lg text-sm font-bold hover:bg-blue-500 hover:text-white transition-all">
@@ -446,17 +458,7 @@ export default function MechanicDashboard() {
                 </div>
 
                 <div className="space-y-6">
-                  <div className="space-y-2">
-                    <span className="text-xs font-bold text-muted-foreground uppercase">Vehicles Serviced</span>
-                    <div className="flex flex-wrap gap-2">
-                      {displayData.vehiclesServiced?.map((v: string) => (
-                        <span key={v} className="bg-secondary text-secondary-foreground px-3 py-1 rounded-full text-sm font-medium">{v}</span>
-                      )) || (displayData.vehicleTypes?.map((v: string) => (
-                        <span key={v} className="bg-secondary text-secondary-foreground px-3 py-1 rounded-full text-sm font-medium">{v}</span>
-                      )) || <span className="text-muted-foreground italic">None selected</span>)}
-                    </div>
-                  </div>
-                  
+
                   <div className="space-y-2">
                     <span className="text-xs font-bold text-muted-foreground uppercase">Specific Services & Prices</span>
                     {servicesData.length === 0 ? (

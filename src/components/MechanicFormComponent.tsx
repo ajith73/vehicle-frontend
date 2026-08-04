@@ -26,9 +26,10 @@ interface MechanicFormComponentProps {
   onCancelOverride?: () => void;
   isModal?: boolean;
   submitButtonText?: string;
+  onMechanicTypeChange?: (type: string) => void;
 }
 
-export default function MechanicFormComponent({ id, isEdit, initialData, onSubmitOverride, onCancelOverride, isModal, submitButtonText }: MechanicFormComponentProps) {
+export default function MechanicFormComponent({ id, isEdit, initialData, onSubmitOverride, onCancelOverride, isModal, submitButtonText, onMechanicTypeChange }: MechanicFormComponentProps) {
   const navigate = useNavigate();
   const getSelectStyles = (hasError?: boolean) => ({
     control: (base: any, state: any) => ({
@@ -578,7 +579,10 @@ export default function MechanicFormComponent({ id, isEdit, initialData, onSubmi
                         name="mechanicType" 
                         value={type} 
                         checked={mechanicType === type}
-                        onChange={e => setMechanicType(e.target.value)}
+                        onChange={e => {
+                          setMechanicType(e.target.value);
+                          if (onMechanicTypeChange) onMechanicTypeChange(e.target.value);
+                        }}
                         className="accent-primary w-4 h-4"
                       />
                       <span className="text-sm font-medium">{type}</span>

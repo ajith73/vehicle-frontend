@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../api/apiClient';
@@ -32,12 +32,12 @@ export const useMechanicAuth = (selectedMechanic: Mechanic | null) => {
         setOtpState('login');
         toast.success('Account found! Please enter your password to continue.');
       } else {
-        setOtpState('sent');
         setOtp(['', '', '', '', '', '']);
         await apiClient('/public/send-otp', {
           method: 'POST',
           data: { email, mechanicId: selectedMechanic?.id }
         });
+        setOtpState('sent');
         setTimer(60); 
         toast.success(`OTP sent to ${email}`);
       }
@@ -49,12 +49,16 @@ export const useMechanicAuth = (selectedMechanic: Mechanic | null) => {
     }
   };
 
+  const [isVerifying, setIsVerifying] = useState(false);
+
   const handleVerifyOtp = async () => {
+    if (isVerifying) return;
     const code = otp.join('');
     if (code.length !== 6) {
       toast.error('Please enter the full 6-digit OTP.');
       return;
     }
+    setIsVerifying(true);
     try {
       await apiClient('/public/verify-otp', {
         method: 'POST',
@@ -64,6 +68,8 @@ export const useMechanicAuth = (selectedMechanic: Mechanic | null) => {
       toast.success('Email verified successfully!');
     } catch (err: any) {
       toast.error(err.message || 'Invalid or expired OTP. Please try again.');
+    } finally {
+      setIsVerifying(false);
     }
   };
 
@@ -129,6 +135,12 @@ export const useMechanicAuth = (selectedMechanic: Mechanic | null) => {
       setIsContinuing(false);
     }
   };
+
+  useEffect(() => {
+    if (otpState === 'sent' && otp.join('').length === 6) {
+      handleVerifyOtp();
+    }
+  }, [otp, otpState]);
 
   return {
     email,
