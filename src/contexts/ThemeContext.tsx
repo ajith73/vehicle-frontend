@@ -12,13 +12,13 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const getSystemTheme = (): Theme => {
-    if (typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
       return 'dark';
     }
     return 'light';
   };
 
-  const [theme, setThemeState] = useState<Theme>(getSystemTheme());
+  const [theme, setThemeState] = useState<Theme>('light');
 
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme);
@@ -28,7 +28,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setThemeState((prev) => (prev === 'light' ? 'dark' : 'light'));
   };
 
-  // Sync theme to document body and listen to system changes
+  useEffect(() => {
+    setThemeState(getSystemTheme());
+  }, []);
+
   useEffect(() => {
     const root = document.documentElement;
     if (theme === 'dark') {

@@ -8,6 +8,7 @@ interface SEOProps {
   image?: string;
   url?: string;
   schema?: any;
+  noindex?: boolean;
 }
 
 export function SEO({
@@ -17,12 +18,14 @@ export function SEO({
   image = 'https://roadresq.in/social-share.png',
   url = 'https://roadresq.in',
   schema,
+  noindex = false,
 }: SEOProps) {
   return (
     <Helmet>
       <title>{title}</title>
       <meta name="description" content={description} />
       <meta name="keywords" content={keywords} />
+      {noindex && <meta name="robots" content="noindex,nofollow" />}
 
       {/* Open Graph / Facebook */}
       <meta property="og:type" content="website" />

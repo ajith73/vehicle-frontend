@@ -1,6 +1,14 @@
+import { SEO } from '../components/SEO';
+
 export default function TermsPage() {
   return (
     <div className="flex-1 w-full bg-background flex flex-col min-h-0 overflow-y-auto custom-scrollbar">
+      <SEO
+        title="Terms and Conditions | RoadResQ"
+        description="Read the RoadResQ terms and conditions for roadside assistance discovery, mechanic listings, platform usage, and payment responsibility."
+        url="https://roadresq.in/terms"
+        keywords="RoadResQ terms, roadside assistance terms, mechanic platform conditions"
+      />
       <div className="mx-auto max-w-4xl px-4 py-16 sm:px-8 sm:py-24">
         <h1 className="text-4xl font-black text-foreground mb-8">Terms and Conditions</h1>
         

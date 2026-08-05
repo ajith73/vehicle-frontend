@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import Select from 'react-select';
 import { apiClient } from '../api/apiClient';
 import { useLocationContext } from '../contexts/LocationContext';
+import { SEO } from '../components/SEO';
 
 const FEEDBACK_TYPES = [
   { name: 'Bug Report', icon: Bug, prompt: 'Tell us what broke, where it happened, and how we can reproduce it.' },
@@ -121,6 +122,12 @@ export default function FeedbackPage() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[calc(100vh-73px)] p-4 sm:p-8 pb-[80px] sm:pb-8 relative">
+      <SEO
+        title="Feedback and Issue Reporting | RoadResQ"
+        description="Share feedback, report wrong mechanic information, request new location coverage, or suggest improvements for the RoadResQ platform."
+        url="https://roadresq.in/feedback"
+        keywords="RoadResQ feedback, report wrong mechanic info, request mechanic coverage, roadside assistance feedback"
+      />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/10 via-background to-background -z-10" />
 
       <div className="max-w-xl w-full bg-card/60 backdrop-blur-xl shadow-2xl rounded-3xl p-6 sm:p-10 border border-white/10 dark:border-white/5">

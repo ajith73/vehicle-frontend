@@ -1,11 +1,20 @@
 import { Shield, Target, Zap, HeartHandshake, Clock, Users, ShieldCheck, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { SEO } from '../components/SEO';
+import { PublicLinkGrid } from '../components/seo/PublicLinkGrid';
+import { TrustSignalsSection } from '../components/seo/TrustSignalsSection';
+import { citySeoConfigs } from '../content/seoLocations';
 
 export default function AboutPage() {
   const navigate = useNavigate();
 
   return (
     <div className="flex-1 w-full bg-background flex flex-col min-h-0 overflow-y-auto custom-scrollbar">
+      <SEO
+        title="About RoadResQ | Roadside Assistance Platform in Tamil Nadu"
+        description="Learn how RoadResQ helps drivers find mechanics, towing support, puncture repair, and roadside assistance across Tamil Nadu with stronger trust, visibility, and faster local search."
+        url="https://roadresq.in/about"
+      />
       {/* Hero Section */}
       <div className="relative overflow-hidden bg-card border-b border-border">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-secondary/20 z-0"></div>
@@ -107,6 +116,55 @@ export default function AboutPage() {
         </div>
       </div>
 
+
+
+      <section className="mx-auto w-full max-w-7xl px-4 pb-12 sm:px-8 mt-12">
+        <div className="rounded-[2rem] border border-border/50 bg-gradient-to-tr from-card to-secondary/20 p-8 shadow-sm sm:p-10 relative overflow-hidden">
+          <div className="absolute bottom-0 left-0 -ml-10 -mb-10 w-40 h-40 rounded-full bg-primary/5 blur-3xl pointer-events-none" />
+          <h2 className="text-2xl font-black text-foreground sm:text-3xl relative z-10">
+            Mechanic list and nearby search
+          </h2>
+          <p className="mt-3 max-w-4xl text-sm leading-relaxed text-muted-foreground sm:text-base relative z-10">
+            Our platform is built for drivers comparing mechanic options, roadside assistance, towing support, and workshop coverage in one place. Use the list and map filters to narrow results by location, vehicle type, service type, and radius so you can understand why a result appears and how many mechanics are available in your current search area.
+          </p>
+          <div className="mt-8 grid gap-6 md:grid-cols-3 relative z-10">
+            <article className="group rounded-2xl border border-border/40 bg-background/50 p-6 hover:bg-background transition-all hover:shadow-[0_0_20px_rgba(var(--primary),0.05)] hover:border-primary/20">
+              <h3 className="text-lg font-bold text-foreground">How to broaden results</h3>
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground group-hover:text-foreground/80 transition-colors">
+                If your search is empty, try a wider radius, remove one service filter, or search with a broader city or area name instead of a very specific phrase.
+              </p>
+            </article>
+            <article className="group rounded-2xl border border-border/40 bg-background/50 p-6 hover:bg-background transition-all hover:shadow-[0_0_20px_rgba(var(--primary),0.05)] hover:border-primary/20">
+              <h3 className="text-lg font-bold text-foreground">Why location matters</h3>
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground group-hover:text-foreground/80 transition-colors">
+                RoadResQ uses your selected location source to estimate nearby mechanics and make distance-based browsing easier across both the list and map flows.
+              </p>
+            </article>
+            <article className="group rounded-2xl border border-border/40 bg-background/50 p-6 hover:bg-background transition-all hover:shadow-[0_0_20px_rgba(var(--primary),0.05)] hover:border-primary/20">
+              <h3 className="text-lg font-bold text-foreground">What search supports</h3>
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground group-hover:text-foreground/80 transition-colors">
+                The search experience is optimized for car mechanics, bike mechanics, towing providers, puncture help, and other roadside workshop searches with clear filter visibility.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <TrustSignalsSection />
+
+      <PublicLinkGrid
+        title="Explore city and service coverage"
+        description="Use these internal links to move into city-specific and service-specific discovery flows."
+        links={[
+          ...citySeoConfigs.slice(0, 6).map((city) => ({
+            to: `/cities/${city.slug}`,
+            label: `Mechanics in ${city.name}`
+          })),
+          { to: '/list', label: 'Browse all mechanic listings' },
+          { to: '/submit', label: 'Submit or update a mechanic record' }
+        ]}
+      />
+
       {/* Legal Links */}
       <div className="bg-card border-t border-border mt-auto">
         <div className="mx-auto max-w-7xl px-4 py-12 sm:px-8 flex flex-col sm:flex-row items-center justify-between gap-6 text-center sm:text-left">
@@ -117,15 +175,15 @@ export default function AboutPage() {
           <div className="flex flex-wrap items-center justify-center gap-4">
             <button 
               onClick={() => navigate('/terms')}
-              className="flex items-center gap-2 rounded-xl bg-secondary px-5 py-3 text-sm font-bold text-foreground hover:bg-secondary/80 transition-colors"
+              className="flex items-center gap-2 rounded-xl border border-border/50 bg-secondary/50 backdrop-blur-sm px-6 py-3 text-sm font-bold text-foreground hover:bg-secondary transition-all hover:-translate-y-0.5 hover:shadow-sm"
             >
-              <ShieldCheck className="h-4 w-4" /> Terms & Conditions
+              <ShieldCheck className="h-4 w-4 text-primary" /> Terms & Conditions
             </button>
             <button 
               onClick={() => navigate('/privacy')}
-              className="flex items-center gap-2 rounded-xl bg-secondary px-5 py-3 text-sm font-bold text-foreground hover:bg-secondary/80 transition-colors"
+              className="flex items-center gap-2 rounded-xl border border-border/50 bg-secondary/50 backdrop-blur-sm px-6 py-3 text-sm font-bold text-foreground hover:bg-secondary transition-all hover:-translate-y-0.5 hover:shadow-sm"
             >
-              <Lock className="h-4 w-4" /> Privacy Policy
+              <Lock className="h-4 w-4 text-primary" /> Privacy Policy
             </button>
           </div>
         </div>

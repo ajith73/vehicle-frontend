@@ -39,7 +39,7 @@ export function MechanicDetailsModal({
       >
         <div className="relative h-32 sm:h-40 shrink-0 bg-secondary/50">
           {selectedMechanicForDetails.image || selectedMechanicForDetails.imageUrl ? (
-            <img src={selectedMechanicForDetails.image || selectedMechanicForDetails.imageUrl} alt="Mechanic" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#f1f5f9"/><text x="50" y="50" font-size="50" text-anchor="middle" dominant-baseline="central">🛠️</text></svg>')}` }} />
+            <img src={selectedMechanicForDetails.image || selectedMechanicForDetails.imageUrl} alt={selectedMechanicForDetails.businessName || selectedMechanicForDetails.name || 'Mechanic listing image'} loading="lazy" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#f1f5f9"/><text x="50" y="50" font-size="50" text-anchor="middle" dominant-baseline="central">🛠️</text></svg>')}` }} />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
               <Wrench className="w-16 h-16 text-muted-foreground/30" />
@@ -62,6 +62,7 @@ export function MechanicDetailsModal({
           <button 
             onClick={onClose}
             className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-black/50 text-white/80 hover:text-white hover:bg-black/70 backdrop-blur-md transition-colors shadow-lg z-10"
+            aria-label="Close mechanic details"
           >
             <X className="w-5 h-5" />
           </button>
@@ -128,7 +129,7 @@ export function MechanicDetailsModal({
                               <Phone size={16} /> Call
                             </a>
                             {p.isWhatsapp && (
-                              <a href={`https://wa.me/91${p.number}`} target="_blank" rel="noreferrer" className="flex flex-1 sm:flex-none items-center justify-center gap-2 rounded-xl bg-green-500/10 px-4 py-2.5 text-sm font-bold text-green-600 transition-all hover:bg-green-500 hover:text-white shadow-sm hover:shadow-green-500/25 active:scale-95" title="WhatsApp">
+                              <a href={`https://wa.me/91${p.number}`} target="_blank" rel="noopener noreferrer" className="flex flex-1 sm:flex-none items-center justify-center gap-2 rounded-xl bg-green-500/10 px-4 py-2.5 text-sm font-bold text-green-600 transition-all hover:bg-green-500 hover:text-white shadow-sm hover:shadow-green-500/25 active:scale-95" title="WhatsApp">
                                 <MessageCircle size={16} /> WhatsApp
                               </a>
                             )}
@@ -178,7 +179,7 @@ export function MechanicDetailsModal({
                       <span className="text-muted-foreground">🌐</span> Website
                     </span>
                     <div className="flex flex-wrap gap-2.5">
-                      <a href={selectedMechanicForDetails.websiteUrl.startsWith('http') ? selectedMechanicForDetails.websiteUrl : `https://${selectedMechanicForDetails.websiteUrl}`} target="_blank" rel="noreferrer" className="flex flex-1 sm:flex-none items-center justify-center gap-2 rounded-xl bg-teal-500/10 px-4 py-2.5 text-sm font-bold text-teal-600 transition-all hover:bg-teal-500 hover:text-white shadow-sm hover:shadow-teal-500/25 active:scale-95" title="Website">
+                      <a href={selectedMechanicForDetails.websiteUrl.startsWith('http') ? selectedMechanicForDetails.websiteUrl : `https://${selectedMechanicForDetails.websiteUrl}`} target="_blank" rel="noopener noreferrer" className="flex flex-1 sm:flex-none items-center justify-center gap-2 rounded-xl bg-teal-500/10 px-4 py-2.5 text-sm font-bold text-teal-600 transition-all hover:bg-teal-500 hover:text-white shadow-sm hover:shadow-teal-500/25 active:scale-95" title="Website">
                         <Globe size={16} /> Visit Website
                       </a>
                     </div>
@@ -383,7 +384,7 @@ export function MechanicDetailsModal({
            <button 
              onClick={() => {
                const { latitude, longitude } = selectedMechanicForDetails;
-               window.open(`https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`, '_blank');
+               window.open(`https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`, '_blank', 'noopener,noreferrer');
              }} 
              className="flex-[1.5] bg-primary text-primary-foreground h-12 rounded-xl flex justify-center items-center hover:bg-primary/90 active:scale-95 transition-all shadow-md shadow-primary/20 font-bold text-sm gap-2"
            >

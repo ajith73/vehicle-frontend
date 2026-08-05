@@ -3,7 +3,6 @@ import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import Select from 'react-select';
 import { User, Phone, MapPin, Wrench, CalendarClock, Plus, Trash2, Save, X, Info, Image, Globe, Map, Loader2 } from 'lucide-react';
-import { State, City } from 'country-state-city';
 import { apiClient } from '../api/apiClient';
 import { useDataContext } from '../contexts/DataContext';
 
@@ -99,6 +98,7 @@ export default function MechanicFormComponent({ id, isEdit, initialData, onSubmi
   useEffect(() => {
     const loadStates = async () => {
       try {
+        const { State } = await import('country-state-city');
         setStateOptions(
           State.getStatesOfCountry('IN').map((state) => ({
             value: state.isoCode,
@@ -187,6 +187,7 @@ export default function MechanicFormComponent({ id, isEdit, initialData, onSubmi
       }
 
       try {
+        const { City } = await import('country-state-city');
         setCityOptions(
           City.getCitiesOfState('IN', stateOption.value).map((city) => ({
             value: city.name,

@@ -1,17 +1,27 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   Plus,
   ArrowLeft,
   Search,
+  ShieldCheck,
+  MessageSquare,
+  Clock3,
+  MapPin,
+  ArrowRight,
+  Wrench,
+  Siren,
+  Car,
 } from 'lucide-react';
 import { apiClient } from '../api/apiClient';
 import { submitMechanicRegistration } from '../api/mechanics';
-import MechanicFormComponent from '../components/MechanicFormComponent';
+import { SEO } from '../components/SEO';
+import { citySeoConfigs } from '../content/seoLocations';
 import type { Mechanic } from '../types';
-import { State } from 'country-state-city';
 import { useDataContext } from '../contexts/DataContext';
+
+const MechanicFormComponent = lazy(() => import('../components/MechanicFormComponent'));
 
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
@@ -201,6 +211,58 @@ const validateForm = (form: FormState) => {
 
 export default function SubmitMechanicPage() {
   const navigate = useNavigate();
+  const trustItems = [
+    {
+      icon: ShieldCheck,
+      title: 'Admin-reviewed listing flow',
+      description: 'Submissions from mechanics and service providers are routed for Super Admin review before they affect live public data.'
+    },
+    {
+      icon: MessageSquare,
+      title: 'Correction-friendly updates',
+      description: 'Existing workshops can request edits instead of creating confusion through duplicate or conflicting public information.'
+    },
+    {
+      icon: MapPin,
+      title: 'Better local discovery',
+      description: 'Accurate city, area, service, and location details help drivers find the right mechanic faster during real roadside situations.'
+    },
+    {
+      icon: Clock3,
+      title: 'Built for faster response',
+      description: 'Clear service, timing, and contact information improves how quickly stranded users can choose and reach a provider.'
+    }
+  ];
+  const publicLinks = [
+    {
+      to: '/list',
+      label: 'Browse all mechanics',
+      description: 'Review how public mechanic listings currently appear.',
+      icon: Wrench,
+      iconClasses: 'bg-blue-500/10 text-blue-500'
+    },
+    {
+      to: '/emergency',
+      label: 'Emergency roadside help',
+      description: 'Open urgent support numbers and emergency guidance.',
+      icon: Siren,
+      iconClasses: 'bg-red-500/10 text-red-500'
+    },
+    {
+      to: '/about',
+      label: 'About RoadResQ',
+      description: 'Understand the platform mission and product direction.',
+      icon: ShieldCheck,
+      iconClasses: 'bg-emerald-500/10 text-emerald-500'
+    },
+    ...citySeoConfigs.slice(0, 3).map((city) => ({
+      to: `/cities/${city.slug}`,
+      label: `Mechanics in ${city.name}`,
+      description: `Explore the dedicated public city page for ${city.name}.`,
+      icon: Car,
+      iconClasses: 'bg-violet-500/10 text-violet-500'
+    }))
+  ];
   const [mode, setMode] = useState<FormMode>('pick');
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState<Mechanic[]>([]);
@@ -228,8 +290,9 @@ export default function SubmitMechanicPage() {
   }, [vehicles, services, isLoadingData]);
 
   useEffect(() => {
-    const loadStates = () => {
+    const loadStates = async () => {
       try {
+        const { State } = await import('country-state-city');
         setStateOptions(
           State.getStatesOfCountry('IN').map((state) => ({
             value: state.isoCode,
@@ -363,6 +426,12 @@ export default function SubmitMechanicPage() {
 
   return (
     <div className="min-h-screen bg-background sm:p-8 pt-16 sm:pt-20">
+      <SEO
+        title="Submit or Update a Mechanic Listing | RoadResQ"
+        description="Create a new mechanic listing request or submit updates to an existing RoadResQ mechanic record for Super Admin review."
+        url="https://roadresq.in/submit"
+        keywords="submit mechanic listing, update mechanic record, claim workshop listing, roadside service provider registration"
+      />
       <div className="mx-auto max-w-4xl bg-card sm:rounded-2xl sm:shadow-xl flex flex-col min-h-[calc(100vh-4rem)] sm:min-h-0 overflow-hidden sm:border border-border">
         {/* Header */}
         <div className="border-b border-border p-4 sm:p-6 relative">
@@ -470,35 +539,106 @@ export default function SubmitMechanicPage() {
                   )}
 
                   <div className="sm:rounded-2xl sm:border border-border bg-card p-4 sm:p-5 sm:shadow-sm">
-                    <MechanicFormComponent 
-                      isEdit={!!selectedMechanic}
-                      initialData={selectedMechanic}
-                      onSubmitOverride={async (payload) => {
-                        setSubmitting(true);
-                        setError('');
-                        try {
-                          await submitMechanicRegistration({
-                            ...payload,
-                            existingMechanicId: selectedMechanic?.id
-                          });
-                          toast.success(selectedMechanic ? 'Update request sent to Super Admin' : 'New mechanic request sent to Super Admin');
-                          navigate('/');
-                        } catch (submitError) {
-                          setError(submitError instanceof Error ? submitError.message : 'Failed to submit request.');
-                          window.scrollTo(0, 0);
-                        } finally {
-                          setSubmitting(false);
-                        }
-                      }}
-                      onCancelOverride={() => setMode('pick')}
-                      isModal={false}
-                    />
+                    <Suspense
+                      fallback={
+                        <div className="rounded-2xl border border-border bg-background/70 px-4 py-6 text-sm text-muted-foreground">
+                          Loading mechanic form...
+                        </div>
+                      }
+                    >
+                      <MechanicFormComponent 
+                        isEdit={!!selectedMechanic}
+                        initialData={selectedMechanic}
+                        onSubmitOverride={async (payload) => {
+                          setSubmitting(true);
+                          setError('');
+                          try {
+                            await submitMechanicRegistration({
+                              ...payload,
+                              existingMechanicId: selectedMechanic?.id
+                            });
+                            toast.success(selectedMechanic ? 'Update request sent to Super Admin' : 'New mechanic request sent to Super Admin');
+                            navigate('/');
+                          } catch (submitError) {
+                            setError(submitError instanceof Error ? submitError.message : 'Failed to submit request.');
+                            window.scrollTo(0, 0);
+                          } finally {
+                            setSubmitting(false);
+                          }
+                        }}
+                        onCancelOverride={() => setMode('pick')}
+                        isModal={false}
+                      />
+                    </Suspense>
                   </div>
                 </div>
               </div>
             </div>
           )}
         </div>
+      </div>
+
+      <div className="mt-8 space-y-0 sm:mt-10">
+        <section className="mx-auto w-full max-w-7xl px-4 pb-12 sm:px-8">
+          <div className="overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/10 via-card to-secondary/20 shadow-sm">
+            <div className="p-6 sm:p-8">
+              <div className="max-w-3xl">
+                <p className="text-sm font-black uppercase tracking-[0.2em] text-primary">Trust Signals</p>
+                <h2 className="mt-2 text-2xl font-black text-foreground sm:text-3xl">Why drivers can trust the platform</h2>
+                <p className="mt-3 text-sm leading-7 text-muted-foreground sm:text-base">
+                  Listing submission pages should clearly explain how RoadResQ handles review quality, local accuracy, and responsible publishing before data becomes visible to the public.
+                </p>
+              </div>
+
+              <div className="mt-6 grid gap-4 md:grid-cols-2">
+                {trustItems.map((item) => (
+                  <article key={item.title} className="rounded-2xl border border-border/60 bg-background/75 p-5 shadow-sm transition-colors hover:border-primary/30">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                      <item.icon className="h-5 w-5" />
+                    </div>
+                    <h3 className="mt-4 text-lg font-black text-foreground">{item.title}</h3>
+                    <p className="mt-2 text-sm leading-6 text-muted-foreground">{item.description}</p>
+                  </article>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="mx-auto w-full max-w-7xl px-4 pb-12 sm:px-8">
+          <div className="overflow-hidden rounded-3xl border border-orange-500/20 bg-gradient-to-br from-orange-500/10 via-card to-yellow-500/10 shadow-sm">
+            <div className="p-6 sm:p-8">
+              <div className="max-w-3xl">
+                <p className="text-sm font-black uppercase tracking-[0.2em] text-orange-600 dark:text-orange-400">Explore More</p>
+                <h2 className="mt-2 text-2xl font-black text-foreground sm:text-3xl">Browse more public pages</h2>
+                <p className="mt-3 text-sm leading-7 text-muted-foreground sm:text-base">
+                  These public pages help users explore coverage, emergency use cases, and dedicated city landing pages while also improving crawlable internal linking.
+                </p>
+              </div>
+
+              <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {publicLinks.map((item) => (
+                  <button
+                    key={item.to}
+                    onClick={() => navigate(item.to)}
+                    className="group flex items-start gap-4 rounded-2xl border border-border/60 bg-background/80 p-4 text-left transition-all hover:border-orange-400/40 hover:bg-background hover:shadow-md"
+                  >
+                    <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${item.iconClasses}`}>
+                      <item.icon className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-3">
+                        <h3 className="text-sm font-black text-foreground sm:text-base">{item.label}</h3>
+                        <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-orange-500" />
+                      </div>
+                      <p className="mt-2 text-sm leading-6 text-muted-foreground">{item.description}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
   );

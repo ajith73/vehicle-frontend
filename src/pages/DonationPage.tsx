@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Heart, CreditCard, HeartHandshake, ArrowRight, X, Eye, EyeOff, Copy, QrCode } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { apiClient } from '../api/apiClient';
+import { SEO } from '../components/SEO';
 
 const SUGGESTED_AMOUNTS = [100, 200, 500, 1000];
 
@@ -76,6 +77,12 @@ export default function DonationPage() {
   return (
     <>
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-73px)] p-4 sm:p-8 pb-[80px] sm:pb-8 relative">
+      <SEO
+        title="Support and Donations | RoadResQ"
+        description="Support RoadResQ with a donation to help maintain free mechanic discovery, roadside assistance search, and public emergency help tools."
+        url="https://roadresq.in/donate"
+        keywords="RoadResQ donation, support roadside assistance platform, mechanic platform donation"
+      />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/10 via-background to-background -z-10" />
       
       <div className="max-w-xl w-full bg-card/60 backdrop-blur-xl shadow-2xl rounded-3xl p-6 sm:p-10 border border-white/10 dark:border-white/5">
@@ -199,6 +206,7 @@ export default function DonationPage() {
                       onClick={() => setIsUpiVisible(!isUpiVisible)}
                       className="p-2 bg-background hover:bg-secondary border border-border rounded-lg text-muted-foreground transition-colors"
                       title={isUpiVisible ? "Hide UPI ID" : "Show UPI ID"}
+                      aria-label={isUpiVisible ? 'Hide UPI ID' : 'Show UPI ID'}
                     >
                       {isUpiVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -209,6 +217,7 @@ export default function DonationPage() {
                       }}
                       className="p-2 bg-background hover:bg-secondary border border-border rounded-lg text-muted-foreground transition-colors"
                       title="Copy UPI ID"
+                      aria-label="Copy UPI ID"
                     >
                       <Copy className="w-4 h-4" />
                     </button>
@@ -224,6 +233,7 @@ export default function DonationPage() {
                     <img 
                       src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=ajith737353@okaxis&pn=Vehicle%20Repair&am=${amount}&cu=INR`} 
                       alt="UPI QR Code" 
+                      loading="lazy"
                       className="w-full h-full object-cover p-2"
                     />
                   ) : (

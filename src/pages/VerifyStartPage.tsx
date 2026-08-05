@@ -7,6 +7,7 @@ import { useMechanicSearch } from '../hooks/useMechanicSearch';
 import MechanicSearch from '../components/verify/MechanicSearch';
 import ClaimMechanicFlow from '../components/verify/ClaimMechanicFlow';
 import DirectLoginFlow from '../components/verify/DirectLoginFlow';
+import { SEO } from '../components/SEO';
 
 export default function VerifyStartPage() {
   const navigate = useNavigate();
@@ -28,6 +29,13 @@ export default function VerifyStartPage() {
 
   return (
     <div className="min-h-screen bg-muted/30">
+      <SEO
+        title="Verify Your Business | RoadResQ"
+        description="Mechanics and service providers can verify or claim their RoadResQ business profile to manage their listing securely."
+        url="https://roadresq.in/verify-start"
+        keywords="verify mechanic profile, claim RoadResQ business, mechanic verification"
+        noindex
+      />
       <div className="max-w-3xl mx-auto px-4 py-8">
         <button 
           onClick={() => navigate('/')} 

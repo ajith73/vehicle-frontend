@@ -67,13 +67,13 @@ export default function ShareButtons({ url, title }: { url: string; title: strin
   const handleInstagramClick = () => {
     handleCopyLink();
     setTimeout(() => {
-      window.open('https://instagram.com', '_blank');
+      window.open('https://instagram.com', '_blank', 'noopener,noreferrer');
     }, 500);
   };
 
   const handleGithubClick = () => {
     // Redirect to the project's github if you have one, or just show a message.
-    window.open('https://github.com', '_blank');
+    window.open('https://github.com', '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -103,6 +103,7 @@ export default function ShareButtons({ url, title }: { url: string; title: strin
         onClick={handleInstagramClick}
         className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-500 text-white transition-transform hover:scale-110"
         title="Copy link for Instagram"
+        aria-label="Copy link for Instagram"
       >
         <Instagram size={20} />
       </button>
@@ -112,6 +113,7 @@ export default function ShareButtons({ url, title }: { url: string; title: strin
         onClick={handleGithubClick}
         className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-800 text-white transition-transform hover:scale-110 dark:bg-gray-700"
         title="View on GitHub"
+        aria-label="View on GitHub"
       >
         <Github size={20} />
       </button>
@@ -121,6 +123,7 @@ export default function ShareButtons({ url, title }: { url: string; title: strin
         onClick={handleCopyLink}
         className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-foreground transition-transform hover:scale-110"
         title="Copy Link"
+        aria-label="Copy link"
       >
         <Link2 size={20} />
       </button>

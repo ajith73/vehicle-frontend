@@ -69,6 +69,7 @@ export function MechanicBottomSheet({
         <button 
           onClick={(e) => { e.stopPropagation(); setSelectedMechanic(null); }}
           className="absolute top-3 right-4 sm:top-4 sm:right-5 p-2 bg-secondary/50 hover:bg-secondary rounded-full transition-colors z-10"
+          aria-label="Close mechanic sheet"
         >
           <X className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
         </button>
@@ -92,7 +93,7 @@ export function MechanicBottomSheet({
                 className="relative shrink-0 overflow-hidden rounded-xl w-20 h-20 group/img cursor-pointer shadow-sm hover:shadow-md transition-shadow"
                 onClick={(e) => { e.stopPropagation(); setSelectedMechanicForDetails(selectedMechanic); setIsDetailsOpen(true); }}
               >
-                <img src={selectedMechanic.image || selectedMechanic.imageUrl} alt={selectedMechanic.businessName || selectedMechanic.name} className="w-full h-full object-cover bg-secondary group-hover/img:scale-110 transition-transform duration-500" onError={(e) => { (e.target as HTMLImageElement).src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#f1f5f9"/><text x="50" y="50" font-size="40" text-anchor="middle" dominant-baseline="central">🛠️</text></svg>')}` }} />
+                <img src={selectedMechanic.image || selectedMechanic.imageUrl} alt={selectedMechanic.businessName || selectedMechanic.name} loading="lazy" className="w-full h-full object-cover bg-secondary group-hover/img:scale-110 transition-transform duration-500" onError={(e) => { (e.target as HTMLImageElement).src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#f1f5f9"/><text x="50" y="50" font-size="40" text-anchor="middle" dominant-baseline="central">🛠️</text></svg>')}` }} />
                 {selectedMechanic.verificationLevel > 0 && (
                   <div className="absolute top-0 left-0 bg-blue-600 text-white rounded-br-lg p-0.5 shadow-md flex items-center justify-center z-10" title={`Verified Level ${selectedMechanic.verificationLevel}`}>
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
@@ -156,33 +157,33 @@ export function MechanicBottomSheet({
           {/* Action Icons Row */}
           <div className="flex justify-around items-center px-4 py-3 border-y border-border/50 gap-2 shrink-0">
              {selectedMechanic.phone?.[0] && (
-               <a href={`tel:${selectedMechanic.phone[0].number}`} className="p-3 bg-primary/10 text-primary rounded-full hover:bg-primary/20 transition-colors shrink-0">
+               <a href={`tel:${selectedMechanic.phone[0].number}`} aria-label="Call mechanic" className="p-3 bg-primary/10 text-primary rounded-full hover:bg-primary/20 transition-colors shrink-0">
                  <Phone className="w-5 h-5" />
                </a>
              )}
              {selectedMechanic.phone?.[0]?.isWhatsapp && (
-               <a href={`https://wa.me/91${selectedMechanic.phone[0].number}`} target="_blank" rel="noreferrer" className="p-3 bg-green-500/10 text-green-600 rounded-full hover:bg-green-500/20 transition-colors shrink-0">
+               <a href={`https://wa.me/91${selectedMechanic.phone[0].number}`} target="_blank" rel="noopener noreferrer" aria-label="Open WhatsApp chat" className="p-3 bg-green-500/10 text-green-600 rounded-full hover:bg-green-500/20 transition-colors shrink-0">
                  <MessageCircle className="w-5 h-5" />
                </a>
              )}
              {selectedMechanic.phone?.[0] && (
-               <a href={`sms:${selectedMechanic.phone[0].number}`} className="p-3 bg-blue-500/10 text-blue-600 rounded-full hover:bg-blue-500/20 transition-colors shrink-0">
+               <a href={`sms:${selectedMechanic.phone[0].number}`} aria-label="Send SMS" className="p-3 bg-blue-500/10 text-blue-600 rounded-full hover:bg-blue-500/20 transition-colors shrink-0">
                  <MessageSquare className="w-5 h-5" />
                </a>
              )}
              {selectedMechanic.email && (
-               <a href={`mailto:${selectedMechanic.email}`} className="p-3 bg-orange-500/10 text-orange-600 rounded-full hover:bg-orange-500/20 transition-colors shrink-0">
+               <a href={`mailto:${selectedMechanic.email}`} aria-label="Send email" className="p-3 bg-orange-500/10 text-orange-600 rounded-full hover:bg-orange-500/20 transition-colors shrink-0">
                  <Mail className="w-5 h-5" />
                </a>
              )}
              {selectedMechanic.websiteUrl && (
-               <a href={selectedMechanic.websiteUrl} target="_blank" rel="noreferrer" className="p-3 bg-purple-500/10 text-purple-600 rounded-full hover:bg-purple-500/20 transition-colors shrink-0">
+               <a href={selectedMechanic.websiteUrl} target="_blank" rel="noopener noreferrer" aria-label="Open website" className="p-3 bg-purple-500/10 text-purple-600 rounded-full hover:bg-purple-500/20 transition-colors shrink-0">
                  <Globe className="w-5 h-5" />
                </a>
              )}
              <button onClick={() => {
                openExternalNavigation(selectedMechanic);
-             }} className="p-3 bg-secondary text-secondary-foreground rounded-full hover:bg-secondary/80 border border-border shadow-sm transition-colors shrink-0">
+             }} aria-label="Open navigation" className="p-3 bg-secondary text-secondary-foreground rounded-full hover:bg-secondary/80 border border-border shadow-sm transition-colors shrink-0">
                <Navigation className="w-5 h-5" />
              </button>
           </div>
@@ -220,7 +221,7 @@ export function MechanicBottomSheet({
                     >
                       {m.image || m.imageUrl ? (
                         <div className="relative shrink-0">
-                          <img src={m.image || m.imageUrl} alt={m.businessName} className="w-12 h-12 rounded-lg object-cover" onError={(e) => { (e.target as HTMLImageElement).src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#f1f5f9"/><text x="50" y="50" font-size="50" text-anchor="middle" dominant-baseline="central">🛠️</text></svg>')}` }} />
+                          <img src={m.image || m.imageUrl} alt={m.businessName || m.name || 'Nearby mechanic'} loading="lazy" className="w-12 h-12 rounded-lg object-cover" onError={(e) => { (e.target as HTMLImageElement).src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#f1f5f9"/><text x="50" y="50" font-size="50" text-anchor="middle" dominant-baseline="central">🛠️</text></svg>')}` }} />
                           {m.verificationLevel > 0 && (
                             <div className="absolute top-0 left-0 bg-blue-600 text-white rounded-br-lg p-0.5 shadow-md flex items-center justify-center" title={`Verified Level ${m.verificationLevel}`}>
                               <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>

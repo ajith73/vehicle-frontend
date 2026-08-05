@@ -71,7 +71,7 @@ export function InfoSections() {
         </h3>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
           <button
-            onClick={() => window.open('https://www.google.com/maps/search/petrol+station+near+me', '_blank')}
+            onClick={() => window.open('https://www.google.com/maps/search/petrol+station+near+me', '_blank', 'noopener,noreferrer')}
             className="group flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border border-border bg-card p-4 transition-all hover:border-primary/50 hover:shadow-md"
           >
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-500/10 text-orange-500 transition-transform group-hover:scale-110">
@@ -81,7 +81,7 @@ export function InfoSections() {
           </button>
 
           <button
-            onClick={() => window.open('https://www.google.com/maps/search/cng+station+near+me', '_blank')}
+            onClick={() => window.open('https://www.google.com/maps/search/cng+station+near+me', '_blank', 'noopener,noreferrer')}
             className="group flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border border-border bg-card p-4 transition-all hover:border-primary/50 hover:shadow-md"
           >
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500 transition-transform group-hover:scale-110">
@@ -91,7 +91,7 @@ export function InfoSections() {
           </button>
 
           <button
-            onClick={() => window.open('https://www.google.com/maps/search/ev+charging+station+near+me', '_blank')}
+            onClick={() => window.open('https://www.google.com/maps/search/ev+charging+station+near+me', '_blank', 'noopener,noreferrer')}
             className="group flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border border-border bg-card p-4 transition-all hover:border-primary/50 hover:shadow-md"
           >
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-500/10 text-blue-500 transition-transform group-hover:scale-110">
@@ -101,7 +101,7 @@ export function InfoSections() {
           </button>
 
           <button
-            onClick={() => window.open('https://www.google.com/maps/search/car+wash+near+me', '_blank')}
+            onClick={() => window.open('https://www.google.com/maps/search/car+wash+near+me', '_blank', 'noopener,noreferrer')}
             className="group flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border border-border bg-card p-4 transition-all hover:border-primary/50 hover:shadow-md"
           >
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-cyan-500/10 text-cyan-500 transition-transform group-hover:scale-110">
@@ -111,7 +111,7 @@ export function InfoSections() {
           </button>
 
           <button
-            onClick={() => window.open('https://www.google.com/maps/search/auto+parts+store+near+me', '_blank')}
+            onClick={() => window.open('https://www.google.com/maps/search/auto+parts+store+near+me', '_blank', 'noopener,noreferrer')}
             className="group flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border border-border bg-card p-4 transition-all hover:border-primary/50 hover:shadow-md col-span-2 sm:col-span-1"
           >
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-500/10 text-slate-500 transition-transform group-hover:scale-110">

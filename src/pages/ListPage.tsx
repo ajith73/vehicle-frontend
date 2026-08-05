@@ -240,12 +240,19 @@ export default function ListPage() {
 
   const vehicleSelectOptions = vehicleOptions.map((vehicle) => ({ value: vehicle, label: vehicle }));
   const serviceSelectOptions = serviceOptions.map((service) => ({ value: service, label: service }));
+  const seoTitle = searchParam
+    ? `${searchParam} Mechanics List | RoadResQ`
+    : 'Find Mechanics Near You | RoadResQ';
+  const seoDescription = searchParam
+    ? `Browse mechanics, towing support, and roadside assistance related to ${searchParam}. Refine by vehicle, service, radius, and location in RoadResQ.`
+    : 'Search and find top-rated vehicle mechanics, towing services, and roadside assistance nearby.';
 
   return (
     <div className="relative flex min-h-screen flex-col bg-background pb-20 sm:pb-0">
       <SEO 
-        title="Find Mechanics Near You | RoadResQ"
-        description="Search and find top-rated vehicle mechanics, towing services, and roadside assistance nearby."
+        title={seoTitle}
+        description={seoDescription}
+        url={`https://roadresq.in/list${searchParams.toString() ? `?${searchParams.toString()}` : ''}`}
       />
       <div className="sticky top-0 z-10 border-b border-border bg-card px-4 pt-6 pb-4 shadow-sm sm:px-8">
         <div className="mx-auto mb-4 flex w-full max-w-7xl items-center justify-between">
@@ -431,6 +438,8 @@ export default function ListPage() {
           </>
         )}
       </div>
+
+
 
       <ListFiltersModal
         isOpen={isFilterOpen}

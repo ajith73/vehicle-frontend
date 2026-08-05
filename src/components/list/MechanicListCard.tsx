@@ -22,7 +22,7 @@ export function MechanicListCard({ mechanic, onOpenDetails, onNavigate }: Mechan
               onOpenDetails(mechanic);
             }}
           >
-            <img src={mechanic.image || mechanic.imageUrl} alt={mechanic.businessName || mechanic.name} className="h-full w-full object-cover bg-secondary transition-transform duration-500 group-hover/img:scale-110" onError={(e) => { (e.target as HTMLImageElement).src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#f1f5f9"/><text x="50" y="50" font-size="50" text-anchor="middle" dominant-baseline="central">🛠️</text></svg>')}` }} />
+            <img src={mechanic.image || mechanic.imageUrl} alt={mechanic.businessName || mechanic.name} loading="lazy" className="h-full w-full object-cover bg-secondary transition-transform duration-500 group-hover/img:scale-110" onError={(e) => { (e.target as HTMLImageElement).src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#f1f5f9"/><text x="50" y="50" font-size="50" text-anchor="middle" dominant-baseline="central">🛠️</text></svg>')}` }} />
             {mechanic.verificationLevel > 0 && (
               <div className="absolute top-0 left-0 bg-blue-600 text-white rounded-br-lg p-0.5 shadow-md flex items-center justify-center z-10" title={`Verified Level ${mechanic.verificationLevel}`}>
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
@@ -104,7 +104,7 @@ export function MechanicListCard({ mechanic, onOpenDetails, onNavigate }: Mechan
           </a>
         )}
         {mechanic.phone?.[0]?.isWhatsapp && (
-          <a href={`https://wa.me/91${mechanic.phone[0].number}`} target="_blank" rel="noreferrer" className="flex h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-border/50 bg-secondary/80 text-[13px] font-bold text-foreground transition-all hover:bg-green-600 hover:text-white active:scale-95">
+          <a href={`https://wa.me/91${mechanic.phone[0].number}`} target="_blank" rel="noopener noreferrer" className="flex h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-border/50 bg-secondary/80 text-[13px] font-bold text-foreground transition-all hover:bg-green-600 hover:text-white active:scale-95">
             <MessageCircle size={16} /> <span className="hidden sm:inline">WhatsApp</span>
           </a>
         )}

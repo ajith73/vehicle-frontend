@@ -959,7 +959,7 @@ export default function MapPage() {
                       className="relative shrink-0 overflow-hidden rounded-xl w-20 h-20 group/img cursor-pointer shadow-sm hover:shadow-md transition-shadow"
                       onClick={(e) => { e.stopPropagation(); setSelectedMechanicForDetails(selectedMechanic); setIsDetailsOpen(true); }}
                     >
-                      <img src={selectedMechanic.image} alt={selectedMechanic.businessName || selectedMechanic.name} className="w-full h-full object-cover bg-secondary group-hover/img:scale-110 transition-transform duration-500" />
+                      <img src={selectedMechanic.image} alt={selectedMechanic.businessName || selectedMechanic.name} loading="lazy" className="w-full h-full object-cover bg-secondary group-hover/img:scale-110 transition-transform duration-500" />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px]">
                         <Eye className="w-6 h-6 text-white drop-shadow-md" />
                       </div>
@@ -997,33 +997,33 @@ export default function MapPage() {
                 {/* Action Icons Row */}
                 <div className="flex justify-around items-center px-4 py-3 border-y border-border/50 gap-2 shrink-0">
                   {selectedMechanic.phone?.[0] && (
-                    <a href={`tel:${selectedMechanic.phone[0].number}`} className="p-3 bg-primary/10 text-primary rounded-full hover:bg-primary/20 transition-colors shrink-0">
+                    <a href={`tel:${selectedMechanic.phone[0].number}`} aria-label="Call mechanic" className="p-3 bg-primary/10 text-primary rounded-full hover:bg-primary/20 transition-colors shrink-0">
                       <Phone className="w-5 h-5" />
                     </a>
                   )}
                   {selectedMechanic.phone?.[0]?.isWhatsapp && (
-                    <a href={`https://wa.me/91${selectedMechanic.phone[0].number}`} target="_blank" rel="noreferrer" className="p-3 bg-green-500/10 text-green-600 rounded-full hover:bg-green-500/20 transition-colors shrink-0">
+                    <a href={`https://wa.me/91${selectedMechanic.phone[0].number}`} target="_blank" rel="noopener noreferrer" aria-label="Open WhatsApp chat" className="p-3 bg-green-500/10 text-green-600 rounded-full hover:bg-green-500/20 transition-colors shrink-0">
                       <MessageCircle className="w-5 h-5" />
                     </a>
                   )}
                   {selectedMechanic.phone?.[0] && (
-                    <a href={`sms:${selectedMechanic.phone[0].number}`} className="p-3 bg-blue-500/10 text-blue-600 rounded-full hover:bg-blue-500/20 transition-colors shrink-0">
+                    <a href={`sms:${selectedMechanic.phone[0].number}`} aria-label="Send SMS" className="p-3 bg-blue-500/10 text-blue-600 rounded-full hover:bg-blue-500/20 transition-colors shrink-0">
                       <MessageSquare className="w-5 h-5" />
                     </a>
                   )}
                   {selectedMechanic.email && (
-                    <a href={`mailto:${selectedMechanic.email}`} className="p-3 bg-orange-500/10 text-orange-600 rounded-full hover:bg-orange-500/20 transition-colors shrink-0">
+                    <a href={`mailto:${selectedMechanic.email}`} aria-label="Send email" className="p-3 bg-orange-500/10 text-orange-600 rounded-full hover:bg-orange-500/20 transition-colors shrink-0">
                       <Mail className="w-5 h-5" />
                     </a>
                   )}
                   {selectedMechanic.websiteUrl && (
-                    <a href={selectedMechanic.websiteUrl} target="_blank" rel="noreferrer" className="p-3 bg-purple-500/10 text-purple-600 rounded-full hover:bg-purple-500/20 transition-colors shrink-0">
+                    <a href={selectedMechanic.websiteUrl} target="_blank" rel="noopener noreferrer" aria-label="Open website" className="p-3 bg-purple-500/10 text-purple-600 rounded-full hover:bg-purple-500/20 transition-colors shrink-0">
                       <Globe className="w-5 h-5" />
                     </a>
                   )}
                   <button onClick={() => {
                     openExternalNavigation(selectedMechanic);
-                  }} className="p-3 bg-secondary text-secondary-foreground rounded-full hover:bg-secondary/80 border border-border shadow-sm transition-colors shrink-0">
+                  }} aria-label="Open navigation" className="p-3 bg-secondary text-secondary-foreground rounded-full hover:bg-secondary/80 border border-border shadow-sm transition-colors shrink-0">
                     <Navigation className="w-5 h-5" />
                   </button>
                 </div>
@@ -1060,7 +1060,7 @@ export default function MapPage() {
                             className="bg-background border border-border rounded-xl p-3 flex items-center gap-3 cursor-pointer hover:border-primary/50 transition-colors"
                           >
                             {m.image ? (
-                              <img src={m.image} alt={m.businessName} className="w-12 h-12 rounded-lg object-cover shrink-0" />
+                              <img src={m.image} alt={m.businessName || m.name || 'Nearby mechanic'} loading="lazy" className="w-12 h-12 rounded-lg object-cover shrink-0" />
                             ) : (
                               <div className="w-12 h-12 bg-secondary rounded-lg flex items-center justify-center shrink-0">
                                 <Wrench className="w-5 h-5 text-muted-foreground" />
@@ -1152,7 +1152,7 @@ export default function MapPage() {
             {/* Header / Cover */}
             <div className="relative h-48 sm:h-56 bg-secondary/50">
               {selectedMechanicForDetails.image ? (
-                <img src={selectedMechanicForDetails.image} alt="Mechanic" className="w-full h-full object-cover" />
+                <img src={selectedMechanicForDetails.image} alt={selectedMechanicForDetails.businessName || selectedMechanicForDetails.name || 'Mechanic listing image'} loading="lazy" className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
                   <Wrench className="w-16 h-16 text-muted-foreground/30" />
@@ -1162,6 +1162,7 @@ export default function MapPage() {
               <button
                 onClick={() => setIsDetailsOpen(false)}
                 className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-black/50 text-white/80 hover:text-white hover:bg-black/70 backdrop-blur-md transition-colors shadow-lg"
+                aria-label="Close mechanic details"
               >
                 <X className="w-5 h-5" />
               </button>

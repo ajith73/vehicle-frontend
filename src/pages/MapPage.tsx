@@ -347,12 +347,19 @@ export default function MapPage() {
   const loadingMessage = locationLoading 
     ? 'Getting your location...' 
     : 'Finding mechanics near you...';
+  const seoTitle = search
+    ? `Mechanic Map for ${search} | RoadResQ`
+    : 'Interactive Mechanics Map | RoadResQ';
+  const seoDescription = search
+    ? `Explore mechanic locations, towing support, and roadside assistance on the map for ${search}.`
+    : 'View all available vehicle mechanics, towing services, and roadside assistance on the map.';
 
   return (
     <div className="flex-1 w-full relative bg-background flex flex-col min-h-0">
       <SEO 
-        title="Interactive Mechanics Map | RoadResQ"
-        description="View all available vehicle mechanics, towing services, and roadside assistance on the map."
+        title={seoTitle}
+        description={seoDescription}
+        url={`https://roadresq.in/map${searchParams.toString() ? `?${searchParams.toString()}` : ''}`}
       />
       {locationMessage && (
         <div className="absolute left-4 right-4 top-4 z-[1200] sm:left-1/2 sm:right-auto sm:w-[520px] sm:-translate-x-1/2">

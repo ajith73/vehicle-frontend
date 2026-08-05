@@ -1,6 +1,14 @@
+import { SEO } from '../components/SEO';
+
 export default function PrivacyPage() {
   return (
     <div className="flex-1 w-full bg-background flex flex-col min-h-0 overflow-y-auto custom-scrollbar">
+      <SEO
+        title="Privacy Policy | RoadResQ"
+        description="Review the RoadResQ privacy policy covering location data, voluntary submissions, platform security, and how roadside assistance search data is used."
+        url="https://roadresq.in/privacy"
+        keywords="RoadResQ privacy policy, roadside assistance privacy, mechanic platform data policy"
+      />
       <div className="mx-auto max-w-4xl px-4 py-16 sm:px-8 sm:py-24">
         <h1 className="text-4xl font-black text-foreground mb-8">Privacy Policy</h1>
         

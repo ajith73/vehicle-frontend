@@ -77,7 +77,10 @@ export default function MechanicProfile() {
     
   const description = `Get expert ${servicesList} from ${businessName} in ${locationText}, ${mechanic.state || 'Tamil Nadu'}. Available for emergency vehicle support.`;
   const canonicalUrl = `https://roadresq.in/mechanic/${mechanic.id}`;
-  const imageUrl = mechanic.image || mechanic.imageUrl || "https://roadresq.in/social-share.png";
+  const rawImageUrl = mechanic.image || mechanic.imageUrl || '';
+  const imageUrl = rawImageUrl
+    ? (rawImageUrl.startsWith('http') ? rawImageUrl : `https://roadresq.in${rawImageUrl.startsWith('/') ? rawImageUrl : `/${rawImageUrl}`}`)
+    : "https://roadresq.in/social-share.png";
 
   const schema: any = {
     "@context": "https://schema.org",
@@ -129,7 +132,7 @@ export default function MechanicProfile() {
         <div className="bg-card rounded-[24px] shadow-xl border border-border overflow-hidden">
           <div className="h-64 sm:h-80 bg-secondary/50 relative">
             {imageUrl && imageUrl !== "https://roadresq.in/social-share.png" ? (
-               <img src={imageUrl} alt={businessName} className="w-full h-full object-cover" />
+               <img src={imageUrl} alt={businessName} loading="lazy" className="w-full h-full object-cover" />
             ) : (
                <div className="w-full h-full flex items-center justify-center bg-muted">
                  <Wrench className="w-20 h-20 text-muted-foreground/30" />
@@ -177,7 +180,7 @@ export default function MechanicProfile() {
                     <a 
                       href={mechanic.mapLink || `https://maps.google.com/?q=${mechanic.latitude},${mechanic.longitude}`} 
                       target="_blank" 
-                      rel="noreferrer" 
+                      rel="noopener noreferrer" 
                       className="inline-block mt-3 text-primary font-semibold hover:underline"
                     >
                       Get Directions on Google Maps &rarr;

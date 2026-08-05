@@ -71,7 +71,7 @@ export default function BulkUploadViewModal({ viewingRow, onClose }: BulkUploadV
                 <a
                   href={viewingRow.imageUrl}
                   target="_blank"
-                  rel="noreferrer"
+                  rel="noopener noreferrer"
                   className="block break-all text-sm text-blue-500 hover:underline"
                 >
                   {viewingRow.imageUrl}
@@ -100,7 +100,7 @@ export default function BulkUploadViewModal({ viewingRow, onClose }: BulkUploadV
               </div>
               <div>
                 <span className="block text-sm text-muted-foreground">Website</span>
-                <a href={viewingRow.websiteUrl} target="_blank" rel="noreferrer" className="text-blue-500 hover:underline break-all">{viewingRow.websiteUrl || 'N/A'}</a>
+                <a href={viewingRow.websiteUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline break-all">{viewingRow.websiteUrl || 'N/A'}</a>
               </div>
             </div>
 
