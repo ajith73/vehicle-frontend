@@ -366,15 +366,33 @@ export default function ListPage() {
             ))}
           </div>
         ) : error ? (
-          <div className="rounded-2xl border border-red-500/30 bg-red-50 py-10 px-6 sm:px-8 text-center text-red-600">
-            <AlertTriangle className="mx-auto mb-3 h-12 w-12 opacity-50" />
-            <p className="font-semibold">{error}</p>
-            <button
-              onClick={() => setRefreshKey(k => k + 1)}
-              className="mt-4 rounded-lg bg-red-100 px-4 py-2 font-bold text-red-700 hover:bg-red-200"
-            >
-              Try Again
-            </button>
+          <div className="relative overflow-hidden rounded-[2rem] border border-destructive/20 bg-gradient-to-br from-destructive/10 via-card to-card py-16 px-6 sm:px-8 text-center shadow-lg">
+            <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-destructive/10 blur-3xl pointer-events-none" />
+            <div className="absolute -left-10 -bottom-10 h-32 w-32 rounded-full bg-primary/5 blur-3xl pointer-events-none" />
+            
+            <div className="relative z-10">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-destructive/15 text-destructive animate-pulse">
+                <AlertTriangle className="h-8 w-8" />
+              </div>
+              <h4 className="text-xl font-black text-foreground sm:text-2xl">Search Connection Interrupted</h4>
+              <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-muted-foreground">
+                We encountered an issue fetching the latest mechanic list. This could be due to a temporary network issue or server update.
+              </p>
+              <div className="mt-2">
+                <p className="text-xs font-semibold text-destructive bg-destructive/5 inline-block px-3 py-1 rounded-full border border-destructive/10">
+                  {error}
+                </p>
+              </div>
+              <div className="mt-8 flex justify-center">
+                <button
+                  onClick={() => setRefreshKey(k => k + 1)}
+                  className="group flex items-center gap-2 rounded-xl bg-primary px-6 py-3.5 text-sm font-black text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:bg-primary/90 hover:scale-[1.02] active:scale-95"
+                >
+                  <RefreshCw className={`h-4 w-4 transition-transform group-hover:rotate-180 duration-500`} />
+                  Refresh Connection
+                </button>
+              </div>
+            </div>
           </div>
         ) : mechanics.length === 0 ? (
           <div className="rounded-2xl border border-border bg-card py-10 px-6 sm:px-8 text-center text-muted-foreground">
