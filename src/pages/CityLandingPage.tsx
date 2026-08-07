@@ -145,9 +145,9 @@ export default function CityLandingPage() {
 
           <div className="rounded-[2rem] border border-border/50 bg-card/50 backdrop-blur-sm p-8 shadow-sm sm:p-10 relative overflow-hidden">
             <div className="absolute bottom-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-2xl pointer-events-none" />
-            <h2 className="text-2xl font-black text-foreground sm:text-3xl">Coverage around {city.name}</h2>
+            <h2 className="text-2xl font-black text-foreground sm:text-3xl">Major Towns & Cities in {city.name}</h2>
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground sm:text-base">
-              Explore nearby locations and key municipalities searchers commonly lookup for roadside assistance.
+              Explore key towns, suburbs, and major municipalities within the {city.name} district for targeted roadside assistance.
             </p>
             <div className="mt-6 flex flex-wrap gap-2.5">
               {city.nearbyAreas.map((area) => (

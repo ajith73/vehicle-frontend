@@ -133,9 +133,9 @@ export default function ContactPage() {
                   <button
                     key={item.to}
                     onClick={() => navigate(item.to)}
-                    className="group flex items-start gap-4 rounded-2xl border border-border/70 bg-background/75 p-4 text-left transition-all hover:border-primary/40 hover:bg-background hover:shadow-md"
+                    className="group flex items-start gap-4 rounded-2xl border border-border/70 bg-background/75 p-4 text-left transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] hover:border-primary/40 hover:bg-card hover:shadow-xl hover:shadow-primary/5 active:scale-[0.98]"
                   >
-                    <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${item.iconClasses}`}>
+                    <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl transition-transform duration-300 group-hover:scale-110 ${item.iconClasses}`}>
                       <item.icon className="h-5 w-5" />
                     </div>
                     <div className="min-w-0 flex-1">

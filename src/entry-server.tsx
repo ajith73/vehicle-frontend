@@ -38,3 +38,5 @@ export function render(url: string) {
 
   return { html: bodyHtml, head };
 }
+
+export { citySeoConfigs, serviceSeoConfigs } from './content/seoLocations';

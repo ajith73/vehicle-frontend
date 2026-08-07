@@ -277,32 +277,35 @@ export default function ListPage() {
 
         <div className="mx-auto w-full max-w-7xl">
           <div className="flex gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-              <input
-                type="text"
-                aria-label="Search mechanics"
-                placeholder="Search by name, area, city, vehicle, or service..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full rounded-xl border border-border bg-secondary/30 py-3 pl-12 pr-4 text-base shadow-sm transition-all focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-              />
+            <div className="group relative flex-1">
+              <div className="absolute -inset-0.5 rounded-xl bg-gradient-to-r from-primary/30 to-blue-500/30 opacity-0 blur transition duration-500 group-focus-within:opacity-100"></div>
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary" />
+                <input
+                  type="text"
+                  aria-label="Search mechanics"
+                  placeholder="Search by name, area, city, vehicle, or service..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full rounded-xl border border-border bg-card/90 py-3 pl-12 pr-4 text-base shadow-sm backdrop-blur-sm transition-all focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
             </div>
             <button
               onClick={() => setIsFilterOpen(true)}
               aria-label="Open Filters"
-              className="flex shrink-0 items-center justify-center rounded-xl border border-border bg-secondary px-4 transition-colors hover:bg-secondary/80"
+              className="group flex shrink-0 items-center justify-center rounded-xl border border-border bg-card/90 px-4 backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40 hover:bg-primary/5 hover:shadow-md hover:shadow-primary/10 active:scale-95"
               title="Filters"
             >
-              <Filter className="h-5 w-5 text-foreground" />
+              <Filter className="h-5 w-5 text-foreground transition-colors group-hover:text-primary" />
             </button>
             <button
               onClick={() => setRefreshKey(k => k + 1)}
               aria-label="Refresh results"
-              className="flex shrink-0 items-center justify-center rounded-xl border border-border bg-secondary px-4 transition-colors hover:bg-secondary/80"
+              className="group flex shrink-0 items-center justify-center rounded-xl border border-border bg-card/90 px-4 backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40 hover:bg-primary/5 hover:shadow-md hover:shadow-primary/10 active:scale-95"
               title="Refresh results"
             >
-              <RefreshCw className={`h-5 w-5 text-foreground ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-5 w-5 text-foreground transition-colors group-hover:text-primary ${loading ? 'animate-spin' : ''}`} />
             </button>
           </div>
         </div>
@@ -351,11 +354,11 @@ export default function ListPage() {
             </h3>
             <p className="text-sm text-muted-foreground">{loading && page === 1 ? 'Loading mechanics...' : resultSummary}</p>
           </div>
-          <div className="flex flex-wrap gap-2 text-xs font-semibold text-muted-foreground">
-            {vehicleParams.length > 0 && <span className="rounded-full bg-secondary px-3 py-1">Vehicle: {vehicleParams.join(', ')}</span>}
-            {serviceParams.length > 0 && <span className="rounded-full bg-secondary px-3 py-1">Service: {serviceParams.join(', ')}</span>}
-            {searchParam && <span className="rounded-full bg-secondary px-3 py-1">Search: {searchParam}</span>}
-            {sortBy === 'Available' && <span className="rounded-full bg-secondary px-3 py-1">Available first</span>}
+          <div className="flex flex-wrap gap-2 text-xs font-semibold">
+            {vehicleParams.length > 0 && <span className="rounded-full border border-border/50 bg-secondary/50 px-3 py-1 text-foreground backdrop-blur-sm">Vehicle: <span className="text-primary">{vehicleParams.join(', ')}</span></span>}
+            {serviceParams.length > 0 && <span className="rounded-full border border-border/50 bg-secondary/50 px-3 py-1 text-foreground backdrop-blur-sm">Service: <span className="text-primary">{serviceParams.join(', ')}</span></span>}
+            {searchParam && <span className="rounded-full border border-border/50 bg-secondary/50 px-3 py-1 text-foreground backdrop-blur-sm">Search: <span className="text-primary">{searchParam}</span></span>}
+            {sortBy === 'Available' && <span className="rounded-full border border-green-500/20 bg-green-500/10 px-3 py-1 text-green-600 backdrop-blur-sm">Available first</span>}
           </div>
         </div>
 
@@ -395,32 +398,38 @@ export default function ListPage() {
             </div>
           </div>
         ) : mechanics.length === 0 ? (
-          <div className="rounded-2xl border border-border bg-card py-10 px-6 sm:px-8 text-center text-muted-foreground">
-            <Wrench className="mx-auto mb-3 h-12 w-12 opacity-20" />
-            <p className="font-semibold text-foreground">No mechanics found for these filters.</p>
-            <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">
-              {emptyStateReason
-                ? `Nothing matched ${emptyStateReason}. Try broadening one of those filters or changing your location.`
-                : 'Try using a wider radius, another service, or a different location.'}
-            </p>
-            <div className="mt-4 flex flex-col justify-center gap-3 sm:flex-row">
-              <button
-                onClick={() => {
-                  setSearchQuery('');
-                  setPendingVehicles([]);
-                  setPendingServices([]);
-                  setSearchParams(buildMechanicSearchParams({ radius: 5, sort: 'Nearest' }));
-                }}
-                className="rounded-lg bg-secondary px-4 py-2 font-bold text-secondary-foreground hover:bg-secondary/80"
-              >
-                Clear Filters
-              </button>
-              <button
-                onClick={() => navigate('/')}
-                className="rounded-lg bg-primary px-4 py-2 font-bold text-primary-foreground hover:bg-primary/90"
-              >
-                Change Location
-              </button>
+          <div className="relative overflow-hidden rounded-3xl border border-border/50 bg-card/50 px-6 py-12 text-center backdrop-blur-sm sm:px-8">
+            <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-primary/5 blur-3xl pointer-events-none" />
+            <div className="absolute -left-10 -bottom-10 h-40 w-40 rounded-full bg-blue-500/5 blur-3xl pointer-events-none" />
+            <div className="relative z-10">
+              <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-secondary/50 text-muted-foreground">
+                <Wrench className="h-8 w-8" />
+              </div>
+              <h4 className="text-xl font-bold text-foreground sm:text-2xl">No Mechanics Found</h4>
+              <p className="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">
+                {emptyStateReason
+                  ? `Nothing matched ${emptyStateReason}. Try broadening one of those filters or changing your location.`
+                  : 'Try using a wider radius, another service, or a different location.'}
+              </p>
+              <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
+                <button
+                  onClick={() => {
+                    setSearchQuery('');
+                    setPendingVehicles([]);
+                    setPendingServices([]);
+                    setSearchParams(buildMechanicSearchParams({ radius: 5, sort: 'Nearest' }));
+                  }}
+                  className="rounded-xl border border-border bg-card px-5 py-2.5 text-sm font-bold text-foreground shadow-sm transition-all hover:bg-secondary hover:text-secondary-foreground active:scale-95"
+                >
+                  Clear Filters
+                </button>
+                <button
+                  onClick={() => navigate('/')}
+                  className="rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground shadow-md shadow-primary/20 transition-all hover:bg-primary/90 active:scale-95"
+                >
+                  Change Location
+                </button>
+              </div>
             </div>
           </div>
         ) : (

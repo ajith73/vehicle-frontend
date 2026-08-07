@@ -18,6 +18,8 @@ export default function AboutPage() {
       {/* Hero Section */}
       <div className="relative overflow-hidden bg-card border-b border-border">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-secondary/20 z-0"></div>
+        <div className="absolute -left-40 top-0 h-[500px] w-[500px] rounded-full bg-primary/20 blur-[120px] pointer-events-none animate-pulse"></div>
+        <div className="absolute -right-40 bottom-0 h-[500px] w-[500px] rounded-full bg-blue-500/20 blur-[120px] pointer-events-none animate-pulse" style={{ animationDelay: '1s' }}></div>
         <div className="relative z-10 mx-auto max-w-7xl px-4 py-20 sm:px-8 sm:py-28 text-center">
           <h1 className="text-4xl font-black tracking-tight text-foreground sm:text-6xl mb-6">
             Emergency Roadside Assistance, <br className="hidden sm:block" />
@@ -156,7 +158,7 @@ export default function AboutPage() {
         title="Explore city and service coverage"
         description="Use these internal links to move into city-specific and service-specific discovery flows."
         links={[
-          ...citySeoConfigs.slice(0, 6).map((city) => ({
+          ...citySeoConfigs.map((city) => ({
             to: `/cities/${city.slug}`,
             label: `Mechanics in ${city.name}`
           })),

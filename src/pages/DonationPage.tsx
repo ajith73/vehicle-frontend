@@ -103,10 +103,10 @@ export default function DonationPage() {
                   key={amt}
                   type="button"
                   onClick={() => setAmount(amt.toString())}
-                  className={`flex-1 py-3 rounded-xl border-2 font-bold transition-all duration-300 ${
+                  className={`flex-1 py-3 rounded-xl border-2 font-bold transition-all duration-300 active:scale-[0.98] ${
                     amount === amt.toString()
-                      ? 'border-primary bg-primary/10 text-primary shadow-md'
-                      : 'border-border/50 hover:border-primary/50 text-muted-foreground hover:text-foreground bg-background/50'
+                      ? 'border-primary bg-primary/10 text-primary shadow-md scale-105'
+                      : 'border-border/50 hover:border-primary/50 text-muted-foreground hover:text-foreground bg-background/50 hover:-translate-y-1 hover:shadow-lg hover:shadow-primary/5'
                   }`}
                 >
                   ₹{amt}
@@ -173,8 +173,8 @@ export default function DonationPage() {
       
       {/* Consent Modal & Payment Details */}
       {isConsentOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-card w-full max-w-md max-h-[90vh] overflow-y-auto hide-scrollbar rounded-[24px] shadow-2xl border border-border flex flex-col p-6 sm:p-8">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="bg-card/95 backdrop-blur-xl w-full max-w-md max-h-[90vh] overflow-y-auto hide-scrollbar rounded-[28px] shadow-2xl border border-white/10 flex flex-col p-6 sm:p-8 transform animate-in zoom-in-95 duration-500">
             <h3 className="text-2xl font-black text-foreground mb-4">Confirm Donation</h3>
             <p className="text-muted-foreground text-sm mb-6 leading-relaxed">
               Your generous donation directly funds our server hosting, domain maintenance, and ongoing development to keep this platform free for everyone. We do not charge stranded drivers or mechanics for using this service. By proceeding, you agree that this contribution is voluntary and non-refundable. No goods or services are provided in exchange.
@@ -283,8 +283,8 @@ export default function DonationPage() {
       )}
 
       {isThankYouOpen && (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/65 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="relative w-full max-w-md overflow-hidden rounded-[28px] border border-white/10 bg-card/95 p-7 text-center shadow-2xl animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/65 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="relative w-full max-w-md overflow-hidden rounded-[28px] border border-white/10 bg-card/95 backdrop-blur-xl p-7 text-center shadow-2xl animate-in zoom-in-95 duration-500">
             <button
               onClick={() => setIsThankYouOpen(false)}
               className="absolute right-4 top-4 rounded-full border border-border p-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"

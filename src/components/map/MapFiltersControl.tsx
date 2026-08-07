@@ -111,6 +111,7 @@ export function MapFiltersControl({
 }: MapFiltersControlProps) {
   const navigate = useNavigate();
   const [localSearch, setLocalSearch] = useState(search);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
 
   useEffect(() => {
     if (showControls) {
@@ -160,14 +161,20 @@ export function MapFiltersControl({
           </button>
         </div>
 
-        <div className="mb-4 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <div className="mb-4 relative group">
+          {/* Glassmorphic glow background */}
+          <div className={`absolute -inset-0.5 rounded-[14px] bg-gradient-to-r from-primary to-blue-600 opacity-0 blur-md transition-all duration-500 z-10 ${
+            isSearchFocused ? 'opacity-30 animate-pulse scale-[1.01]' : ''
+          }`} />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-20 group-focus-within:text-primary transition-colors" />
           <input
             type="text"
             placeholder="Search mechanics..."
             value={localSearch}
+            onFocus={() => setIsSearchFocused(true)}
+            onBlur={() => setIsSearchFocused(false)}
             onChange={(e) => setLocalSearch(e.target.value)}
-            className="w-full rounded-xl border border-border bg-background py-2.5 pl-9 pr-4 text-sm outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary"
+            className="relative z-20 w-full rounded-xl border border-border bg-background py-2.5 pl-9 pr-4 text-sm outline-none transition-all focus:border-primary"
           />
         </div>
 
@@ -224,7 +231,7 @@ export function MapFiltersControl({
                   setRadius(r);
                   syncQuery({ radius: r });
                 }}
-                className={`px-3 py-1 rounded-full text-xs font-bold ${radius === r ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}
+                className={`px-3 py-1 rounded-full text-xs font-bold transition-all duration-200 active:scale-95 hover:scale-105 hover:shadow-sm ${radius === r ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'}`}
               >
                 {r === 50000 ? 'Any' : `${r}km`}
               </button>
@@ -242,7 +249,7 @@ export function MapFiltersControl({
                   setAvailability(a as any);
                   syncQuery({ availability: a });
                 }}
-                className={`px-3 py-1 rounded-full text-xs font-bold ${availability === a ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}
+                className={`px-3 py-1 rounded-full text-xs font-bold transition-all duration-200 active:scale-95 hover:scale-105 hover:shadow-sm ${availability === a ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'}`}
               >
                 {a}
               </button>
@@ -257,7 +264,7 @@ export function MapFiltersControl({
               <button 
                 key={r}
                 onClick={() => setRouteOption(r as any)}
-                className={`px-3 py-1 rounded-full text-xs font-bold ${routeOption === r ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}
+                className={`px-3 py-1 rounded-full text-xs font-bold transition-all duration-200 active:scale-95 hover:scale-105 hover:shadow-sm ${routeOption === r ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'}`}
               >
                 {r}
               </button>

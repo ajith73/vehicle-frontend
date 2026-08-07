@@ -12,7 +12,7 @@ export function MechanicListCard({ mechanic, onOpenDetails, onNavigate }: Mechan
   const status = getMechanicStatus(mechanic);
 
   return (
-    <div className="group flex cursor-pointer flex-col gap-4 rounded-[24px] border border-border/60 bg-card p-4 shadow-sm transition-all duration-300 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/5 sm:p-5">
+    <div className="group flex cursor-pointer flex-col gap-4 rounded-[24px] border border-border/60 bg-card p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/5 active:scale-[0.99] sm:p-5">
       <div className="flex gap-4">
         {mechanic.image ? (
           <div

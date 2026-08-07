@@ -1,4 +1,5 @@
 import React from 'react';
+import { Phone, Navigation } from 'lucide-react';
 import { getDistanceFromLatLonInKm } from '../../utils/mechanicUtils';
 import toast from 'react-hot-toast';
 
@@ -17,7 +18,7 @@ export function MechanicCard({ mechanic, userLocation, navigateToMechanic }: Mec
 
   return (
     <div
-      className="cursor-pointer rounded-2xl border border-border bg-card p-4 transition-shadow hover:shadow-md"
+      className="cursor-pointer rounded-2xl border border-border bg-card p-4 transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 active:scale-[0.99]"
       onClick={() => navigateToMechanic(mechanic.id)}
     >
       <div className="flex items-center gap-4">
@@ -65,8 +66,9 @@ export function MechanicCard({ mechanic, userLocation, navigateToMechanic }: Mec
               toast.error('Phone number not available');
             }
           }}
-          className="flex-1 flex items-center justify-center rounded-xl border border-border bg-secondary/70 px-3 py-2 text-sm font-bold text-foreground hover:bg-secondary"
+          className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-border bg-secondary/70 px-3 py-2 text-sm font-bold text-foreground transition-all hover:bg-secondary active:scale-95"
         >
+          <Phone className="h-4 w-4" />
           Call
         </a>
         <button
@@ -74,8 +76,9 @@ export function MechanicCard({ mechanic, userLocation, navigateToMechanic }: Mec
             e.stopPropagation();
             navigateToMechanic(mechanic.id);
           }}
-          className="flex-1 rounded-xl bg-primary px-3 py-2 text-sm font-bold text-primary-foreground hover:bg-primary/90"
+          className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-sm font-bold text-primary-foreground transition-all hover:bg-primary/90 active:scale-95 shadow-sm hover:shadow-md hover:shadow-primary/20"
         >
+          <Navigation className="h-4 w-4" />
           Navigate
         </button>
       </div>

@@ -433,9 +433,9 @@ export default function MapPage() {
         <button
           onClick={() => setShowControls(!showControls)}
           aria-label="Map Settings and Filters"
-          className="bg-card text-foreground p-2 rounded-full shadow-lg border border-border hover:bg-secondary/50 transition-colors w-10 h-10 flex items-center justify-center"
+          className="bg-card text-foreground p-2 rounded-full shadow-lg border border-border hover:bg-secondary/50 transition-colors w-10 h-10 flex items-center justify-center group"
         >
-          <Settings2 className="w-5 h-5" />
+          <Settings2 className="w-5 h-5 group-hover:rotate-45 transition-transform duration-300" />
         </button>
         <button
           onClick={locateUser}

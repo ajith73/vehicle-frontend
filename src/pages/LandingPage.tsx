@@ -97,6 +97,20 @@ export default function LandingPage() {
   const [isFetchingMechanics, setIsFetchingMechanics] = useState(true);
   const [fetchError, setFetchError] = useState(false);
   const { theme, toggleTheme } = useTheme();
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [showFab, setShowFab] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 300) {
+        setShowFab(true);
+      } else {
+        setShowFab(false);
+      }
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -294,10 +308,30 @@ export default function LandingPage() {
               <MapPin className="h-3.5 w-3.5" />
             )}
             <span>{locationBadge.label}</span>
+            {!locationBadge.isLoading && locationSource !== 'none' && (
+              <span className="relative flex h-2 w-2">
+                <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                  locationSource === 'geolocation' ? 'bg-emerald-500' :
+                  locationSource === 'ip' ? 'bg-amber-500' : 'bg-blue-500'
+                }`}></span>
+                <span className={`relative inline-flex rounded-full h-2 w-2 ${
+                  locationSource === 'geolocation' ? 'bg-emerald-600' :
+                  locationSource === 'ip' ? 'bg-amber-600' : 'bg-blue-600'
+                }`}></span>
+              </span>
+            )}
           </div>
           {locationMessage && (
-            <button 
+            <div 
               onClick={() => !isLocationMessageExpanded && setIsLocationMessageExpanded(true)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  if (!isLocationMessageExpanded) setIsLocationMessageExpanded(true);
+                }
+              }}
+              role="button"
+              tabIndex={isLocationMessageExpanded ? undefined : 0}
               className={`mx-auto flex max-w-2xl gap-3 rounded-2xl border border-amber-500/30 bg-card/90 px-4 py-3 text-left shadow-sm backdrop-blur transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-amber-500 ${isLocationMessageExpanded ? 'items-start cursor-default' : 'items-center cursor-pointer hover:bg-card w-fit'}`}
               aria-label={isLocationMessageExpanded ? "Location alert" : "Expand location alert"}
             >
@@ -327,7 +361,7 @@ export default function LandingPage() {
                   )}
                 </div>
               )}
-            </button>
+            </div>
           )}
         </div>
 
@@ -342,10 +376,16 @@ export default function LandingPage() {
 
           <div className="relative mx-auto mt-6 flex w-full max-w-md gap-2" ref={searchDropdownRef}>
             <div className="relative z-50 flex-1 group">
-              <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary" />
+              {/* Glassmorphic glow background */}
+              <div className={`absolute -inset-1 rounded-[22px] bg-gradient-to-r from-primary to-blue-600 opacity-0 blur-lg transition-all duration-500 z-10 ${
+                isSearchFocused ? 'opacity-35 animate-pulse scale-[1.01]' : ''
+              }`} />
+              <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary z-30" />
               <input
                 type="text"
                 value={localSearch}
+                onFocus={() => setIsSearchFocused(true)}
+                onBlur={() => setIsSearchFocused(false)}
                 onChange={(e) => setLocalSearch(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 placeholder="Search area, city..."
@@ -485,28 +525,58 @@ export default function LandingPage() {
               />
             ))
           ) : (
-            <div className="col-span-full rounded-2xl border border-border bg-card px-6 py-8 text-center">
-              <p className="text-base font-bold text-foreground">No nearby mechanics found for the current filters.</p>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Try changing the selected service, switching vehicle type, or choosing a different location to widen the search.
-              </p>
-              <div className="mt-4 flex flex-col justify-center gap-3 sm:flex-row">
-                <button
-                  onClick={() => {
-                    setSelectedService('');
-                    setSelectedVehicle('');
-                    setLocalSearch('');
-                  }}
-                  className="rounded-xl border border-border bg-secondary/70 px-4 py-2 text-sm font-bold text-foreground hover:bg-secondary"
-                >
-                  Clear Filters
-                </button>
-                <button
-                  onClick={() => setShowLocationPopup(true)}
-                  className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground hover:bg-primary/90"
-                >
-                  Change Location
-                </button>
+            <div className="col-span-full relative overflow-hidden rounded-3xl border border-border/50 bg-gradient-to-br from-card to-secondary/10 px-6 py-12 text-center shadow-lg">
+              <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-primary/5 blur-3xl pointer-events-none" />
+              <div className="absolute -left-10 -bottom-10 h-32 w-32 rounded-full bg-secondary/10 blur-3xl pointer-events-none" />
+              
+              <div className="relative z-10 max-w-md mx-auto">
+                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-secondary text-muted-foreground">
+                  <Wrench className="h-7 w-7 text-primary/75 animate-bounce" />
+                </div>
+                <h4 className="text-lg font-black text-foreground">No Local Listings Found</h4>
+                <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+                  We couldn't find any workshops matching your exact parameters within range. Try adjusting your vehicle choice or clearing search filters.
+                </p>
+                <div className="mt-6 flex flex-wrap justify-center gap-2">
+                  {selectedVehicle && (
+                    <button
+                      onClick={() => setSelectedVehicle('')}
+                      className="inline-flex items-center gap-1 text-xs font-bold bg-background border border-border/60 hover:border-primary/30 px-3 py-1.5 rounded-full text-foreground hover:bg-primary/5 transition-colors"
+                    >
+                      Clear Vehicle: {selectedVehicle}
+                    </button>
+                  )}
+                  {selectedService && (
+                    <button
+                      onClick={() => setSelectedService('')}
+                      className="inline-flex items-center gap-1 text-xs font-bold bg-background border border-border/60 hover:border-primary/30 px-3 py-1.5 rounded-full text-foreground hover:bg-primary/5 transition-colors"
+                    >
+                      Clear Service: {selectedService}
+                    </button>
+                  )}
+                  {(localSearch || locationName !== 'Current Location') && (
+                    <button
+                      onClick={() => {
+                        setLocalSearch('');
+                        requestLocation();
+                      }}
+                      className="inline-flex items-center gap-1 text-xs font-bold bg-background border border-border/60 hover:border-primary/30 px-3 py-1.5 rounded-full text-foreground hover:bg-primary/5 transition-colors"
+                    >
+                      Reset Location
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      setSelectedService('');
+                      setSelectedVehicle('');
+                      setLocalSearch('');
+                      requestLocation();
+                    }}
+                    className="inline-flex items-center gap-1 text-xs font-bold bg-primary text-primary-foreground px-4 py-1.5 rounded-full hover:bg-primary/90 transition-colors shadow-sm"
+                  >
+                    Clear All Filters
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -702,6 +772,18 @@ export default function LandingPage() {
       <footer className="py-6 text-center text-sm font-semibold text-muted-foreground mt-4 border-t border-border/50">
         © 2026 RoadResQ. All Rights Reserved.
       </footer>
+
+      {/* Mobile Floating Action Button (FAB) */}
+      {showFab && (
+        <button
+          onClick={() => navigate(`/map?vehicle=${selectedVehicle}&service=${selectedService}`)}
+          className="fixed bottom-6 right-6 z-45 flex items-center gap-2 rounded-full border border-primary/20 bg-primary px-5 py-3.5 text-sm font-black text-primary-foreground shadow-lg shadow-primary/30 transition-all hover:scale-105 active:scale-95 sm:hidden animate-in slide-in-from-bottom-5 duration-300"
+          aria-label="Open Map Finder"
+        >
+          <Compass className="h-5 w-5 animate-pulse" />
+          <span>Open Map Finder</span>
+        </button>
+      )}
     </div>
   );
 }

@@ -150,12 +150,12 @@ export default function FeedbackPage() {
                     setMechanicId('');
                     setMechanicSearch('');
                   }}
-                  className={`flex items-center gap-3 p-4 rounded-xl border-2 text-left transition-all duration-300 ${type === t.name
+                  className={`group flex items-center gap-3 p-4 rounded-xl border-2 text-left transition-all duration-300 active:scale-[0.98] ${type === t.name
                       ? 'border-primary bg-primary/10 text-primary shadow-md'
-                      : 'border-border/50 hover:border-primary/50 text-muted-foreground hover:text-foreground bg-background/50'
+                      : 'border-border/50 hover:border-primary/50 text-muted-foreground hover:text-foreground bg-background/50 hover:-translate-y-1 hover:shadow-lg hover:shadow-primary/5'
                     }`}
                 >
-                  <t.icon className="w-5 h-5 shrink-0" />
+                  <t.icon className={`w-5 h-5 shrink-0 transition-transform duration-300 ${type === t.name ? 'scale-110' : 'group-hover:scale-110 group-hover:text-primary'}`} />
                   <span className="font-semibold text-sm leading-tight">{t.name}</span>
                 </button>
               ))}
@@ -237,8 +237,8 @@ export default function FeedbackPage() {
 
       {/* Success Modal Overlay */}
       {success && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="relative max-w-md w-full bg-card shadow-2xl rounded-3xl p-8 sm:p-12 border border-border text-center transform animate-in zoom-in-95 duration-500">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="relative max-w-md w-full bg-card/90 backdrop-blur-xl shadow-2xl rounded-3xl p-8 sm:p-12 border border-white/10 dark:border-white/5 text-center transform animate-in zoom-in-95 duration-500">
             <button
               onClick={() => setSuccess(false)}
               className="absolute top-4 right-4 p-2 text-muted-foreground hover:bg-muted hover:text-foreground rounded-full transition-colors"

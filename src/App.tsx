@@ -8,7 +8,7 @@ import AppProviders from './app/AppProviders';
 
 import LandingPage from './pages/LandingPage';
 import ListPage from './pages/ListPage';
-import MapPage from './pages/MapPage';
+const MapPage = lazy(() => import('./pages/MapPage'));
 const MapCNPage = lazy(() => import('./pages/MapCNPage'));
 const FeedbackPage = lazy(() => import('./pages/FeedbackPage'));
 const DonationPage = lazy(() => import('./pages/DonationPage'));
