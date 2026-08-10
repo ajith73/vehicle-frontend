@@ -1,6 +1,7 @@
 import React from 'react';
 import { Eye, MapPin, Phone, MessageCircle, Navigation, Wrench } from 'lucide-react';
-import { getMechanicStatus } from '../../utils/mechanicUtils';
+import { getMechanicStatus, getEstimatedTimeFromDistance } from '../../utils/mechanicUtils';
+import { LazyImage } from '../shared/LazyImage';
 
 interface MechanicListCardProps {
   mechanic: any;
@@ -22,7 +23,11 @@ export function MechanicListCard({ mechanic, onOpenDetails, onNavigate }: Mechan
               onOpenDetails(mechanic);
             }}
           >
-            <img src={mechanic.image || mechanic.imageUrl} alt={mechanic.businessName || mechanic.name} loading="lazy" className="h-full w-full object-cover bg-secondary transition-transform duration-500 group-hover/img:scale-110" onError={(e) => { (e.target as HTMLImageElement).src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#f1f5f9"/><text x="50" y="50" font-size="50" text-anchor="middle" dominant-baseline="central">🛠️</text></svg>')}` }} />
+            <LazyImage 
+              src={mechanic.image || mechanic.imageUrl} 
+              alt={mechanic.businessName || mechanic.name} 
+              imgClassName="bg-secondary group-hover/img:scale-110" 
+            />
             {mechanic.verificationLevel > 0 && (
               <div className="absolute top-0 left-0 bg-blue-600 text-white rounded-br-lg p-0.5 shadow-md flex items-center justify-center z-10" title={`Verified Level ${mechanic.verificationLevel}`}>
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
@@ -71,15 +76,10 @@ export function MechanicListCard({ mechanic, onOpenDetails, onNavigate }: Mechan
                   {mechanic.businessName || mechanic.name}
                 </h4>
               </div>
-              {mechanic.dist !== null && mechanic.dist !== undefined && (
-                <span className="shrink-0 rounded-lg bg-primary/10 px-2.5 py-1 text-xs font-black text-primary">
-                  {mechanic.dist.toFixed(1)} km
-                </span>
-              )}
             </div>
             <p className="flex items-center gap-1.5 truncate text-[13px] font-medium text-muted-foreground">
               <MapPin size={14} className="shrink-0 text-primary/70" />
-              <span className="truncate">{mechanic.landmark ? `${mechanic.landmark}, ` : ''}{mechanic.area}</span>
+              <span className="truncate">{[mechanic.landmark, mechanic.area].filter(Boolean).join(', ')}</span>
             </p>
           </div>
 
@@ -91,6 +91,11 @@ export function MechanicListCard({ mechanic, onOpenDetails, onNavigate }: Mechan
             }`}>
               {status}
             </span>
+            {mechanic.dist !== null && mechanic.dist !== undefined && (
+              <span className="shrink-0 rounded bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary tracking-wide uppercase">
+                {mechanic.dist.toFixed(1)} km • {getEstimatedTimeFromDistance(mechanic.dist)}
+              </span>
+            )}
             {mechanic.is24Hours && <span className="rounded border border-blue-500/20 bg-blue-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-blue-600">24/7</span>}
             {mechanic.evSupport && <span className="rounded border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-600">EV Ready</span>}
           </div>

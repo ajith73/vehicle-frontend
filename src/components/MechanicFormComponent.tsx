@@ -98,9 +98,9 @@ export default function MechanicFormComponent({ id, isEdit, initialData, onSubmi
   useEffect(() => {
     const loadStates = async () => {
       try {
-        const { State } = await import('country-state-city');
+        const states = await apiClient<any[]>('/public/geo/states');
         setStateOptions(
-          State.getStatesOfCountry('IN').map((state) => ({
+          states.map((state) => ({
             value: state.isoCode,
             label: state.name
           }))
@@ -187,9 +187,9 @@ export default function MechanicFormComponent({ id, isEdit, initialData, onSubmi
       }
 
       try {
-        const { City } = await import('country-state-city');
+        const cities = await apiClient<any[]>(`/public/geo/states/${stateOption.value}/cities`);
         setCityOptions(
-          City.getCitiesOfState('IN', stateOption.value).map((city) => ({
+          cities.map((city) => ({
             value: city.name,
             label: city.name
           }))

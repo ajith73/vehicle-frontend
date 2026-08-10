@@ -4,6 +4,7 @@ import ReactMapGL, { Marker, Source, Layer, useMap, NavigationControl, Geolocate
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { X, Phone, MessageCircle, MapPin, Navigation, ChevronLeft, LocateFixed, Mail, Globe, Settings2, MessageSquare, Wrench, Heart, Eye, AlertTriangle, Search } from 'lucide-react';
 import { apiClient } from '../api/apiClient';
+import { LazyImage } from '../components/shared/LazyImage';
 import { useLocationContext } from '../contexts/LocationContext';
 import { useDataContext } from '../contexts/DataContext';
 import toast from 'react-hot-toast';
@@ -959,7 +960,7 @@ export default function MapPage() {
                       className="relative shrink-0 overflow-hidden rounded-xl w-20 h-20 group/img cursor-pointer shadow-sm hover:shadow-md transition-shadow"
                       onClick={(e) => { e.stopPropagation(); setSelectedMechanicForDetails(selectedMechanic); setIsDetailsOpen(true); }}
                     >
-                      <img src={selectedMechanic.image} alt={selectedMechanic.businessName || selectedMechanic.name} loading="lazy" className="w-full h-full object-cover bg-secondary group-hover/img:scale-110 transition-transform duration-500" />
+                      <LazyImage src={selectedMechanic.image} alt={selectedMechanic.businessName || selectedMechanic.name} imgClassName="bg-secondary group-hover/img:scale-110" />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px]">
                         <Eye className="w-6 h-6 text-white drop-shadow-md" />
                       </div>
@@ -1060,7 +1061,7 @@ export default function MapPage() {
                             className="bg-background border border-border rounded-xl p-3 flex items-center gap-3 cursor-pointer hover:border-primary/50 transition-colors"
                           >
                             {m.image ? (
-                              <img src={m.image} alt={m.businessName || m.name || 'Nearby mechanic'} loading="lazy" className="w-12 h-12 rounded-lg object-cover shrink-0" />
+                              <LazyImage src={m.image} alt={m.businessName || m.name || 'Nearby mechanic'} className="w-12 h-12 rounded-lg shrink-0" />
                             ) : (
                               <div className="w-12 h-12 bg-secondary rounded-lg flex items-center justify-center shrink-0">
                                 <Wrench className="w-5 h-5 text-muted-foreground" />
@@ -1152,7 +1153,7 @@ export default function MapPage() {
             {/* Header / Cover */}
             <div className="relative h-48 sm:h-56 bg-secondary/50">
               {selectedMechanicForDetails.image ? (
-                <img src={selectedMechanicForDetails.image} alt={selectedMechanicForDetails.businessName || selectedMechanicForDetails.name || 'Mechanic listing image'} loading="lazy" className="w-full h-full object-cover" />
+                <LazyImage src={selectedMechanicForDetails.image} alt={selectedMechanicForDetails.businessName || selectedMechanicForDetails.name || 'Mechanic listing image'} />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
                   <Wrench className="w-16 h-16 text-muted-foreground/30" />

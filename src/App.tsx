@@ -38,6 +38,7 @@ const AdminFeedback = lazy(() => import('./pages/AdminFeedback'));
 const AdminDonations = lazy(() => import('./pages/AdminDonations'));
 const AdminSettings = lazy(() => import('./pages/AdminSettings'));
 const AdminReviews = lazy(() => import('./pages/AdminReviews'));
+const AdminCities = lazy(() => import('./pages/AdminCities'));
 
 function AnalyticsTracker() {
   const location = useLocation();
@@ -120,6 +121,7 @@ export function AppRoutes() {
               <Route path="settings" element={<AdminSettings />} />
               <Route path="reviews" element={<AdminReviews />} />
               <Route path="users" element={<AdminUsers />} />
+              <Route path="cities" element={<AdminCities />} />
             </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

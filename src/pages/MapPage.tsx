@@ -361,47 +361,17 @@ export default function MapPage() {
         description={seoDescription}
         url={`https://roadresq.in/map${searchParams.toString() ? `?${searchParams.toString()}` : ''}`}
       />
-      {locationMessage && (
-        <div className="absolute left-4 right-4 top-4 z-[1200] sm:left-1/2 sm:right-auto sm:w-[520px] sm:-translate-x-1/2">
-          <div 
-            onClick={() => !isLocationMessageExpanded && setIsLocationMessageExpanded(true)}
-            className={`rounded-2xl border border-amber-500/30 bg-card/95 p-4 shadow-xl backdrop-blur transition-all duration-300 ${isLocationMessageExpanded ? 'cursor-default' : 'cursor-pointer hover:bg-card w-fit sm:mx-auto'}`}
-          >
-            {isLocationMessageExpanded ? (
-              <div className="flex items-start gap-3 animate-in fade-in duration-300">
-                <div className="rounded-xl bg-amber-500/15 p-2 text-amber-600">
-                  <AlertTriangle className="h-5 w-5" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-foreground">
-                    {locationSource === 'ip' ? 'Approximate location in use' : 'Location unavailable'}
-                  </p>
-                  <p className="mt-1 text-sm text-muted-foreground">{locationMessage}</p>
-                </div>
-                {locationSource !== 'geolocation' && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); requestLocation(); }}
-                    className="shrink-0 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
-                  >
-                    Retry
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div className="flex items-center gap-3 animate-in fade-in duration-300">
-                <div className="rounded-xl bg-amber-500/15 p-2 text-amber-600 shrink-0">
-                  <AlertTriangle className="h-5 w-5" />
-                </div>
-                {locationSource !== 'geolocation' && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); requestLocation(); }}
-                    className="shrink-0 text-sm font-bold text-primary hover:underline"
-                  >
-                    Enable device location
-                  </button>
-                )}
-              </div>
-            )}
+      {locationMessage && locationSource !== 'geolocation' && (
+        <div className="absolute top-4 left-0 right-0 z-[1200] flex justify-center px-4 pointer-events-none animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="pointer-events-auto flex items-center gap-2 rounded-full border border-amber-500/30 bg-card/90 px-3 py-1.5 shadow-sm backdrop-blur text-sm">
+            <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
+            <span className="text-muted-foreground font-medium text-xs sm:text-sm whitespace-nowrap">{locationMessage}</span>
+            <button
+              onClick={(e) => { e.stopPropagation(); requestLocation(true); }}
+              className="font-bold text-primary hover:underline text-xs sm:text-sm ml-1 shrink-0"
+            >
+              Enable
+            </button>
           </div>
         </div>
       )}

@@ -119,7 +119,25 @@ export default function AdminMechanics() {
   };
 
   let result = mechanics.filter(m => {
-    const searchString = `${m.businessName || m.name} ${m.mechanicName || ''} ${m.city} ${m.phone?.[0]?.number || ''} ${m.phone?.map((p: any) => p.number).join(' ') || ''}`.toLowerCase();
+    let phoneStr = '';
+    if (m.phone) {
+      if (Array.isArray(m.phone)) {
+        phoneStr = m.phone.map((p: any) => typeof p === 'object' ? p.number : p).join(' ');
+      } else if (typeof m.phone === 'string') {
+        try {
+          const parsed = JSON.parse(m.phone);
+          if (Array.isArray(parsed)) {
+            phoneStr = parsed.map((p: any) => typeof p === 'object' ? p.number : p).join(' ');
+          } else {
+            phoneStr = m.phone;
+          }
+        } catch {
+          phoneStr = m.phone;
+        }
+      }
+    }
+    
+    const searchString = `${m.businessName || m.name || ''} ${m.mechanicName || ''} ${m.city || ''} ${m.area || ''} ${m.district || ''} ${phoneStr}`.toLowerCase();
     const matchesSearch = searchString.includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'All' || m.status === statusFilter;
     const matchesType = typeFilter === 'All Types' || m.mechanicType === typeFilter;

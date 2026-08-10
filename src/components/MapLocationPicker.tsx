@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, useMap, useMapEvents, ZoomControl } from 'react-leaflet';
 import L from 'leaflet';
 import { MapPin, X, Navigation, Check, Search } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
@@ -161,7 +161,8 @@ export function MapLocationPicker({ initialLocation, onSelect, onClose }: MapLoc
             )}
           </div>
 
-          <MapContainer center={coords} zoom={14} className="w-full h-full z-0">
+          <MapContainer center={coords} zoom={14} className="w-full h-full z-0" zoomControl={false}>
+            <ZoomControl position="bottomleft" />
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

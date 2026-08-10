@@ -40,10 +40,6 @@ export default defineConfig({
             return 'select-vendor';
           }
 
-          if (id.includes('country-state-city')) {
-            return 'geo-data-vendor';
-          }
-
           if (id.includes('react-share')) {
             return 'share-vendor';
           }

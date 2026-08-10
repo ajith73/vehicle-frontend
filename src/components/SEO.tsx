@@ -14,7 +14,7 @@ interface SEOProps {
 export function SEO({
   title = 'RoadResQ | 24/7 Roadside Assistance in Tamil Nadu',
   description = 'RoadResQ provides fast roadside assistance across Tamil Nadu including mechanics, towing, puncture repair, battery jump-start, fuel delivery, and emergency vehicle support.',
-  keywords = '24/7 roadside assistance near me, car towing service, bike towing service near me, emergency car repair, flat tire repair, car battery jump start, car mechanic open now, RoadResQ, Tamil Nadu, Coimbatore, Chennai, Madurai, Salem',
+  keywords = '24 hours car mechanic near me, emergency car mechanic tamil nadu, highway car breakdown assistance tn, car mechanic near me, bike mechanic near me, best car mechanic in tamil nadu, doorstep car service tamil nadu, car towing service in tamil nadu, car AC repair near me, mobile car mechanic near me, RoadResQ',
   image = 'https://roadresq.in/social-share.png',
   url = 'https://roadresq.in',
   schema,

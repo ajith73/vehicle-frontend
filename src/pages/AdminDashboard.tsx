@@ -8,14 +8,12 @@ import {
 } from 'lucide-react';
 import * as authApi from '../api/auth';
 import type { User, DetailedCityStat } from '../types';
-import { CityStatsModal } from '../components/admin/CityStatsModal';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const [stats, setStats] = useState<any>(null);
   const [profile, setProfile] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isCityModalOpen, setIsCityModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -213,7 +211,7 @@ export default function AdminDashboard() {
               <LayoutGrid className="w-5 h-5 text-teal-500" /> City Services & Vehicles Breakdown
             </h3>
             <button 
-              onClick={() => setIsCityModalOpen(true)}
+              onClick={() => navigate('/admin/cities')}
               className="text-sm font-bold text-primary hover:underline"
             >
               View All Cities
@@ -336,11 +334,6 @@ export default function AdminDashboard() {
         </div>
       )}
       
-      <CityStatsModal 
-        isOpen={isCityModalOpen} 
-        onClose={() => setIsCityModalOpen(false)} 
-        cityStats={stats?.detailedCityStats || []} 
-      />
     </div>
   );
 }

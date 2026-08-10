@@ -292,15 +292,15 @@ export default function SubmitMechanicPage() {
   useEffect(() => {
     const loadStates = async () => {
       try {
-        const { State } = await import('country-state-city');
+        const states = await apiClient<any[]>('/public/geo/states');
         setStateOptions(
-          State.getStatesOfCountry('IN').map((state) => ({
+          states.map((state) => ({
             value: state.isoCode,
             label: state.name
           }))
         );
-      } catch (loadError) {
-        console.error('Failed to load state data', loadError);
+      } catch (err) {
+        console.error('Failed to load states', err);
       }
     };
 
@@ -337,14 +337,14 @@ export default function SubmitMechanicPage() {
       }
 
       try {
-        const { default: City } = await import('country-state-city/lib/city');
         const matchedState = stateOptions.find((option) => option.label === form.stateOption?.label);
         if (!matchedState?.value) {
           setCityOptions([]);
           return;
         }
 
-        const options = City.getCitiesOfState('IN', matchedState.value).map((city) => ({
+        const cities = await apiClient<any[]>(`/public/geo/states/${matchedState.value}/cities`);
+        const options = cities.map((city) => ({
           value: city.name,
           label: city.name
         }));

@@ -62,6 +62,13 @@ const faqItems = [
   },
 ];
 
+const getGreeting = () => {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 18) return 'Good afternoon';
+  return 'Good evening';
+};
+
 export default function LandingPage() {
   const navigate = useNavigate();
   const [selectedService, setSelectedService] = useState('');
@@ -236,7 +243,7 @@ export default function LandingPage() {
       <SEO 
         title="RoadResQ | Find Mechanics Near You Across Tamil Nadu"
         description="Find nearby mechanics, towing partners, puncture repair, jump-start, fuel delivery, and emergency roadside assistance across Coimbatore, Chennai, Madurai, Trichy, Salem, Erode, and more Tamil Nadu cities."
-        keywords="mechanics near me, mechanic near me in Coimbatore, roadside assistance Tamil Nadu, towing service near me, puncture repair near me, bike mechanic near me, car mechanic open now, emergency breakdown help, RoadResQ"
+        keywords="car mechanic near me, bike mechanic near me, 24 hours car mechanic near me, doorstep car service tamil nadu, mobile car mechanic near me, best car mechanic in tamil nadu, car AC repair near me, car battery replacement near me, nearest car service center, emergency vehicle repair near me, RoadResQ"
         url="https://roadresq.in/"
         schema={{
           "@context": "https://schema.org",
@@ -276,7 +283,7 @@ export default function LandingPage() {
         <div className="relative z-20 mb-6 flex w-full max-w-3xl flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2 shrink-0">
             <Wrench className="h-5 w-5 text-primary" />
-            <span className="text-base font-bold text-foreground sm:text-lg">Find nearby mechanic help fast</span>
+            <span className="text-base font-bold text-foreground sm:text-lg">{getGreeting()}</span>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -321,46 +328,16 @@ export default function LandingPage() {
               </span>
             )}
           </div>
-          {locationMessage && (
-            <div 
-              onClick={() => !isLocationMessageExpanded && setIsLocationMessageExpanded(true)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  if (!isLocationMessageExpanded) setIsLocationMessageExpanded(true);
-                }
-              }}
-              role="button"
-              tabIndex={isLocationMessageExpanded ? undefined : 0}
-              className={`mx-auto flex max-w-2xl gap-3 rounded-2xl border border-amber-500/30 bg-card/90 px-4 py-3 text-left shadow-sm backdrop-blur transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-amber-500 ${isLocationMessageExpanded ? 'items-start cursor-default' : 'items-center cursor-pointer hover:bg-card w-fit'}`}
-              aria-label={isLocationMessageExpanded ? "Location alert" : "Expand location alert"}
-            >
-              <AlertTriangle className={`${isLocationMessageExpanded ? 'mt-0.5' : ''} h-4 w-4 shrink-0 text-amber-600`} />
-              
-              {isLocationMessageExpanded ? (
-                <div className="min-w-0 flex-1 animate-in fade-in duration-300 flex flex-wrap items-center gap-x-2 gap-y-1">
-                  <p className="text-sm text-muted-foreground">{locationMessage}</p>
-                  {locationSource !== 'geolocation' && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); requestLocation(); }}
-                      className="text-sm font-bold text-primary hover:underline"
-                    >
-                      Try device location
-                    </button>
-                  )}
-                </div>
-              ) : (
-                <div className="flex items-center gap-3 flex-1 min-w-0 animate-in fade-in duration-300">
-                  {locationSource !== 'geolocation' && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); requestLocation(); }}
-                      className="shrink-0 text-sm font-bold text-primary hover:underline"
-                    >
-                      Enable device location
-                    </button>
-                  )}
-                </div>
-              )}
+          {locationMessage && locationSource !== 'geolocation' && (
+            <div className="flex items-center gap-2 rounded-full border border-amber-500/30 bg-card/90 px-3 py-1.5 shadow-sm backdrop-blur text-sm animate-in fade-in slide-in-from-top-2 duration-300 mt-2">
+              <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
+              <span className="text-muted-foreground font-medium text-xs sm:text-sm whitespace-nowrap">{locationMessage}</span>
+              <button
+                onClick={(e) => { e.stopPropagation(); requestLocation(true); }}
+                className="font-bold text-primary hover:underline text-xs sm:text-sm ml-1 shrink-0"
+              >
+                Enable
+              </button>
             </div>
           )}
         </div>

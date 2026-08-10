@@ -4,6 +4,7 @@ import { Building, Settings, FileText, Image as ImageIcon, Edit, LogOut, ArrowLe
 import { apiClient } from '../api/apiClient';
 import type { Mechanic } from '../types';
 import toast from 'react-hot-toast';
+import { LazyImage } from '../components/shared/LazyImage';
 
 export default function MechanicDashboard() {
   const { id } = useParams<{ id: string }>();
@@ -217,7 +218,7 @@ export default function MechanicDashboard() {
                   {/* Header Section */}
                   <div className="flex flex-col md:flex-row gap-6 items-start">
                     {(displayData.image || displayData.imageUrl) && (
-                      <img src={displayData.image || displayData.imageUrl} alt={displayData.businessName || displayData.name || 'Mechanic profile image'} loading="lazy" className="w-full md:w-48 h-48 object-cover rounded-xl border border-border shadow-sm shrink-0" onError={(e) => { (e.target as HTMLImageElement).src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#f1f5f9"/><text x="50" y="50" font-size="50" text-anchor="middle" dominant-baseline="central">🛠️</text></svg>')}` }} />
+                      <LazyImage src={displayData.image || displayData.imageUrl} alt={displayData.businessName || displayData.name || 'Mechanic profile image'} imgClassName="w-full md:w-48 h-48 object-cover rounded-xl border border-border shadow-sm shrink-0" />
                     )}
                     <div className="flex-1 space-y-2">
                       <div className="flex items-center gap-3">
@@ -362,7 +363,7 @@ export default function MechanicDashboard() {
                             <>
                               {/\.(jpg|jpeg|png|gif|webp)$/i.test(val) || val.toLowerCase().includes('image') ? (
                                 <a href={val.startsWith('/') ? `${import.meta.env.VITE_API_URL?.replace('/api', '') || ''}${val}` : (val.startsWith('http') ? val : `https://${val}`)} target="_blank" rel="noopener noreferrer" className="block relative w-full group/img overflow-hidden rounded-lg border border-border">
-                                  <img src={val.startsWith('/') ? `${import.meta.env.VITE_API_URL?.replace('/api', '') || ''}${val}` : (val.startsWith('http') ? val : `https://${val}`)} alt={key} loading="lazy" className="w-full h-32 object-cover transition-transform group-hover/img:scale-105" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                                  <LazyImage src={val.startsWith('/') ? `${import.meta.env.VITE_API_URL?.replace('/api', '') || ''}${val}` : (val.startsWith('http') ? val : `https://${val}`)} alt={key} imgClassName="w-full h-32 object-cover transition-transform group-hover/img:scale-105" />
                                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1">
                                     <ExternalLink size={18} className="text-white" />
                                     <span className="text-[10px] text-white font-bold uppercase tracking-wider">Preview</span>
@@ -422,7 +423,7 @@ export default function MechanicDashboard() {
                         {key === 'Profile Photo Link' && val && typeof val === 'string' && val.startsWith('http') ? (
                           <div className="shrink-0 flex items-center justify-end">
                             <a href={val} target="_blank" rel="noopener noreferrer" className="block relative group overflow-hidden rounded-full border border-border mt-3 sm:mt-0 w-16 h-16">
-                              <img src={val} alt={`${displayData.businessName || displayData.name || 'Mechanic'} profile photo`} loading="lazy" className="w-full h-full object-cover transition-transform group-hover:scale-110" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                              <LazyImage src={val} alt={`${displayData.businessName || displayData.name || 'Mechanic'} profile photo`} imgClassName="w-full h-full object-cover transition-transform group-hover:scale-110" />
                               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center">
                                 <ExternalLink size={14} className="text-white" />
                               </div>

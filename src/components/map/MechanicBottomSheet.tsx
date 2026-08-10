@@ -1,7 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Eye, Wrench, MapPin, Phone, MessageCircle, MessageSquare, Mail, Globe, Navigation, Heart, ChevronLeft, X } from 'lucide-react';
-import { getMechanicStatus, getDistanceFromLatLonInKm } from '../../utils/mechanicUtils';
+import { Navigation, MapPin, Star, AlertTriangle, Phone, ExternalLink, ShieldCheck, Wrench, Eye, MessageCircle, MessageSquare, Mail, Globe, Heart, ChevronLeft, X } from 'lucide-react';
+import { getMechanicStatus, getDistanceFromLatLonInKm, getEstimatedTimeFromDistance } from '../../utils/mechanicUtils';
+import { LazyImage } from '../shared/LazyImage';
 import L from 'leaflet';
 
 interface MechanicBottomSheetProps {
@@ -93,7 +94,7 @@ export function MechanicBottomSheet({
                 className="relative shrink-0 overflow-hidden rounded-xl w-20 h-20 group/img cursor-pointer shadow-sm hover:shadow-md transition-shadow"
                 onClick={(e) => { e.stopPropagation(); setSelectedMechanicForDetails(selectedMechanic); setIsDetailsOpen(true); }}
               >
-                <img src={selectedMechanic.image || selectedMechanic.imageUrl} alt={selectedMechanic.businessName || selectedMechanic.name} loading="lazy" className="w-full h-full object-cover bg-secondary group-hover/img:scale-110 transition-transform duration-500" onError={(e) => { (e.target as HTMLImageElement).src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#f1f5f9"/><text x="50" y="50" font-size="40" text-anchor="middle" dominant-baseline="central">🛠️</text></svg>')}` }} />
+                <LazyImage src={selectedMechanic.image || selectedMechanic.imageUrl} alt={selectedMechanic.businessName || selectedMechanic.name} imgClassName="bg-secondary group-hover/img:scale-110" />
                 {selectedMechanic.verificationLevel > 0 && (
                   <div className="absolute top-0 left-0 bg-blue-600 text-white rounded-br-lg p-0.5 shadow-md flex items-center justify-center z-10" title={`Verified Level ${selectedMechanic.verificationLevel}`}>
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
@@ -139,7 +140,7 @@ export function MechanicBottomSheet({
                 </h3>
               </div>
               <p className="text-sm text-muted-foreground flex items-center gap-1.5 truncate">
-                <MapPin className="w-4 h-4 shrink-0" /> {selectedMechanic.landmark ? `${selectedMechanic.landmark}, ` : ''}{selectedMechanic.area}
+                <MapPin className="w-4 h-4 shrink-0" /> <span className="truncate">{[selectedMechanic.landmark, selectedMechanic.area].filter(Boolean).join(', ')}</span>
               </p>
               
               <div className="flex items-center gap-2 mt-2">
@@ -221,7 +222,7 @@ export function MechanicBottomSheet({
                     >
                       {m.image || m.imageUrl ? (
                         <div className="relative shrink-0">
-                          <img src={m.image || m.imageUrl} alt={m.businessName || m.name || 'Nearby mechanic'} loading="lazy" className="w-12 h-12 rounded-lg object-cover" onError={(e) => { (e.target as HTMLImageElement).src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#f1f5f9"/><text x="50" y="50" font-size="50" text-anchor="middle" dominant-baseline="central">🛠️</text></svg>')}` }} />
+                          <LazyImage src={m.image || m.imageUrl} alt={m.businessName || m.name || 'Nearby mechanic'} className="w-12 h-12 rounded-lg shrink-0" />
                           {m.verificationLevel > 0 && (
                             <div className="absolute top-0 left-0 bg-blue-600 text-white rounded-br-lg p-0.5 shadow-md flex items-center justify-center" title={`Verified Level ${m.verificationLevel}`}>
                               <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
@@ -253,7 +254,7 @@ export function MechanicBottomSheet({
                             {m.currentStatus || 'Available'}
                           </span>
                         </div>
-                        <p className="mt-0.5 text-xs text-muted-foreground truncate">{m.distToSelected?.toFixed(1)} km away • {m.area}</p>
+                        <p className="mt-0.5 text-xs text-muted-foreground truncate">{m.distToSelected?.toFixed(1)} km away • {getEstimatedTimeFromDistance(m.distToSelected || 0)}{m.area ? ` • ${m.area}` : ''}</p>
                       </div>
                       <ChevronLeft className="w-4 h-4 text-muted-foreground rotate-180" />
                     </div>

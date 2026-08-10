@@ -305,9 +305,22 @@ export default function ListPage() {
               className="group flex shrink-0 items-center justify-center rounded-xl border border-border bg-card/90 px-4 backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40 hover:bg-primary/5 hover:shadow-md hover:shadow-primary/10 active:scale-95"
               title="Refresh results"
             >
-              <RefreshCw className={`h-5 w-5 text-foreground transition-colors group-hover:text-primary ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-5 w-5 text-foreground transition-all group-hover:text-primary ${loading ? 'animate-spin' : ''}`} />
             </button>
           </div>
+          
+          {locationMessage && locationSource !== 'geolocation' && (
+            <div className="mt-3 flex items-center justify-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 shadow-sm backdrop-blur text-sm w-fit mx-auto animate-in fade-in duration-300">
+              <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
+              <span className="text-muted-foreground font-medium text-xs sm:text-sm whitespace-nowrap">{locationMessage}</span>
+              <button
+                onClick={(e) => { e.stopPropagation(); requestLocation(true); }}
+                className="font-bold text-primary hover:underline text-xs sm:text-sm ml-1 shrink-0"
+              >
+                Enable
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

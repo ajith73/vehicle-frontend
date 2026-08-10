@@ -5,6 +5,7 @@ import { apiClient } from '../api/apiClient';
 import type { Mechanic } from '../types';
 import { MapPin, Wrench, Navigation, Phone } from 'lucide-react';
 import { MechanicReviews } from '../components/shared/MechanicReviews';
+import { LazyImage } from '../components/shared/LazyImage';
 
 export default function MechanicProfile() {
   const { id } = useParams<{ id: string }>();
@@ -132,7 +133,7 @@ export default function MechanicProfile() {
         <div className="bg-card rounded-[24px] shadow-xl border border-border overflow-hidden">
           <div className="h-64 sm:h-80 bg-secondary/50 relative">
             {imageUrl && imageUrl !== "https://roadresq.in/social-share.png" ? (
-               <img src={imageUrl} alt={businessName} loading="lazy" className="w-full h-full object-cover" />
+               <LazyImage src={imageUrl} alt={businessName} />
             ) : (
                <div className="w-full h-full flex items-center justify-center bg-muted">
                  <Wrench className="w-20 h-20 text-muted-foreground/30" />

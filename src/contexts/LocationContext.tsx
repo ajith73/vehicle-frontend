@@ -9,7 +9,7 @@ interface LocationContextType {
   locationName: string;
   searchQuery: string;
   setLocation: (coords: [number, number] | null, name: string, source?: LocationSource) => void;
-  requestLocation: () => Promise<void>;
+  requestLocation: (showToast?: boolean) => Promise<void>;
   isLoading: boolean;
   locationSource: LocationSource;
   locationMessage: string | null;
@@ -40,10 +40,10 @@ export const LocationProvider = ({ children }: { children: ReactNode }) => {
       const data = res.data;
       if (data && data.city) {
         setLocation([parseFloat(data.latitude), parseFloat(data.longitude)], data.city, 'ip');
-        setLocationMessage('Using approximate location.');
+        setLocationMessage('Approximate location used');
       } else {
         setLocationSource('none');
-        setLocationMessage('Location access unavailable.');
+        setLocationMessage('Location unavailable');
       }
     } catch (err) {
       console.warn('IP location fetch failed', err);
@@ -54,8 +54,25 @@ export const LocationProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const requestLocation = async () => {
-    setIsLoading(true);
+  const requestLocation = async (showToast = false) => {
+    if (showToast) {
+       setIsLoading(true);
+       try {
+         const permission = await navigator.permissions.query({ name: 'geolocation' });
+         if (permission.state === 'denied') {
+           import('react-hot-toast').then(({ default: toast }) => {
+             toast.error('Location is blocked in your browser settings. Please enable it to use device location.');
+           });
+           setIsLoading(false);
+           return;
+         }
+       } catch (e) {
+         // permissions API not supported in all browsers
+       }
+    } else {
+       setIsLoading(true);
+    }
+
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         async (position) => {
@@ -73,7 +90,7 @@ export const LocationProvider = ({ children }: { children: ReactNode }) => {
         },
         async () => {
           console.warn('Could not get geolocation, falling back to IP');
-          setLocationMessage('Location denied. Using approximate location.');
+          setLocationMessage('Location denied. Using approximate.');
           await fetchIpLocation();
         },
         { timeout: 10000 }

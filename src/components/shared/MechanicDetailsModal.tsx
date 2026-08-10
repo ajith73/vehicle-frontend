@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { X, Wrench, MapPin, Info, Star, Phone, MessageSquare, MessageCircle, Mail, Globe, Navigation } from 'lucide-react';
 import { getMechanicStatus, getDistanceFromLatLonInKm } from '../../utils/mechanicUtils';
 import { MechanicReviews } from './MechanicReviews';
+import { LazyImage } from './LazyImage';
 
 interface MechanicDetailsModalProps {
   isOpen: boolean;
@@ -39,7 +40,7 @@ export function MechanicDetailsModal({
       >
         <div className="relative h-32 sm:h-40 shrink-0 bg-secondary/50">
           {selectedMechanicForDetails.image || selectedMechanicForDetails.imageUrl ? (
-            <img src={selectedMechanicForDetails.image || selectedMechanicForDetails.imageUrl} alt={selectedMechanicForDetails.businessName || selectedMechanicForDetails.name || 'Mechanic listing image'} loading="lazy" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#f1f5f9"/><text x="50" y="50" font-size="50" text-anchor="middle" dominant-baseline="central">🛠️</text></svg>')}` }} />
+            <LazyImage src={selectedMechanicForDetails.image || selectedMechanicForDetails.imageUrl} alt={selectedMechanicForDetails.businessName || selectedMechanicForDetails.name || 'Mechanic listing image'} />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
               <Wrench className="w-16 h-16 text-muted-foreground/30" />
@@ -74,8 +75,19 @@ export function MechanicDetailsModal({
             <h3 className="font-black text-2xl text-foreground leading-tight">
               {selectedMechanicForDetails.businessName || selectedMechanicForDetails.name}
             </h3>
-            <p className="text-muted-foreground text-sm flex items-center gap-1.5 mt-2 font-medium">
-              <MapPin size={14} className="text-primary" /> {selectedMechanicForDetails.landmark ? `${selectedMechanicForDetails.landmark}, ` : ''}{selectedMechanicForDetails.area}
+            <p className="text-muted-foreground text-sm flex items-start gap-1.5 mt-2 font-medium">
+              <MapPin size={14} className="text-primary mt-0.5 shrink-0" /> 
+              <span className="leading-snug">
+                {selectedMechanicForDetails.address || 
+                 selectedMechanicForDetails.shopAddress || 
+                 [
+                   selectedMechanicForDetails.area, 
+                   selectedMechanicForDetails.landmark, 
+                   selectedMechanicForDetails.city, 
+                   selectedMechanicForDetails.state, 
+                   selectedMechanicForDetails.pincode
+                 ].filter(Boolean).join(', ')}
+              </span>
             </p>
           </div>
           <div className="grid grid-cols-2 gap-4">

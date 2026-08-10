@@ -10,6 +10,16 @@ export function getDistanceFromLatLonInKm(lat1: number, lon1: number, lat2: numb
   return R * c; 
 }
 
+export function getEstimatedTimeFromDistance(distanceKm: number): string {
+  // Average city driving speed ~ 30 km/h -> 2 mins per km
+  const minutes = Math.max(1, Math.ceil(distanceKm * 2));
+  if (minutes < 60) return `${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  const remainingMins = minutes % 60;
+  if (remainingMins === 0) return `${hours} hr`;
+  return `${hours} hr ${remainingMins} min`;
+}
+
 export const isCurrentlyAvailable = (mechanic: any) => {
   if (!mechanic) return false;
   if (mechanic.availability === false) return false;
