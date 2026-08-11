@@ -41,6 +41,14 @@ export default function ServiceCityLandingPage() {
     ]
   };
 
+  let queryParams = `?search=${encodeURIComponent(city.name)}`;
+  if (service.vehicleTypes && service.vehicleTypes.length > 0) {
+    queryParams += `&vehicle=${encodeURIComponent(service.vehicleTypes.join(','))}`;
+  }
+  if (service.serviceTypes && service.serviceTypes.length > 0) {
+    queryParams += `&service=${encodeURIComponent(service.serviceTypes.join(','))}`;
+  }
+
   return (
     <div className="flex min-h-screen flex-col bg-background pb-20 sm:pb-0">
       <SEO title={pageTitle} description={pageDescription} url={canonical} keywords={`${service.shortLabel} in ${city.name}, ${service.keywords.join(', ')}, ${city.name} roadside assistance`} schema={faqSchema} />
@@ -68,14 +76,14 @@ export default function ServiceCityLandingPage() {
             </p>
             <div className="mt-10 flex flex-wrap gap-4">
               <Link
-                to={`/list?search=${encodeURIComponent(city.name)}&service=${encodeURIComponent(service.name)}`}
+                to={`/list${queryParams}`}
                 className="group inline-flex items-center gap-2 rounded-2xl bg-primary px-6 py-4 text-sm font-black text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:bg-primary/90 hover:scale-[1.02] active:scale-95"
               >
                 Open filtered mechanic list 
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Link>
               <Link
-                to={`/map?search=${encodeURIComponent(city.name)}&service=${encodeURIComponent(service.name)}`}
+                to={`/map${queryParams}`}
                 className="inline-flex items-center gap-2 rounded-2xl border border-border/50 bg-background/50 backdrop-blur-sm px-6 py-4 text-sm font-black text-foreground shadow-sm transition-all hover:bg-secondary hover:scale-[1.02] active:scale-95"
               >
                 Open filtered map
@@ -114,7 +122,7 @@ export default function ServiceCityLandingPage() {
               {city.nearbyAreas.map((area) => (
                 <Link
                   key={area}
-                  to={`/list?search=${encodeURIComponent(area)}&service=${encodeURIComponent(service.name)}`}
+                  to={`/list?search=${encodeURIComponent(area)}${queryParams.replace('?search=' + encodeURIComponent(city.name), '')}`}
                   className="rounded-xl border border-border/40 bg-background/50 px-4 py-2.5 text-xs font-bold text-foreground transition-all hover:border-primary/30 hover:bg-primary/5 hover:-translate-y-0.5"
                 >
                   {service.name} near {area}

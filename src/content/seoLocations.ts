@@ -14,6 +14,8 @@ export type ServiceSeoConfig = {
   shortLabel: string;
   keywords: string[];
   trustPoints: string[];
+  vehicleTypes: string[];
+  serviceTypes: string[];
 };
 
 export const citySeoConfigs: CitySeoConfig[] = [
@@ -367,21 +369,27 @@ export const serviceSeoConfigs: ServiceSeoConfig[] = [
     name: 'Car Mechanic',
     shortLabel: 'car mechanic',
     keywords: ['car mechanic near me', 'car service shop', 'car breakdown help'],
-    trustPoints: ['Car-focused repair support', 'Nearby workshop discovery', 'Fast search-to-contact flow']
+    trustPoints: ['Car-focused repair support', 'Nearby workshop discovery', 'Fast search-to-contact flow'],
+    vehicleTypes: ['Car', 'SUV', 'Van'],
+    serviceTypes: []
   },
   {
     slug: 'bike-mechanic',
     name: 'Bike Mechanic',
     shortLabel: 'bike mechanic',
     keywords: ['bike mechanic near me', 'two wheeler repair', 'motorcycle roadside help'],
-    trustPoints: ['Bike and scooter repair visibility', 'Two-wheeler roadside support', 'Local shop discovery']
+    trustPoints: ['Bike and scooter repair visibility', 'Two-wheeler roadside support', 'Local shop discovery'],
+    vehicleTypes: ['Bike', 'Scooter'],
+    serviceTypes: []
   },
   {
     slug: 'towing',
     name: 'Towing Service',
     shortLabel: 'towing service',
     keywords: ['towing near me', 'vehicle towing', 'breakdown towing support'],
-    trustPoints: ['Breakdown recovery support', 'Emergency tow discovery', 'Useful during non-drivable breakdowns']
+    trustPoints: ['Breakdown recovery support', 'Emergency tow discovery', 'Useful during non-drivable breakdowns'],
+    vehicleTypes: [],
+    serviceTypes: ['Emergency Towing & Flatbed Services', 'Heavy Vehicle Towing & Recovery']
   }
 ];
 
