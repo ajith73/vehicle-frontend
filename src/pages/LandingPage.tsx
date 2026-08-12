@@ -1,6 +1,7 @@
 import { Suspense, lazy, useEffect, useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Moon, Sun, MapPin, Edit2, AlertTriangle, Search, Navigation, Compass, Star, Map as MapIcon, Loader2, Wrench, ChevronRight, ShieldCheck, Filter, ArrowUpRight } from 'lucide-react';
+import { FaFacebook, FaTwitter, FaInstagram, FaLinkedin } from 'react-icons/fa';
 import { apiClient } from '../api/apiClient';
 import { searchPlaces, type PlaceSuggestion } from '../api/geocoding';
 import { useLocationContext } from '../contexts/LocationContext';
@@ -105,19 +106,7 @@ export default function LandingPage() {
   const [fetchError, setFetchError] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const [showFab, setShowFab] = useState(false);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      if (window.scrollY > 300) {
-        setShowFab(true);
-      } else {
-        setShowFab(false);
-      }
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -746,21 +735,27 @@ export default function LandingPage() {
         </Suspense>
       )}
       
-      <footer className="py-6 text-center text-sm font-semibold text-muted-foreground mt-4 border-t border-border/50">
-        © 2026 RoadResQ. All Rights Reserved.
+      <footer className="py-8 text-center text-sm font-semibold text-muted-foreground mt-4 border-t border-border/50">
+        <div className="flex flex-col items-center gap-4">
+          <div className="flex items-center gap-6 mb-2">
+            <a href="https://www.instagram.com/roadresqofficial247/" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors" aria-label="Instagram">
+              <FaInstagram className="w-5 h-5" />
+            </a>
+            <a href="https://www.facebook.com/profile.php?id=61593310886141" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors" aria-label="Facebook">
+              <FaFacebook className="w-5 h-5" />
+            </a>
+            <a href="https://x.com/roadresq247" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors" aria-label="X (Twitter)">
+              <FaTwitter className="w-5 h-5" />
+            </a>
+            <a href="https://www.linkedin.com/company/roadresqofficial/?viewAsMember=true" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors" aria-label="LinkedIn">
+              <FaLinkedin className="w-5 h-5" />
+            </a>
+          </div>
+          <div>© 2026 RoadResQ. All Rights Reserved.</div>
+        </div>
       </footer>
 
-      {/* Mobile Floating Action Button (FAB) */}
-      {showFab && (
-        <button
-          onClick={() => navigate(`/map?vehicle=${selectedVehicle}&service=${selectedService}`)}
-          className="fixed bottom-6 right-6 z-45 flex items-center gap-2 rounded-full border border-primary/20 bg-primary px-5 py-3.5 text-sm font-black text-primary-foreground shadow-lg shadow-primary/30 transition-all hover:scale-105 active:scale-95 sm:hidden animate-in slide-in-from-bottom-5 duration-300"
-          aria-label="Open Map Finder"
-        >
-          <Compass className="h-5 w-5 animate-pulse" />
-          <span>Open Map Finder</span>
-        </button>
-      )}
+
     </div>
   );
 }
