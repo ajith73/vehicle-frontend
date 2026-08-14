@@ -12,6 +12,7 @@ const MapPage = lazy(() => import('./pages/MapPage'));
 const MapCNPage = lazy(() => import('./pages/MapCNPage'));
 const FeedbackPage = lazy(() => import('./pages/FeedbackPage'));
 const DonationPage = lazy(() => import('./pages/DonationPage'));
+const WhyRoadResQPage = lazy(() => import('./pages/WhyRoadResQPage'));
 const SubmitMechanicPage = lazy(() => import('./pages/SubmitMechanicPage'));
 const EmergencyHubPage = lazy(() => import('./pages/EmergencyHubPage'));
 const ContactPage = lazy(() => import('./pages/ContactPage'));
@@ -22,6 +23,7 @@ const VerifyStartPage = lazy(() => import('./pages/VerifyStartPage'));
 const CityLandingPage = lazy(() => import('./pages/CityLandingPage'));
 const ServiceCityLandingPage = lazy(() => import('./pages/ServiceCityLandingPage'));
 const MechanicProfile = lazy(() => import('./pages/MechanicProfile'));
+const PartnerPage = lazy(() => import('./pages/PartnerPage'));
 const MechanicDashboard = lazy(() => import('./pages/MechanicDashboard'));
 const VerifyFlowPage = lazy(() => import('./pages/VerifyFlowPage'));
 const AdminLogin = lazy(() => import('./pages/AdminLogin'));
@@ -72,6 +74,7 @@ const publicRoutes = (
     <Route path="/mapcn" element={<MapCNPage />} />
     <Route path="/feedback" element={<FeedbackPage />} />
     <Route path="/donate" element={<DonationPage />} />
+    <Route path="/why-road-resq" element={<WhyRoadResQPage />} />
     <Route path="/contact" element={<ContactPage />} />
     <Route path="/about" element={<AboutPage />} />
     <Route path="/terms" element={<TermsPage />} />
@@ -79,6 +82,7 @@ const publicRoutes = (
     <Route path="/verify-start" element={<VerifyStartPage />} />
     <Route path="/cities/:citySlug" element={<CityLandingPage />} />
     <Route path="/services/:serviceSlug/in/:citySlug" element={<ServiceCityLandingPage />} />
+    <Route path="/partner" element={<PartnerPage />} />
     <Route path="/mechanic/:id" element={<MechanicProfile />} />
     <Route path="/mechanic-dashboard/:id" element={<Suspense fallback={<RouteLoader />}><MechanicDashboard /></Suspense>} />
     <Route path="/verify-flow/:id" element={<Suspense fallback={<RouteLoader />}><VerifyFlowPage /></Suspense>} />

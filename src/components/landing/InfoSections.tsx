@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Activity, Fuel, Zap, Droplets, Settings, ArrowRight, ShieldAlert } from 'lucide-react';
+import { Activity, Fuel, Zap, Droplets, Settings, ArrowRight, ShieldAlert, Navigation } from 'lucide-react';
 import ShareButtons from '../ShareButtons';
 
 export function InfoSections() {
@@ -159,6 +159,12 @@ export function InfoSections() {
               >
                 🛡️ Verify My Business
               </button>
+              <button 
+                onClick={() => navigate('/partner')}
+                className="mt-1 inline-flex items-center justify-center rounded-2xl bg-pink-50 dark:bg-pink-900/30 px-5 py-3 text-sm font-black text-pink-700 dark:text-pink-300 transition-colors hover:bg-pink-100 dark:hover:bg-pink-900/50 border border-pink-200 dark:border-pink-800"
+              >
+                🤝 Join as a Partner
+              </button>
             </div>
           </div>
         </div>
@@ -174,13 +180,22 @@ export function InfoSections() {
               <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
                 Discover why we built this platform, how we solve problems for stranded drivers in minutes, and our core mission to empower local mechanics and increase their revenue.
               </p>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base font-medium">
+                Our revolutionary digital grid architecture ensures you are never left stranded. With intelligent dispatching and real-time tracking, help is always just a few taps away.
+              </p>
             </div>
-            <div className="flex flex-col justify-center">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <button
                 onClick={() => navigate('/about')}
                 className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-2xl bg-purple-600 px-6 py-4 text-sm font-black text-white transition-colors hover:bg-purple-700 shadow-[0_8px_30px_rgba(147,51,234,0.3)] hover:-translate-y-1 active:translate-y-0"
               >
                 Read Our Story <ArrowRight className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => navigate('/why-road-resq')}
+                className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-2xl bg-background border-2 border-purple-200 dark:border-purple-800 px-6 py-4 text-sm font-black text-purple-700 dark:text-purple-300 transition-colors hover:bg-purple-50 dark:hover:bg-purple-900/30 hover:-translate-y-1 active:translate-y-0"
+              >
+                Why RoadResQ? <Navigation className="h-4 w-4" />
               </button>
             </div>
           </div>

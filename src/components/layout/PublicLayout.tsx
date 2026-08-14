@@ -10,8 +10,13 @@ export default function PublicLayout() {
     <div className="min-h-[100dvh] flex flex-col bg-background text-foreground selection:bg-primary/20 pb-[72px] sm:pb-0">
       <header className="hidden sm:block sticky top-0 z-50 p-4 border-b border-border bg-background/80 backdrop-blur-md shadow-sm">
         <div className="max-w-7xl mx-auto flex justify-between items-center w-full">
-          <Link to="/" className="flex items-center gap-2 text-xl font-black text-primary hover:scale-105 transition-transform">
-            <Wrench className="w-6 h-6" /> RoadResQ
+          <Link to="/" className="flex items-center gap-2 text-xl font-black hover:scale-105 transition-transform">
+            <Wrench className="w-6 h-6 text-primary" />
+            <div className="tracking-tight">
+              <span className="text-foreground">Road</span>
+              <span className="text-primary">Res</span>
+              <span className="text-blue-500">Q</span>
+            </div>
           </Link>
           <div className="flex gap-2 sm:gap-6 items-center">
             <Link to="/" className={`hidden sm:flex items-center gap-1 text-sm transition-colors ${location.pathname === '/' ? 'text-primary font-bold' : 'font-medium text-foreground/80 hover:text-primary'}`}>
