@@ -17,7 +17,7 @@ export default function WhyRoadResQPage() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <SEO
-        title="Why RoadResQ | Intelligent Roadside Assistance"
+        title="Why RoadResQ | Premium Roadside Assistance"
         description="Learn how RoadResQ is replacing unorganized service chaos with a premium, digitally native dispatch network engineered for sub-45 minute response times."
       />
 
@@ -297,7 +297,7 @@ export default function WhyRoadResQPage() {
                 color: "text-primary",
                 bg: "bg-primary/10",
                 title: "Navigating Tier-2 Infrastructure",
-                desc: "Our AI dispatch actively monitors hyper-local restrictions to route mechanics optimally, dodging traffic bottlenecks and closed roads."
+                desc: "Our smart dispatch system actively monitors hyper-local restrictions to route mechanics optimally, dodging traffic bottlenecks and closed roads."
               },
               {
                 icon: Clock,
@@ -350,9 +350,9 @@ export default function WhyRoadResQPage() {
             </div>
 
             {[
-              { icon: Smartphone, label: "SOS Initiated", sub: "Stranded driver requests aid via app" },
-              { icon: Activity, label: "Algorithmic Dispatch", sub: "Instant matching with nearest verified partner" },
-              { icon: Wrench, label: "Mechanic Enroute", sub: "Live tracking & upfront pricing" }
+              { icon: Smartphone, label: "Request Aid", sub: "Stranded driver requests help via our web platform" },
+              { icon: Activity, label: "Direct Matching", sub: "Instantly connected with the nearest verified partner" },
+              { icon: Wrench, label: "Service & Payment", sub: "Mechanic arrives, fixes the issue, and gets paid directly" }
             ].map((step, idx) => (
               <motion.div 
                 key={idx}
@@ -371,7 +371,7 @@ export default function WhyRoadResQPage() {
                 <div className="w-20 h-20 rounded-full bg-background border-4 border-card shadow-inner flex items-center justify-center mb-6 relative z-10 group-hover:bg-primary transition-colors duration-300">
                   <step.icon className="w-10 h-10 text-foreground group-hover:text-primary-foreground transition-colors duration-300" />
                 </div>
-                <h4 className="font-black text-foreground mb-3 text-lg">{step.label}</h4>
+                <h4 className="font-black text-foreground mb-3 text-lg text-center">{step.label}</h4>
                 <p className="text-sm text-muted-foreground leading-relaxed px-2 text-center">{step.sub}</p>
               </motion.div>
             ))}

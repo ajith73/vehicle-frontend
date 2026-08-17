@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { apiClient } from '../api/apiClient';
+import { SEO } from '../components/SEO';
 import { 
-  ArrowRight, CheckCircle2, Wallet, Clock, ShieldCheck, 
+  ArrowRight, ArrowLeft, CheckCircle2, Wallet, Clock, ShieldCheck, 
   Settings, Battery, Wrench, Droplets, Star,
   ChevronDown, ChevronUp, UserPlus
 } from 'lucide-react';
@@ -10,38 +12,37 @@ import {
 const FAQ_ITEMS = [
   {
     question: "How do I join the RoadResQ partner program?",
-    answer: "Download the RoadResQ partner app or click 'Register Now' on this page. Submit your details, undergo a quick verification process, and you can start accepting service requests within 24 hours."
+    answer: "It's simple! Click 'Register Now' on this page to create your profile. Once you submit your details and verify your identity, you can start accepting service requests in less than 24 hours."
   },
   {
     question: "How much can I earn as a RoadResQ partner?",
-    answer: "Earnings depend on the number of services you complete. On average, our active partners earn between ₹800 to ₹1,200 per hour. Payouts are transferred weekly directly to your bank account."
+    answer: "Your earnings depend entirely on the number of services you complete. The best part? You keep 100% of what you earn. Customers pay you directly for your services, and we don't take any commission."
   },
   {
-    question: "What are the flexible hours?",
-    answer: "You are your own boss! You can choose to be online and accept requests whenever it suits your schedule. There are no mandatory login hours."
+    question: "Do I have to work specific hours?",
+    answer: "Not at all. You are your own boss! You can log into the partner portal and accept requests whenever it suits your schedule. There are absolutely no mandatory login hours."
   },
   {
     question: "What services can I offer on RoadResQ?",
-    answer: "We support a wide range of emergency vehicle services including tyre changes, battery jump-starts, towing, minor engine repairs, and fuel delivery. You can select the services you are equipped to handle during registration."
+    answer: "We support a huge variety of vehicle services. Whether you specialize in towing, battery jump-starts, tyre changes, or general engine repair, you can select the exact services you are equipped to handle during your registration."
   },
   {
-    question: "Where does RoadResQ operate?",
-    answer: "We currently have partner opportunities across major cities in India including Mumbai, Delhi, Bangalore, Chennai, Hyderabad, Pune, and many more. We are constantly expanding!"
+    question: "Where does RoadResQ currently operate?",
+    answer: "We are currently operating across all major cities and towns in Tamil Nadu (including Chennai, Coimbatore, and Madurai). We are growing fast and plan to expand our services all over India very soon!"
   },
   {
-    question: "What happens if I need help during a job?",
-    answer: "Our dedicated partner support team is available 24/7. You can reach out via the partner app or our emergency hotline for immediate assistance on the road."
+    question: "What happens if I need help while on a job?",
+    answer: "We've got your back. Our dedicated support team is available to help you. You can reach out directly through the partner web portal or call our emergency hotline for immediate assistance."
   }
 ];
 
 const CITIES = [
-  "Mumbai", "Delhi", "Bangalore", "Chennai", "Hyderabad", "Pune", 
-  "Ahmedabad", "Jaipur", "Lucknow", "Surat", "Nagpur", "Indore", 
-  "Bhopal", "Patna", "Vadodara", "Agra", "Nashik", "Faridabad", 
-  "Meerut", "Rajkot", "Varanasi"
+  "Chennai", "Coimbatore", "Madurai", "Tiruchirappalli", "Salem", 
+  "Tirunelveli", "Erode", "Vellore", "Thoothukudi", "Dindigul", 
+  "Thanjavur", "Ranipet", "Sivakasi", "Karur", "Ooty"
 ];
 
-const SERVICES = [
+const DEFAULT_SERVICES = [
   { name: 'Tyre Change', icon: Settings },
   { name: 'Battery Jump Start', icon: Battery },
   { name: 'Towing', icon: Wrench },
@@ -50,27 +51,36 @@ const SERVICES = [
   { name: 'AC Repair', icon: Settings },
 ];
 
+const getIconForService = (name: string) => {
+  const n = name.toLowerCase();
+  if (n.includes('battery')) return Battery;
+  if (n.includes('tow')) return Wrench;
+  if (n.includes('engine')) return Wrench;
+  if (n.includes('fuel') || n.includes('oil') || n.includes('coolant')) return Droplets;
+  return Settings;
+};
+
 const TESTIMONIALS = [
   {
     name: "Ramesh Kumar",
     role: "Expert Tyre Repair",
     rating: 5,
-    text: "I have been working as a partner for over a year now. The app is incredibly easy to use, and I get consistent requests. It's a great way to earn on my own terms.",
-    location: "Mumbai"
+    text: "I've been partnered with RoadResQ for a few months now. Since it's all through the web portal, I didn't even have to install anything. I just get alerts, accept the ones near me, and customers pay me directly. It's totally hassle-free.",
+    location: "Coimbatore"
   },
   {
     name: "Manish Yadav",
     role: "Towing Specialist",
     rating: 5,
-    text: "RoadResQ has completely changed how I find work. The weekly payouts are always on time, and the support team is genuinely helpful if I ever run into issues.",
-    location: "Delhi"
+    text: "What I really like is the freedom. I just log into the portal whenever my garage has some downtime. It brings in extra local customers that I wouldn't have found otherwise, and I keep everything I earn.",
+    location: "Chennai"
   },
   {
     name: "Karthik Rajan",
     role: "General Repair",
     rating: 5,
-    text: "What I love most is the flexibility. I can turn on the app when I have free time and earn extra income. The customers are also very appreciative of the quick service.",
-    location: "Bangalore"
+    text: "The support team actually picks up the phone when you need them. I had an issue locating a customer late at night, and they sorted it out instantly. Highly recommend giving it a try if you run a shop.",
+    location: "Madurai"
   }
 ];
 
@@ -78,6 +88,25 @@ export default function PartnerPage() {
   const navigate = useNavigate();
   const [hours, setHours] = useState(25);
   const [activeFaq, setActiveFaq] = useState<number | null>(0);
+  const [services, setServices] = useState<{name: string, icon: any}[]>(DEFAULT_SERVICES);
+
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        const data = await apiClient<any>('/public/specific-services');
+        if (data && data.length > 0) {
+          const formatted = data.map((s: any) => ({
+            name: s.name,
+            icon: getIconForService(s.name)
+          }));
+          setServices(formatted);
+        }
+      } catch (err) {
+        console.error('Failed to fetch services:', err);
+      }
+    };
+    fetchServices();
+  }, []);
 
   const calculateEarnings = () => {
     // Assuming an average of ₹1000/hr
@@ -92,14 +121,27 @@ export default function PartnerPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background pt-16">
+    <div className="min-h-screen bg-background">
+      <SEO 
+        title="Become a Partner Mechanic | RoadResQ"
+        description="Join the RoadResQ partner network. Provide emergency vehicle assistance, tyre changes, and towing services across Tamil Nadu. Set your own hours and keep 100% of your earnings."
+        url="https://roadresq.in/partner"
+      />
       {/* Hero Section */}
-      <section className="relative overflow-hidden pt-12 pb-16 md:pt-24 md:pb-24">
+      <section className="relative overflow-hidden pb-16 md:pb-24">
         <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-background to-pink-500/10" />
         <div className="absolute top-1/4 -left-64 h-96 w-96 rounded-full bg-purple-500/20 blur-[128px]" />
         <div className="absolute bottom-1/4 -right-64 h-96 w-96 rounded-full bg-pink-500/20 blur-[128px]" />
         
-        <div className="container relative mx-auto px-4 sm:px-6">
+        <div className="container relative mx-auto px-4 sm:px-6 pt-6">
+          <button
+            onClick={() => navigate(-1)}
+            className="mb-8 inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back
+          </button>
+          
           <div className="flex flex-col-reverse md:flex-row items-center gap-12 md:gap-8">
             <motion.div 
               className="flex-1 text-center md:text-left"
@@ -187,9 +229,9 @@ export default function PartnerPage() {
               <div className="h-12 w-12 rounded-2xl bg-purple-100 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 flex items-center justify-center mb-4">
                 <Wallet className="h-6 w-6" />
               </div>
-              <h3 className="text-xl font-bold mb-2">₹800–₹1,200 per hour, paid weekly</h3>
+              <h3 className="text-xl font-bold mb-2">Keep 100% of your earnings</h3>
               <p className="text-muted-foreground text-sm">
-                Earn competitive rates for every job. Your earnings are deposited directly into your bank account every week.
+                Customers pay you directly for your services. We don't take any commission from your hard-earned money.
               </p>
             </motion.div>
             
@@ -293,13 +335,21 @@ export default function PartnerPage() {
                 {
                   step: 2,
                   title: "Verify Your Identity",
-                  desc: "Upload a photo of your ID and wait for quick approval. This usually takes less than 24 hours.",
+                  desc: (
+                    <>
+                      Upload a photo of your ID and wait for quick approval. Please ensure you have the{" "}
+                      <a href="#" className="text-purple-600 dark:text-purple-400 hover:underline">
+                        required documents
+                      </a>
+                      . This usually takes less than 24 hours.
+                    </>
+                  ),
                   icon: ShieldCheck
                 },
                 {
                   step: 3,
                   title: "Start Earning",
-                  desc: "Download the Partner app, go online, and accept your first rescue request!",
+                  desc: "Log in to our partner web portal or install our PWA on your phone, go online, and accept your first rescue request!",
                   icon: Wallet
                 }
               ].map((item, i) => (
@@ -335,13 +385,13 @@ export default function PartnerPage() {
           </motion.div>
         </div>
         
-        <div className="flex gap-4 px-4 overflow-x-auto pb-8 hide-scrollbar justify-start md:justify-center">
-          {SERVICES.map((service, i) => (
+        <div className="flex flex-wrap gap-4 px-4 pb-8 justify-center max-w-5xl mx-auto">
+          {services.map((service, i) => (
             <motion.div
               key={i}
-              className="flex-shrink-0 flex items-center gap-2 px-6 py-4 rounded-full border border-border bg-card shadow-sm whitespace-nowrap"
+              className="flex items-center gap-2 px-6 py-4 rounded-full border border-border bg-card shadow-sm whitespace-nowrap hover:shadow-md transition-shadow hover:-translate-y-0.5"
               {...fadeInUp}
-              transition={{ delay: i * 0.05 }}
+              transition={{ delay: (i % 10) * 0.05 }}
             >
               <service.icon className="h-5 w-5 text-purple-500" />
               <span className="font-bold text-sm">{service.name}</span>
@@ -402,9 +452,9 @@ export default function PartnerPage() {
             {...fadeInUp}
           >
             <h2 className="text-3xl md:text-4xl font-black text-foreground mb-4">
-              Partner opportunities across India
+              Partner opportunities across Tamil Nadu
             </h2>
-            <p className="text-muted-foreground">We operate in 100+ cities and expand coverage every month.</p>
+            <p className="text-muted-foreground">We currently operate across Tamil Nadu, with plans to expand all over India soon!</p>
           </motion.div>
           
           <div className="max-w-4xl mx-auto">
